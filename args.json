@@ -1,0 +1,21 @@
+{
+    "url_prefix": "/agricounter",
+    "site_port": "8110", 
+    "backend_python_port": "8115", 
+    "postgres_db_name": "agricounter_db",
+    "postgres_db_username": "agricounter_db_user",
+    "postgres_db_password": "secretDBkeypass",
+    "postgres_db_port": "8120",
+    "admin_username": "admin",
+    "admin_password": "undi$closed37",
+    "initial_users": [
+         {
+            "username": "user0",
+            "password": "detect$obj21"
+         }
+    ],
+    "initial_objects": [
+        "Canola Seedling",
+        "Wheat Head"
+    ]
+}
