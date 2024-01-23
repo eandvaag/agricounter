@@ -1,0 +1,65 @@
+Required Keys
+
+
+All:
+
+    arch:
+        model_type
+        backbone_config
+        neck_config
+        max_detections
+        input_img_shape
+
+    training:
+        training_patch_extraction_params
+        validation_patch_extraction_params
+        learning_rate
+        data_augmentations
+        num_epochs
+        early_stopping
+        batch_size
+        save_method
+        percent_of_training_set_used
+        training_sequence
+
+    inference:
+        inference_patch_extraction_params
+        batch_size
+        image_nms_iou_thresh
+        score_thresh
+
+
+
+CenterNet
+Input width and height must be a multiple of 32.
+
+    arch:
+
+    training:
+
+    inference:
+
+
+
+
+RetinaNet
+Input width and height will be resized to be a multiple of 128.
+
+    arch:
+        max_detections_per_class
+
+    training:
+
+    inference:
+        patch_nms_iou_thresh
+
+
+
+YOLOv4
+Input width and height must be a multiple of 32.
+    arch:
+
+    training:
+
+    inference:
+        patch_nms_iou_thresh
