@@ -6,7 +6,7 @@ site/docker-compose.yml
 site/myapp/cert.pem
 site/myapp/key.pem
 
-backend/src/usr/
+backend/src/usr/*
 
 
 # Byte-compiled / optimized / DLL files
