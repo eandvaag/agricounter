@@ -1,0 +1,7 @@
+site/.git
+site/.gitignore
+site/myapp/node_modules/
+site/myapp/usr/
+backend/.git
+backend/.gitignore
+backend/src/usr
