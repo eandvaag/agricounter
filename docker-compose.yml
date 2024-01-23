@@ -1,0 +1,50 @@
+networks:
+  container_net:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.26.0.0/24
+      driver: default
+services:
+  db:
+    environment:
+      POSTGRES_DB: agricounter_db
+      POSTGRES_PASSWORD: secretDBkeypass
+      POSTGRES_USER: agricounter_db_user
+    image: postgres
+    networks:
+    - container_net
+    ports:
+    - 8120:5432
+    restart: always
+    volumes:
+    - agricounter_db:/var/lib/postgresql/data
+  myapp:
+    build:
+      context: .
+    depends_on:
+    - db
+    environment:
+      AC_IP: myapp
+      AC_PATH: /agricounter
+      AC_PORT: '8110'
+      AC_PY_PORT: '8115'
+      DB_HOST: db
+      DB_PASSWORD: secretDBkeypass
+      DB_PORT: 5432
+      DB_SCHEMA: agricounter_db
+      DB_USER: agricounter_db_user
+      NODE_ENV: docker
+    networks:
+    - container_net
+    ports:
+    - 8110:8110
+    restart: always
+    runtime: nvidia
+    volumes:
+    - source: /home/erik/Documents/agricounter/backend/src/usr
+      target: /opt/app/backend/src/usr
+      type: bind
+version: '3.7'
+volumes:
+  agricounter_db: null
