@@ -54,9 +54,7 @@ def rotate_90(image, boxes, k):
              tf.math.reduce_min(ys, axis=-1),
              tf.math.reduce_max(xs, axis=-1),
              tf.math.reduce_max(ys, axis=-1)], axis=-1)
-        #boxes = tf.stack(
-        #    [boxes[:, 1], 1 - boxes[:, 0], boxes[:, 3], 1 - boxes[:, 2]], axis=-1
-        #)
+
     return image, boxes
 
 
@@ -162,20 +160,15 @@ def apply_inference_transform(batch_images, aug_type):
     transform = A.Compose(augmentations)
 
     transformed_images = []
-    # batch_images = batch_images.numpy()
     for image in batch_images:
-        transformed = transform(image=image) #, bboxes=boxes, class_labels=classes)
+        transformed = transform(image=image)
         transformed_image = transformed["image"]
-        # transformed_image = tf.convert_to_tensor(transformed_image)
         transformed_images.append(transformed_image)
-    
-    # transformed_images = tf.stack(transformed_images, axis=0)
+
     return transformed_images
 
 
-def undo_inference_transform(image_path, pred_boxes, pred_classes, pred_scores, aug_type): #, patch_coords):
-
-    # print("pred_boxes", pred_boxes)
+def undo_inference_transform(image_path, pred_boxes, pred_classes, pred_scores, aug_type):
 
     if aug_type == "nop" or aug_type == "CLAHE":
         return pred_boxes, pred_classes, pred_scores
@@ -192,19 +185,7 @@ def undo_inference_transform(image_path, pred_boxes, pred_classes, pred_scores, 
     elif aug_type == "rotate_270":
         augmentations.append(A.Rotate(limit=(-270, -270), always_apply=True))
 
-    #transform = A.Compose(augmentations)
-
-    # patch_h = patch_coords[2] - patch_coords[0]
-    # patch_w = patch_coords[3] - patch_coords[1]
-
-    # pred_patch_normalized_boxes = np.stack([
-    #     pred_boxes[:, 0] / patch_h,
-    #     pred_boxes[:, 1] / patch_w,
-    #     pred_boxes[:, 2] / patch_h,
-    #     pred_boxes[:, 3] / patch_w
-    # ], axis=-1)
     image = (cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)).astype(np.uint8)
-
 
     pred_boxes = box_utils.swap_xy_np(pred_boxes)
 
@@ -213,20 +194,9 @@ def undo_inference_transform(image_path, pred_boxes, pred_classes, pred_scores, 
     transformed_boxes = np.array(transformed["bboxes"]).reshape(-1, 4)
     transformed_classes = np.array(transformed["class_labels"])
     transformed_scores = np.array(transformed["scores"])
-    #detections[:, 0:4] = transformed_boxes
     transformed_boxes = box_utils.swap_xy_np(transformed_boxes)
-    # print("transformed_boxes", transformed_boxes)
-    # print("transformed_classes", transformed_classes)
-    # print("transformed_scores", transformed_scores)
 
-    # transformed_patch_abs_boxes = np.stack([
-    #     pred_boxes[:, 0] * patch_h,
-    #     pred_boxes[:, 1] * patch_w,
-    #     pred_boxes[:, 2] * patch_h,
-    #     pred_boxes[:, 3] * patch_w
-    # ], axis=-1)
-
-    return transformed_boxes, transformed_classes, transformed_scores #detections
+    return transformed_boxes, transformed_classes, transformed_scores
 
 
 def apply_augmentations_custom(augmentations, image, boxes):

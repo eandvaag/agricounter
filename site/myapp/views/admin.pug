@@ -1,0 +1,108 @@
+doctype html
+
+html
+    head
+        title="AgriCounter"
+        meta(name="viewport" content="width=device-width, initial-scale=1")
+
+        link(rel="icon" href=process.env.AC_PATH + "/images/favicon.ico")
+
+        link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css")
+        link(href=process.env.AC_PATH + '/stylesheets/main.css' rel='stylesheet')
+        
+        script(src="https://code.jquery.com/jquery-3.6.0.js")
+
+        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/common.js')
+        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/admin.js')
+        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/modal.js')
+
+    body
+        div(id="container")
+
+            include ./header.pug
+
+
+            div(id="modal" class="modal")
+                div(class="modal-content")
+                    div(class="modal-header" id="modal_head")
+
+                    div(class="modal-body" id="modal_body")
+
+                    div(class="modal-footer")
+
+            div(id="body")
+
+
+
+                div(style="height: 8px")
+
+                div(class="panel" style="width: 1500px;")
+
+
+
+
+                    table(style="border: 1px solid white; padding: 50px")
+                        tr
+                            td 
+                                div(style="width: 500px")
+
+                                    table
+
+                                        tr
+
+                                            td(style="text-align: left")
+                                                div(style="font-weight: bold; width: 300px") User Accounts 
+
+                                            td(style="width: 100%")
+
+
+                                            td 
+                                                div(style="width: 30px")
+                                                    button(class="button-green button-green-hover" style="width: 25px; height: 25px; border-radius: 5px; font-size: 12px;" type="button" id="add_usr_button")
+                                                        i(class="fa-solid fa-circle-plus")
+
+                            td
+                                div(style="width: 50px")
+
+
+                            td 
+                                div(style="width: 500px")
+
+                                    table
+
+                                        tr
+
+                                            td(style="text-align: left")
+                                                div(style="font-weight: bold; width: 300px") Object Classes 
+
+                                            td(style="width: 100%")
+
+
+                                            td 
+                                                div(style="width: 30px")
+                                                    button(class="button-green button-green-hover" style="width: 25px; height: 25px; border-radius: 5px; font-size: 12px;" type="button" id="add_cls_button")
+                                                        i(class="fa-solid fa-circle-plus")
+
+
+
+                        tr 
+
+                            td
+                                div(class="scrollable_area" style="width: 500px; height: 600px; border-radius: 10px; overflow-y: scroll")
+                                    table(id="user_list" style="border-collapse: collapse")
+
+
+                            td 
+                                div(style="width: 50px")
+
+
+                            td
+
+                                div(class="scrollable_area" style="width: 500px; height: 600px; border-radius: 10px; overflow-y: scroll")
+                                    table(id="class_list" style="border-collapse: collapse")
+
+
+
+    script.
+        let username = !{JSON.stringify(username)};
+        let data = !{JSON.stringify(data)};

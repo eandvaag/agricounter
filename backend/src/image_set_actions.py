@@ -9,7 +9,6 @@ import traceback
 
 from io_utils import json_io
 from models.common import annotation_utils
-import auto_select
 #import image_set_model as ism
 
 base_url = "https://" + os.environ.get("AC_IP") + ":" + os.environ.get("AC_PORT") + os.environ.get("AC_PATH")
@@ -17,11 +16,10 @@ status_notification_url = base_url + "/status_notification"
 results_notification_url = base_url + "/results_notification"
 model_notification_url = base_url + "/model_notification"
 
-# INITIALIZING = "initializing"
 IDLE = "Idle"
 FINE_TUNING = "Fine-Tuning"
 FINISHED_FINE_TUNING = "Finished Fine-Tuning"
-# FINISHED_TRAINING = "Finished Training"
+
 PREDICTING = "Predicting"
 FINISHED_PREDICTING = "Finished Predicting"
 
@@ -32,12 +30,6 @@ CALCULATING_VORONOI_AREAS = "Calculating Voronoi Areas"
 SWITCHING_MODELS = "Switching Models"
 FINISHED_SWITCHING_MODELS = "Finished Switching Models"
 
-SELECTING_MODEL = "Selecting Model"
-FINISHED_SELECTING_MODEL = "Finished Selecting Model"
-# RESTARTING = "Restarting"
-# FINISHED_RESTARTING = "Finished Restarting"
-# DETERMINING_PATCH_SIZE = "Determining Patch Size"
-# TRAINING_BASELINE = "Training Baseline"
 TRAINING = "Training"
 
 
@@ -288,10 +280,6 @@ def process_switch(item):
 
             switch_req = json_io.load_json(switch_req_path)
 
-            # if switch_req["auto"]:
-            # set_scheduler_status(username, farm_name, field_name, mission_date, SELECTING_MODEL)
-            # model_creator, model_name = auto_select.auto_select_model(item)
-            # else:
             model_creator = switch_req["model_creator"]
             model_name = switch_req["model_name"]
 
@@ -436,12 +424,6 @@ def process_switch(item):
                 os.remove(usr_block_path)
             if os.path.exists(sys_block_path):
                 os.remove(sys_block_path)
-
-
-            auto_select_path = os.path.join(model_dir, "auto_select_request.json")
-            if os.path.exists(auto_select_path):
-                os.remove(auto_select_path)
-
 
 
             os.remove(switch_req_path)
