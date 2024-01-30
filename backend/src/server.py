@@ -1,4 +1,3 @@
-# import urllib3
 from flask import Flask, request
 import time
 import os
@@ -8,11 +7,7 @@ import logging
 import traceback
 import multiprocessing as mp
 import threading
-import random
 import tensorflow as tf
-# from tensorflow import keras
-# from tensorflow.keras import layers
-# from tensorflow.keras import mixed_precision
 import numpy as np
 
 import image_set_aux
@@ -21,12 +16,9 @@ import extract_patches as ep
 from image_set import Image
 import excess_green
 
-from io_utils import json_io, w3c_io, tf_record_io
+from io_utils import json_io, tf_record_io
 from models.yolov4 import yolov4_image_set_driver
 from models.common import annotation_utils, inference_metrics
-import auto_select
-import interpolate
-# from process import MyProcess
 
 from lock_queue import LockQueue
 
@@ -36,11 +28,8 @@ MAX_STORED_SCHEDULER_UPDATES = 10
 cv = threading.Condition()
 sch_ctx = {}
 
-# mixed_precision.set_global_policy('mixed_float16')
 
 app = Flask(__name__)
-
-
 
 
 @app.route(os.environ.get("AC_PATH") + '/health_request', methods=['POST'])
@@ -60,17 +49,10 @@ def add_request():
         if "request_type" not in json_request:
             return {"message": "bad_request"}
         req_type = json_request["request_type"]
-        # item = {
-        #     "username": json_request["username"],
-        #     "farm_name": json_request["farm_name"],
-        #     "field_name": json_request["field_name"],
-        #     "mission_date": json_request["mission_date"]
-        # }
+
         ok = True
         if req_type == "switch":
             sch_ctx["switch_queue"].enqueue(json_request)
-        elif req_type == "auto_select":
-            sch_ctx["auto_select_queue"].enqueue(json_request)
         elif req_type == "prediction":
             sch_ctx["prediction_queue"].enqueue(json_request)
         elif req_type == "training":
@@ -112,24 +94,12 @@ def needs_training(image_set_dir):
         return False
 
 
-    # is_ortho = "training_regions" in annotations[list(annotations.keys())[0]]
-    # if is_ortho:
     annotations_path = os.path.join(image_set_dir, "annotations", "annotations.json")
     annotations = annotation_utils.load_annotations(annotations_path)
     num_training_regions = annotation_utils.get_num_training_regions(annotations)
-    # 0
-    # for image_name in annotations.keys():
-    #     num_training_regions += len(annotations[image_name]["training_regions"])
+
     return status["num_regions_fully_trained_on"] < num_training_regions
 
-    # else:
-    #     num_training_images = 0
-    #     for image_name in annotations.keys():
-    #         if annotations[image_name]["status"] == "completed_for_training":
-    #             num_training_images += 1
-    #     needs_training = status["num_images_fully_trained_on"] < num_training_images
-
-    # return needs_training
 
 
 def check_train(username, farm_name, field_name, mission_date):
@@ -172,17 +142,10 @@ def check_baseline(username):
 def process_baseline(item):
     logger = logging.getLogger(__name__)
     try:
-        # trace = None
+
         username = item["model_creator"]
-
-
-
         baseline_name = item["model_name"]
-        # baseline_id = item["username"] + ":" + baseline_name
 
-        # baseline_dir = os.path.join("usr", "data", "baselines", baseline_name) #"training", baseline_name)
-        
-        # baselines_dir = os.path.join("usr", "shared", "baselines")
         usr_dir = os.path.join("usr", "data", username)
         models_dir = os.path.join(usr_dir, "models")
         pending_dir = os.path.join(models_dir, "pending")
@@ -194,30 +157,16 @@ def process_baseline(item):
             baseline_available_dir = os.path.join(available_dir, "public", baseline_name)
         else:
             baseline_available_dir = os.path.join(available_dir, "private", baseline_name)
-        # baseline_available_dir = os.path.join(available_dir, baseline_name)
 
         aborted_dir = os.path.join(models_dir, "aborted")
         baseline_aborted_dir = os.path.join(aborted_dir, baseline_name)
-
-        # pending_dir = os.path.join(baselines_dir, "pending")
-        # baseline_pending_dir = os.path.join(pending_dir, baseline_name)
-        # log_path = os.path.join(baseline_pending_dir, "log.json")
-
-        # available_dir = os.path.join(baselines_dir, "available")
-        # baseline_available_dir = os.path.join(available_dir, baseline_name)
-
-        # aborted_dir = os.path.join(baselines_dir, "aborted")
-
-        # resuming = os.path.exists(log_path)
-            
-        #     raise RuntimeError("A baseline with the same name already exists!")
 
         if os.path.exists(baseline_available_dir) or os.path.exists(baseline_aborted_dir):
             if os.path.exists(baseline_available_dir):
                 logger.info("Not training baseline: baseline_available_dir exists")
             else:
                 logger.info("Not training baseline: baseline_aborted_dir exists")
-            return False #raise RuntimeError("A baseline with the same name already exists!")
+            return False
 
         logging.info("Starting to train baseline {}".format(item["model_name"]))
         # isa.set_scheduler_status(username, "---", "---", "---", isa.TRAINING)
@@ -1162,117 +1111,6 @@ def check_switch(username, farm_name, field_name, mission_date):
             "mission_date": mission_date
         })
 
-def check_auto_select(username, farm_name, field_name, mission_date):
-
-    image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
-    auto_select_req_path = os.path.join(image_set_dir, "model", "auto_select_request.json")
-    if os.path.exists(auto_select_req_path):
-        sch_ctx["auto_select_queue"].enqueue({
-            "username": username,
-            "farm_name": farm_name,
-            "field_name": field_name,
-            "mission_date": mission_date
-        })
-
-
-
-# def process_restart(item):
-
-#     logger = logging.getLogger(__name__)
-
-#     username = item["username"]
-#     farm_name = item["farm_name"]
-#     field_name = item["field_name"]
-#     mission_date = item["mission_date"]
-
-#     image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
-#     model_dir = os.path.join(image_set_dir, "model")
-
-#     restart_req_path = os.path.join(model_dir, "training", "restart_request.json")
-#     if os.path.exists(restart_req_path):
-
-#         logger.info("Restarting {}".format(item))
-#         isa.set_scheduler_status(username, farm_name, field_name, mission_date, isa.RESTARTING)
-        
-#         loss_record_path = os.path.join(model_dir, "training", "loss_record.json")
-
-#         loss_record = {
-#             "training_loss": { "values": [],
-#                             "best": 100000000,
-#                             "epochs_since_improvement": 100000000}, 
-#             "validation_loss": {"values": [],
-#                                 "best": 100000000,
-#                                 "epochs_since_improvement": 100000000},
-#         }
-#         json_io.save_json(loss_record_path, loss_record)
-
-        
-#         weights_dir = os.path.join(model_dir, "weights")
-
-#         default_weights_path = os.path.join("usr", "shared", "weights", "default_weights.h5")
-
-#         shutil.copy(default_weights_path, os.path.join(weights_dir, "cur_weights.h5"))
-#         shutil.copy(default_weights_path, os.path.join(weights_dir, "best_weights.h5"))
-
-
-#         results_dir = os.path.join(model_dir, "results")
-#         results = glob.glob(os.path.join(results_dir, "*"))
-#         for result in results:
-#             shutil.rmtree(result)
-
-#         prediction_dir = os.path.join(model_dir, "prediction")
-#         shutil.rmtree(prediction_dir)
-#         os.makedirs(prediction_dir)
-
-#         os.makedirs(os.path.join(prediction_dir, "image_requests"))
-#         os.makedirs(os.path.join(prediction_dir, "images"))
-#         image_set_requests = os.path.join(prediction_dir, "image_set_requests")
-#         os.makedirs(image_set_requests)
-#         os.makedirs(os.path.join(image_set_requests, "aborted"))
-#         os.makedirs(os.path.join(image_set_requests, "pending"))
-
-
-#         training_dir = os.path.join(model_dir, "training")
-#         training_records_dir = os.path.join(training_dir, "training_tf_records")
-#         if os.path.exists(training_records_dir):
-#             shutil.rmtree(training_records_dir)
-#             os.makedirs(training_records_dir)
-#         validation_records_dir = os.path.join(training_dir, "validation_tf_records")
-#         if os.path.exists(validation_records_dir):
-#             shutil.rmtree(validation_records_dir)
-#             os.makedirs(validation_records_dir)
-
-#         patches_dir = os.path.join(image_set_dir, "patches")
-#         # patch_size_estimate_record_path = os.path.join(patches_dir, "patch_size_estimate_record.json")
-#         # patch_size_estimate_record = None
-#         # if os.path.exists(patch_size_estimate_record_path):
-#             # patch_size_estimate_record = json_io.load_json(patch_size_estimate_record_path)
-
-#         shutil.rmtree(patches_dir)
-#         os.makedirs(patches_dir)
-
-#         # if patch_size_estimate_record is not None:
-#             # json_io.save_json(patch_size_estimate_record_path, patch_size_estimate_record)
-
-
-#         annotations_path = os.path.join(image_set_dir, "annotations", "annotations_w3c.json")
-#         annotations = json_io.load_json(annotations_path)
-#         for image_name in annotations.keys():
-#             if annotations[image_name]["status"] == "completed_for_training":
-#                 annotations[image_name]["status"] = "completed_for_testing"
-#         json_io.save_json(annotations_path, annotations)
-
-
-#         status_path = os.path.join(model_dir, "status.json")
-#         status = json_io.load_json(status_path)
-#         status["num_images_fully_trained_on"] = 0
-#         json_io.save_json(status_path, status)
-
-#         os.remove(restart_req_path)
-
-#         isa.emit_results_change(username, farm_name, field_name, mission_date)
-
-#         return
 
 
 def one_pass():
@@ -1301,13 +1139,6 @@ def one_pass():
                     except Exception as e:
                         trace = traceback.format_exc()
                         logger.error("Exception occurred while performing pass (check_switch)")
-                        logger.error(e)
-                        logger.error(trace)
-                    try:
-                        check_auto_select(username, farm_name, field_name, mission_date)
-                    except Exception as e:
-                        trace = traceback.format_exc()
-                        logger.error("Exception occurred while performing pass (check_auto_select)")
                         logger.error(e)
                         logger.error(trace)
 
@@ -1372,12 +1203,6 @@ def drain():
                 isa.process_switch(item)
                 switch_queue_size = sch_ctx["switch_queue"].size()
 
-            auto_select_queue_size = sch_ctx["auto_select_queue"].size()
-            while auto_select_queue_size > 0:
-                item = sch_ctx["auto_select_queue"].dequeue()
-                auto_select.process_auto_select(item, sch_ctx)
-                auto_select_queue_size = sch_ctx["auto_select_queue"].size()
-
 
             pred_queue_size = sch_ctx["prediction_queue"].size()
             while pred_queue_size  > 0:
@@ -1423,7 +1248,7 @@ def drain():
 
              
 def an_item_is_available():
-    queue_names = ["switch_queue", "auto_select_queue", "prediction_queue", "training_queue", "baseline_queue"]
+    queue_names = ["switch_queue", "prediction_queue", "training_queue", "baseline_queue"]
 
     for queue_name in queue_names:
         if sch_ctx[queue_name].size() > 0:
@@ -1454,17 +1279,19 @@ if __name__ == "__main__":
     #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 
-    # gpus = tf.config.list_physical_devices('GPU')
-    # if gpus:
-    #     try:
-    #         # Currently, memory growth needs to be the same across GPUs
-    #         for gpu in gpus:
-    #             tf.config.experimental.set_memory_growth(gpu, True)
-    #             logical_gpus = tf.config.list_logical_devices('GPU')
-    #             print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    #     except RuntimeError as e:
-    #         # Memory growth must be set before GPUs have been initialized
-    #         print(e)
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+                logical_gpus = tf.config.list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
+
+    exit()
 
     # # gpus = None
 
@@ -1475,7 +1302,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     sch_ctx["switch_queue"] = LockQueue()
-    sch_ctx["auto_select_queue"] = LockQueue()
     sch_ctx["prediction_queue"] = LockQueue()
     sch_ctx["training_queue"] = LockQueue()
     sch_ctx["baseline_queue"] = LockQueue()

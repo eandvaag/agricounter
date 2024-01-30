@@ -1,7 +1,5 @@
-#FROM debian:bullseye-slim
-#FROM python:3.8-slim-bullseye
 
-FROM nvidia/cuda:11.5.0-cudnn8-devel-ubuntu20.04 AS builder
+FROM nvidia/cuda:11.5.0-cudnn8-devel-ubuntu20.04
 RUN apt update -y
 RUN apt update && apt install -y exiftool
 RUN apt update && apt install -y curl
@@ -25,20 +23,19 @@ RUN mkdir -p /opt/app
 WORKDIR /opt/app
 RUN adduser app
 RUN usermod -a -G app app 
-COPY --chown=app backend ./backend
-COPY --chown=app site ./site
+
+COPY --chown=app backend/src/requirements.txt ./backend/src/requirements.txt
 RUN pip3 install --upgrade pip
 RUN pip3 install --no-cache-dir --debug libclang
 RUN pip3 install -r ./backend/src/requirements.txt
+COPY --chown=app backend ./backend
+COPY --chown=app site ./site
 
-FROM builder AS build1
 
 WORKDIR ./site/myapp
 RUN npm install
 RUN apt update && apt install -y postgresql-client
 RUN apt update && apt install -y imagemagick
-#COPY --chown=app ./node_modules/annotorious ./node_modules/annotorious
-#COPY --chown=app ./node_modules/openseadragon3 ./node_modules/openseadragon3
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN sed -i 's/policy domain="resource" name="disk" value="1GiB"/policy domain="resource" name="disk" value="8GiB"/' /etc/ImageMagick-6/policy.xml
 
@@ -47,13 +44,11 @@ RUN export gdal_ver=`gdalinfo --version | perl -a -e 'if ($_ =~ /.*\s+(\d+\.\d+\
 RUN apt update && apt install -y libvips-tools
 
 ARG CACHEBUST=1
-FROM build1 AS build2
 
 USER app
 RUN ln -s /opt/app/backend/src/usr /opt/app/site/myapp/usr
 
-# WORKDIR /opt/app
-# CMD python -c 'import install; install.app_init()'
+
 RUN chmod +x myapp-init.sh 
 CMD /bin/sh /opt/app/site/myapp/myapp-init.sh
 EXPOSE 8115

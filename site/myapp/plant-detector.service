@@ -1,0 +1,9 @@
+[Unit]
+Description=Plant detector systemd service.
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/node /home/erik/plantdetector/bin/www
+WorkingDirectory=/home/erik/plantdetector
+[Install]
+WantedBy=multi-user.target

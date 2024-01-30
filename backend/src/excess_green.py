@@ -9,145 +9,19 @@ from osgeo import gdal
 
 from joblib import Parallel, delayed
 
-# from skimage.filters import threshold_otsu
 
 from image_set import Image
 import image_utils
 from io_utils import json_io
-# import lock
 from models.common import box_utils, poly_utils
 
 CHUNK_SIZE = 5000
-# TILE_SIZE = 500
-
-
-# def range_map(old_val, old_min, old_max, new_min, new_max):
-#     new_val = (((old_val - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
-#     return new_val
-
-
-# # def set_luminance_lab(self, image_array, luminance_adjust):
-# #     """Sets the luminance (L channel in LAB color space) value for an image to a set fixed value"""
-# #     im_Lab = cv2.cvtColor(image_array, cv2.COLOR_RGB2LAB)
-# #     im_L = im_Lab[:, :, 0]
-# #     im_L[:, :] = luminance_adjust
-# #     im_Lab = np.dstack((im_L, im_Lab[:, :, 1], im_Lab[:, :, 2]))
-# #     img_modified = cv2.cvtColor(im_Lab, cv2.COLOR_LAB2RGB)
-# #     return img_modified
-
-
-
-
-# def largest_indices(arr, n):
-#     """
-#     Returns the indices of the n largest elements.
-#     :param arr: A numpy array
-#     :param n: An positive integer
-#     :return: A numpy array of indices and shape
-#     """
-#     # does nothing on a 1-d array
-#     flattened_array = arr.flatten()
-#     # Partition the array into the indices of largest values
-#     indices = np.argpartition(flattened_array, -n)[-n:]
-#     # Sorts in ascending order
-#     indices = indices[np.argsort(-flattened_array[indices])]
-#     return np.unravel_index(indices, arr.shape)
-
-
-# def get_gradient_magnitude(image_array):
-#     """"Compute the gradient magnitude for the passed in image
-#     :return image (numpy array)
-#     """
-#     d_depth = cv2.CV_8U #32F
-#     d_x = cv2.Sobel(image_array, d_depth, 1, 0)
-#     d_y = cv2.Sobel(image_array, d_depth, 0, 1)
-#     return np.sqrt(d_x ** 2 + d_y ** 2)
-
-
-
-# def create_edge_mask(exg_array, percent_strongest_edge=1):
-#     print(exg_array.shape)
-#     gradient_array = get_gradient_magnitude(exg_array)
-    
-#     print(gradient_array.shape)
-#     #scaled_gradient_array = image_utils.scale_image(gradient_array, -1, 1, 0, 255, rint=True, np_type='uint8')
-
-#     num_strongest_edges = int(percent_strongest_edge/100 * len(gradient_array))
-
-#     print("num_strongest_edges", num_strongest_edges)
-
-#     indices = largest_indices(gradient_array, num_strongest_edges)
-
-#     mask = np.zeros(gradient_array.shape)
-#     mask[indices] = 255
-
-#     #kernel = np.ones((121, 121), np.uint8)
-#     #kernel = np.ones((121, 121), np.uint8)
-#     kernel = np.ones((51, 51), np.uint8)
-#     return cv2.dilate(mask, kernel, iterations=1)
-
-
-
-
-# def determine_default_segmentation_value(exg_array, image_array, fallback_thresh):
-
-#     edge_mask = create_edge_mask(exg_array)
-
-#     #test = np.copy(exg_array)
-#     image_array[edge_mask == 0] = (0, 0, 0)
-#     cv2.imwrite("my_test_exg_array.png", image_array)
-#     cv2.imwrite("my_sample_edge_mask.png", edge_mask)
-
-
-#     masked_exg_array = exg_array[edge_mask == 255]
-#     print(exg_array.shape)
-#     print(masked_exg_array.shape)
-#     print(masked_exg_array)
-#     #cv2.imwrite("my_masked_exg_array.png", masked_exg_array)
-
-#     thresh_val, _ = cv2.threshold(masked_exg_array, 0, 255, cv2.THRESH_OTSU)
-
-#     if thresh_val < fallback_thresh:
-#         thresh_val = fallback_thresh
-
-#     sel_val = range_map(thresh_val, 0, 255, -2, 2)
-#     return sel_val
-    
-
-# def my_test():
-
-#     exg = Image("usr/data/kaylie/image_sets/test_farm/test_field/2022-08-22/excess_green/1.png")
-#     image = Image("usr/data/kaylie/image_sets/test_farm/test_field/2022-08-22/images/1.JPG")
-#     exg_array = exg.load_image_array()
-#     image_array = image.load_image_array()
-#     sel_val = determine_default_segmentation_value(exg_array, image_array,  0)
-#     print(sel_val)
-
-
-# def determine_exg_threshold_with_detections():
-#     detections = 
 
 
 def create_vegetation_record_for_orthomosaic(image_set_dir, excess_green_record, metadata, annotations, predictions):
 
     
     image_name = list(annotations.keys())[0]
-
-
-    # if image_name in vegetation_record and excess_green_record[image_name]["sel_val"] == vegetation_record[image_name]["sel_val"]:
-    #     return vegetation_record
-    # needs_update = False
-    # if image_name not in vegetation_record or excess_green_record[image_name]["sel_val"] != vegetation_record[image_name]["sel_val"]:
-    #     needs_update = True
-    # elif not np.array_equal(np.array(vegetation_record[image_name]["training_regions_coordinates"]), 
-    #                         np.array(annotations[image_name]["training_regions"])):
-    #     needs_update = True
-    # elif not np.array_equal(np.array(vegetation_record[image_name]["test_regions_coordinates"]), 
-    #                         np.array(annotations[image_name]["test_regions"])):
-    #     needs_update = True
-    # if not needs_update:
-    #     return vegetation_record
-
 
     image_path = glob.glob(os.path.join(image_set_dir, "images", image_name + ".*"))[0]
     image = Image(image_path)
@@ -160,12 +34,9 @@ def create_vegetation_record_for_orthomosaic(image_set_dir, excess_green_record,
         for j in range(0, w, CHUNK_SIZE):
             chunk_coords_lst.append([i, j, min(i+CHUNK_SIZE, h), min(j+CHUNK_SIZE, w)])
 
-    # image_chunk = ds.ReadAsArray(i, j, chunk_size, chunk_size)
-
     results = Parallel(int(os.cpu_count() / 3))(
         delayed(get_vegetation_percentages_for_chunk)(
             excess_green_record, metadata, annotations, predictions, image.image_path, chunk_coords) for chunk_coords in chunk_coords_lst)
-    # print("results", results)
 
     region_keys = ["regions_of_interest", "training_regions", "test_regions"]
     cls_names = metadata["object_classes"] + ["All Classes"]

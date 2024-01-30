@@ -374,7 +374,7 @@ def convert():
 
 
     convert_overlay_colors()
-    exit()E
+    exit()
 
 
     convert_annotations()

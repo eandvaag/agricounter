@@ -1,133 +1,19 @@
 import logging
 import os
 import glob
-import tqdm
 import random
 import math as m
 import numpy as np
 import cv2
 from osgeo import gdal
-import uuid
 from joblib import Parallel, delayed
 
 
 from models.common import box_utils, annotation_utils
-from models.yolov4 import yolov4_image_set_driver
-from io_utils import tf_record_io, json_io, w3c_io
+from io_utils import tf_record_io, json_io
 from image_set import Image
 
 DEFAULT_PATCH_SIZE = 300
-
-
-# def estimate_patch_size(image_set_dir, annotations):
-
-#     logger = logging.getLogger(__name__)
-
-#     logger.info("Estimating patch size for {}".format(image_set_dir))
-
-#     patch_size = DEFAULT_PATCH_SIZE
-#     iterations = 1
-#     thresh = 0.5
-#     min_above_thresh_predictions = 100
-#     max_sample_images = 35
-#     min_sample_images = 30
-
-#     image_paths = glob.glob(os.path.join(image_set_dir, "images", "*"))
-#     image_names = [os.path.basename(image_path)[:-4] for image_path in image_paths]
-
-#     patches_dir = os.path.join(image_set_dir, "patches")
-
-#     # for i in range(iterations):
-
-#     #     logger.info("Estimating patch size: Iteration {}, Estimate: {} px.".format(i, patch_size))
-
-#     #     all_boxes = np.empty(shape=(0, 4), dtype=np.int64)
-
-#     #     enough_boxes = False
-#     #     num_images_predicted_on = 0
-
-#     #     while not enough_boxes:
-
-#     # print(image_paths)
-#     for image_path in image_paths:
-            
-
-#         #image_index = random.randrange(0, len(image_paths))
-#         #sel_image_path = image_paths[image_index]
-#         image_name = os.path.basename(image_path)[:-4]
-#         image = Image(image_path)
-
-#         patch_records = extract_patch_records_from_image_tiled(
-#                 image, 
-#                 patch_size,
-#                 image_annotations=None,
-#                 patch_overlap_percent=50, 
-#                 include_patch_arrays=True)
-
-#         logger.info("Writing patches for image {} (from: {})".format(image_name, image_set_dir))
-#         write_patches(patches_dir, patch_records)
-
-#         # for patch_record in patch_records:
-#         #     del patch_record["patch"]
-
-#         image_prediction_dir = os.path.join(image_set_dir, "model", "prediction", "images", image_name)
-#         os.makedirs(image_prediction_dir, exist_ok=True)
-
-#         tf_records = tf_record_io.create_patch_tf_records(patch_records, patches_dir, is_annotated=False)
-#         patches_record_path = os.path.join(image_prediction_dir, "patches-record.tfrec")
-#         tf_record_io.output_patch_tf_records(patches_record_path, tf_records)
-
-
-#     end_time, predictions = yolov4_image_set_driver.predict(image_set_dir, {}, annotations, 
-#                         image_names=image_names, save_result=False, save_image_predictions=False)
-
-
-#     all_boxes = np.empty(shape=(0, 4), dtype=np.int64)
-
-#     for image_name in image_names:
-#         scores = np.array(predictions[image_name]["pred_scores"])
-#         boxes = np.array(predictions[image_name]["pred_image_abs_boxes"])
-
-#             #mask = scores > thresh
-#             #boxes = boxes[mask]
-
-
-#             # box_areas = ((boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0]))
-#             # mean_box_area = np.mean(box_areas)
-#             # s_patch_size = w3c_io.typical_box_area_to_patch_size(mean_box_area)
-#             # logger.info("Image {}: Num boxes: {}, Mean box area: {}, Patch Est.: {}".format(sel_image_name, boxes.shape[0], mean_box_area, s_patch_size))
-
-#         all_boxes = np.concatenate([all_boxes, boxes], axis=0)
-
-#             # num_images_predicted_on += 1
-
-#             # if all_boxes.shape[0] > min_above_thresh_predictions and num_images_predicted_on >= min_sample_images:
-#             #     enough_boxes = True
-
-#             # if num_images_predicted_on >= max_sample_images:
-#             #     return patch_size
-
-#         #box_hyps = np.sqrt((all_boxes[:, 3] - all_boxes[:, 1]) ** 2 + (all_boxes[:, 2] - all_boxes[:, 0]) ** 2)
-#     box_areas = ((all_boxes[:, 3] - all_boxes[:, 1]) * (all_boxes[:, 2] - all_boxes[:, 0]))
-
-#     lower = np.percentile(box_areas, 10)
-#     upper = np.percentile(box_areas, 90)
-
-#     mask = np.logical_and(box_areas > lower, box_areas < upper)
-#     box_areas = box_areas[mask]
-
-
-#     mean_box_area = np.mean(box_areas)
-#     logger.info("All boxes: Num boxes: {} ({} used), Mean box area: {}".format(all_boxes.shape[0], box_areas.size, mean_box_area))
-
-#     patch_size = w3c_io.typical_box_area_to_patch_size(mean_box_area)
-
-#         #patch_size = w3c_io.typical_box_hyp_to_patch_size(mean_box_hyp)
-
-#     logger.info("New estimated patch size is {} px".format(patch_size))
-
-#     return patch_size
-
 
 
 
@@ -146,42 +32,6 @@ def update_model_patch_size(image_set_dir, annotations, region_keys):
 
     return updated_patch_size
 
-    # num_annotations = w3c_io.get_num_annotations(annotations, image_names)
-    # if num_annotations > 0: #100:
-    #     try:
-    #         updated_patch_size = w3c_io.get_patch_size(annotations, image_names)
-    #         status["patch_size"] = updated_patch_size
-    #         json_io.save_json(status_path, status)
-    #     except RuntimeError:
-    #         pass
-    
-    # return updated_patch_size
-
-# def get_updated_patch_size_for_baseline(annotations, image_names):
-
-#     #image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
-
-#     num_annotations = w3c_io.get_num_annotations(annotations, image_names)
-#     if num_annotations < 100:
-#         updated_patch_size = DEFAULT_PATCH_SIZE
-#         # patch_size_estimate_record_path = os.path.join(image_set_dir, "patches", "patch_size_estimate_record.json")
-#         # if os.path.exists(patch_size_estimate_record_path):
-#         #     patch_size_estimate_record = json_io.load_json(patch_size_estimate_record_path)
-#         #     updated_patch_size = patch_size_estimate_record["patch_size_estimate"]
-#         # else:
-#         #     set_scheduler_status(username, farm_name, field_name, mission_date, isa.DETERMINING_PATCH_SIZE)
-#         #     updated_patch_size = ep.estimate_patch_size(image_set_dir, annotations)
-#         #     patch_size_estimate_record = {"patch_size_estimate": updated_patch_size}
-#         #     json_io.save_json(patch_size_estimate_record_path, patch_size_estimate_record)
-
-#     else:
-#         try:
-#             updated_patch_size = w3c_io.get_patch_size(annotations, image_names)
-#         except RuntimeError:
-#             updated_patch_size = DEFAULT_PATCH_SIZE
-
-
-#     return updated_patch_size
 
 
 def update_training_patches(image_set_dir, annotations, updated_patch_size):
