@@ -1,6 +1,4 @@
 import logging
-import time
-# import datetime
 import subprocess
 from natsort import natsorted
 
@@ -11,97 +9,7 @@ import yaml
 
 
 
-# def initialize_data_tree():
-
-#     usr_shared_dir = os.path.join("usr", "shared")
-#     if not os.path.exists(usr_shared_dir):
-#         os.makedirs(usr_shared_dir)
-
-#     objects_path = os.path.join(usr_shared_dir, "objects.json")
-#     if not os.path.exists(objects_path):
-#         json_io.save_json(objects_path, {})
-
-#     scheduler_status_path = os.path.join(usr_shared_dir, "scheduler_status.json")
-#     if not os.path.exists(scheduler_status_path):
-#         json_io.save_json(scheduler_status_path, {})
-
-#     public_image_sets_path = os.path.join("usr", "shared", "public_image_sets.json")
-#     if not os.path.exists(public_image_sets_path):
-#         json_io.save_json(public_image_sets_path, {})
-
-
-#     usr_data_dir = os.path.join("usr", "data")
-#     if not os.path.exists(usr_data_dir):
-#         os.makedirs(usr_data_dir)
-
-
-
-
-
-def app_init():
-
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-
-    logger.info("Waiting for postgres")
-
-    postgres_up = False
-    while not postgres_up:
-
-        res = subprocess.run(["PGPASSWORD=secretDBkeypass", 
-                        "psql", 
-                        "-c", "'\l'", 
-                        "-h", "db", 
-                        "-p", "5432",
-                        "-U", "agricounter_db_user",
-                        "agricounter_db"
-        ])
-
-        if res.returncode != 0:
-            time.sleep(1)
-        else:
-            postgres_up = True
-
-    logger.info("Running migrations")
-    subprocess.run(["npx", "sequelize-cli", "db-migrate"])
-
-    logger.info("Running seeders")
-    subprocess.run(["npx", "sequelize-cli", "db:seed:all"])
-
-    logger.info("Starting npm")
-    subprocess.run(["npm", "run", "start"])
-
-        
-
-
-#     echo 'Waiting for postgres'
-
-# until PGPASSWORD=secretDBkeypass psql -c '\l' -h db -p 5432 -U agricounter_db_user agricounter_db; do
-#   echo >&2 "$(date +%Y%m%dt%H%M%S) Postgres is unavailable - sleeping"
-#   sleep 1
-# done
-# echo >&2 "$(date +%Y%m%dt%H%M%S) Postgres is up - executing command"
-
-
-
-# echo 'running db:migrate'
-# npx sequelize-cli db:migrate
-
-# echo 'running db:seed:all'
-# npx sequelize-cli db:seed:all
-
-
-# echo 'Starting npm'
-# npm run start
-
-
-
-
-
-
-
-
-def configure():
+def create():
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -109,13 +17,6 @@ def configure():
     args_path = os.path.join(".", "args.json")
     with open(args_path, 'r') as fp:
         args = json.load(fp)
-
-
-    # logger.info("Cloning into plant_detection.git")
-    # subprocess.run(["git", "clone", "https://github.com/eandvaag/plant_detection.git"])
-
-    # logger.info("Cloning into plant_detection_viewer.git")
-    # subprocess.run(["git", "clone", "https://github.com/eandvaag/plant_detection_viewer.git"])
 
 
     logger.info("Configuring docker-compose.yml")
@@ -149,7 +50,6 @@ def configure():
     cwd = os.getcwd()
     site_volume = conf["services"]["myapp"]["volumes"][0]
     site_volume["source"] = os.path.join(cwd, "backend", "src", "usr")
-    # site_volume["target"] = os.path.join("opt", "app", "site", "myapp", "usr")
 
 
 
@@ -160,11 +60,8 @@ def configure():
     logger.info("Writing seeders file")
 
     seeders_dir = os.path.join("site", "myapp", "seeders")
-    # os.makedirs(seeders_dir, exist_ok=True)
 
-    # d = datetime.datetime.now()
-
-    seeders_name = "seed-users.js" #str(d.year) + str(d.month) + str(d.day) + str(d.hour) + str(d.minute) + "-seed-users.js"
+    seeders_name = "seed-users.js"
     seeders_path = os.path.join(seeders_dir, seeders_name)
 
     f = open(seeders_path, "w")
@@ -249,14 +146,19 @@ def configure():
 
     logger.info("Starting Docker container")
 
-    # subprocess.run(["docker-compose", "build", "-d"]) #"up", "-d", "--build"])
     subprocess.run(["docker-compose", "up", "-d"])
 
-    # currently site/myapp/myapp-init.sh contains hardcoded names for the database and database user --> need to update
-    # Dockerfile includes timezone -- this should be an argument in args.json
+    # TODO: Dockerfile includes timezone -- this should be an argument in args.json
 
 
 
-if __name__ == "__main__":
 
-    configure()
+def resume():
+    subprocess.run(["docker-compose", "up", "-d"])
+
+def stop():
+    subprocess.run(["docker-compose", "down", "--rmi", "local"])
+
+def destroy():
+    subprocess.run(["docker-compose", "down", "-v", "--rmi", "local"])
+
