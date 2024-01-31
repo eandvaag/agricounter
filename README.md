@@ -34,6 +34,6 @@ To stop the container without removing the PostGreSQL database, use `agricounter
 
 ### Non-Docker Install
 
-To set up the AgriCounter tool without Docker, the two main components of the project (located in the `./site` and `./backend` directories) need to be set up independently. Each of these directories contains a `README.md` file with instructions on how to perform the setup. Once the setup has been performed, the two processes should be started in two separate terminal sessions.
+To set up the AgriCounter tool without Docker, the two main components of the project (located in the `site` and `backend` directories) need to be set up independently. Each of these directories contains a `README.md` file with instructions on how to perform the setup. Once the setup has been performed, the two processes should be started in two separate terminal sessions.
 
 
