@@ -153,10 +153,10 @@ def create():
 
 
 
-def resume():
+def up():
     subprocess.run(["docker-compose", "up", "-d"])
 
-def stop():
+def down():
     subprocess.run(["docker-compose", "down", "--rmi", "local"])
 
 def destroy():

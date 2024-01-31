@@ -27,7 +27,7 @@ The `backend` directory contains the code for the Python process. The Python pro
 `agricounter_ctl.create()` uses the arguments found in `args.json` to set up the application. Edit the `args.json` file in order to configure the setup as desired.
 
 
-To stop the container without removing the PostGreSQL database, use `agricounter_ctl.stop()`. The container can then be re-built with `agricounter_ctl.resume()`. To stop the container and remove the PostGreSQL volume, use `agricounter_ctl.destroy()`.
+To stop the container without removing the PostGreSQL volume, use `agricounter_ctl.down()`. The container can then be re-built with `agricounter_ctl.up()`. To stop the container and remove the PostGreSQL volume, use `agricounter_ctl.destroy()`.
 
 
 
