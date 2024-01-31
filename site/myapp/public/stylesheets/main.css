@@ -27,12 +27,26 @@ hr {
 
 
 .title {
-  font-size: 26px;
+  font-family: "arial";
+  color: white;
+  font-weight: 400;
+  display: block;
+  font-size: 32px; 
+  font-variant-caps: small-caps;
+}
+
+
+
+.label {
+  font-size: 18px; 
   font-family: "arial";
   color: white;
   font-weight: 400;
   display: block;
 }
+
+
+
 
 .header2 {
   font-size: 18px; 
