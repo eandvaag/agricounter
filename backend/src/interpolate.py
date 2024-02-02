@@ -545,27 +545,6 @@ def create_interpolation_map_for_image_set(username, farm_name, field_name, miss
 
         area_m2 = image_width_m * image_height_m
 
-        # fully_annotated = annotation_utils.is_fully_annotated(annotations, image_name, image_width_px, image_height_px)
-        # print("is {} fully annotated? {}".format(image_name, fully_annotated))
-
-        # if fully_annotated: #status == "completed_for_training" or status == "completed_for_testing":
-
-        #     #print("image_name", image_name)
-        #     annotated_value = annotations[image_name]["boxes"].shape[0] / area_m2
-        #     completed_points.append([lon, lat])
-        #     annotated_values.append(annotated_value)
-
-        # if pred_path is not None:
-            
-        #     if not completed_only or fully_annotated: #(status == "completed_for_training" or status == "completed_for_testing"):  
-        #         #predicted_value = len(predictions["image_predictions"][image_name]["pred_image_abs_boxes"]) / metadata["images"][image_name]["area_m2"]
-        #         # v = 0
-        #         # for annotation in predictions[image_name]["annotations"]:
-        #         #     for b in annotation["body"]:
-        #         #         if b["purpose"] == "score" and float(b["value"]) >= 0.5:
-        #         #             v += 1
-                
-        #         #predicted_value = len(predictions[image_name]["annotations"]) 
 
         if interpolated_value == "obj_density":
             if image_name in predictions:

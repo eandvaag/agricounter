@@ -75,19 +75,19 @@ function has_duplicates(array) {
 
 let default_overlay_appearance = {
 
-    "draw_order": ["region_of_interest", "training_region", "test_region", "annotation", "prediction"],
+    "draw_order": ["region_of_interest", "fine_tuning_region", "test_region", "annotation", "prediction"],
     "style": {
         "annotation": "strokeRect",
         "prediction": "strokeRect",
         "region_of_interest": "strokeRect",
-        "training_region": "strokeRect",
+        "fine_tuning_region": "strokeRect",
         "test_region": "strokeRect"
     },
     "colors": {
         "annotation": ["#0080ff", "#ff0033", "#59ff00", "#8000ff", "#ff6200", "#00ff77", "#fb00ff", "#ffff00", "#00ffe5"],
         "prediction": ["#7dbeff", "#ff8099", "#acff80", "#bf80ff", "#ffb080", "#80ffbb", "#fd80ff", "#ffff80", "#80fff2"],
         "region_of_interest": "#a291ba",
-        "training_region": "#a4ba91",
+        "fine_tuning_region": "#a4ba91",
         "test_region": "#91bab9"
     }
 }
@@ -735,7 +735,7 @@ function update_region_name() {
     let navigation_type = $("#navigation_dropdown").val();
     $("#region_name").empty();
     let region_element;
-    if ((navigation_type == "regions_of_interest") || (navigation_type === "training_regions" || navigation_type === "test_regions")) {
+    if ((navigation_type == "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
         let disp_region_index = cur_region_index + 1;
         let region_color;
@@ -743,8 +743,8 @@ function update_region_name() {
             region_color = overlay_appearance["colors"]["region_of_interest"];
             region_element = create_region_of_interest_element(region_color, disp_region_index);
         }
-        else if (navigation_type === "training_regions") {
-            region_color = overlay_appearance["colors"]["training_region"];
+        else if (navigation_type === "fine_tuning_regions") {
+            region_color = overlay_appearance["colors"]["fine_tuning_region"];
             region_element = create_region_element(region_color, disp_region_index);
         }
         else {
@@ -755,9 +755,9 @@ function update_region_name() {
     }
     else {
         let region_of_interest_count = annotations[cur_img_name]["regions_of_interest"].length;
-        let training_region_count = annotations[cur_img_name]["training_regions"].length;
+        let fine_tuning_region_count = annotations[cur_img_name]["fine_tuning_regions"].length;
         let test_region_count = annotations[cur_img_name]["test_regions"].length;
-        region_element = create_regions_summary_element(cur_img_name, region_of_interest_count, training_region_count, test_region_count, bookmark_button=true);
+        region_element = create_regions_summary_element(cur_img_name, region_of_interest_count, fine_tuning_region_count, test_region_count, bookmark_button=true);
     }
 
     $("#region_name").append(
@@ -776,7 +776,7 @@ function bookmark() {
     create_navigation_table();
 }
 
-function create_regions_summary_element(image_name, region_of_interest_count, training_region_count, test_region_count, bookmark_button=false) {
+function create_regions_summary_element(image_name, region_of_interest_count, fine_tuning_region_count, test_region_count, bookmark_button=false) {
 
     if (bookmark_button) {
         if ("bookmarked" in annotations[image_name] && annotations[image_name]["bookmarked"]) {
@@ -799,9 +799,9 @@ function create_regions_summary_element(image_name, region_of_interest_count, tr
     if (region_of_interest_count > 0) {
         disp_region_of_interest_count = region_of_interest_count;
     }
-    let disp_training_region_count = "";
-    if (training_region_count > 0) {
-        disp_training_region_count = training_region_count;
+    let disp_fine_tuning_region_count = "";
+    if (fine_tuning_region_count > 0) {
+        disp_fine_tuning_region_count = fine_tuning_region_count;
     }
     let disp_test_region_count = "";
     if (test_region_count > 0) {
@@ -819,8 +819,8 @@ function create_regions_summary_element(image_name, region_of_interest_count, tr
                         `</div>` +
                     `</td>` +
                     `<td>` +
-                        `<div style="width: 27px; height: 27px; border: 2px solid ${overlay_appearance["colors"]["training_region"]}; color: white; border-radius: 20px">` +
-                            `<div style="font-size: 12px; padding-top: 5px;">${disp_training_region_count}</div>` +
+                        `<div style="width: 27px; height: 27px; border: 2px solid ${overlay_appearance["colors"]["fine_tuning_region"]}; color: white; border-radius: 20px">` +
+                            `<div style="font-size: 12px; padding-top: 5px;">${disp_fine_tuning_region_count}</div>` +
                         `</div>` +
                     `</td>` +
                     `<td>` +
@@ -1180,10 +1180,10 @@ function create_navigation_table() {
             let nav_item = image_name + "/" + -1;
             let row_id = nav_item + "_row";
             let region_of_interest_count = annotations[image_name]["regions_of_interest"].length;
-            let training_region_count = annotations[image_name]["training_regions"].length;
+            let fine_tuning_region_count = annotations[image_name]["fine_tuning_regions"].length;
             let test_region_count = annotations[image_name]["test_regions"].length;
 
-            let regions_summary_element = create_regions_summary_element(image_name, region_of_interest_count, training_region_count, test_region_count, bookmark_button=false);
+            let regions_summary_element = create_regions_summary_element(image_name, region_of_interest_count, fine_tuning_region_count, test_region_count, bookmark_button=false);
             let image_entry_style = "width: 245px";
             if (show_bookmarks && ("bookmarked" in annotations[image_name] && annotations[image_name]["bookmarked"])) {
                 image_entry_style = "width: 245px; border-radius: 20px 1px 1px 20px; border: 1px solid #99cc8b; background-color: #99cc8b11";
@@ -1212,7 +1212,7 @@ function create_navigation_table() {
 
         }
     }
-    else if ((navigation_type === "regions_of_interest") || (navigation_type === "training_regions" || navigation_type === "test_regions")) {
+    else if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
         for (let image_name of natsort(Object.keys(annotations))) {
 
@@ -1224,8 +1224,8 @@ function create_navigation_table() {
                 if (navigation_type === "regions_of_interest") {
                     region_color = overlay_appearance["colors"]["region_of_interest"];
                 }
-                else if (navigation_type === "training_regions") {
-                    region_color = overlay_appearance["colors"]["training_region"];
+                else if (navigation_type === "fine_tuning_regions") {
+                    region_color = overlay_appearance["colors"]["fine_tuning_region"];
                 }
                 else {
                     region_color = overlay_appearance["colors"]["test_region"];
@@ -1263,15 +1263,15 @@ function update_navigation_dropdown() {
 
     let cur_navigation_val = $("#navigation_dropdown").val();
     let num_regions_of_interest = get_num_regions("regions_of_interest");
-    let num_training_regions = get_num_regions("training_regions");
+    let num_fine_tuning_regions = get_num_regions("fine_tuning_regions");
     let num_test_regions = get_num_regions("test_regions");
     $("#navigation_dropdown").empty();
     $("#navigation_dropdown").append($("<option></option>").val("images").text("Images"));
     if (num_regions_of_interest > 0) {
         $("#navigation_dropdown").append($("<option></option>").val("regions_of_interest").text("Regions of Interest"));
     }
-    if (num_training_regions > 0) {
-        $("#navigation_dropdown").append($("<option></option>").val("training_regions").text("Fine-Tuning Regions"));
+    if (num_fine_tuning_regions > 0) {
+        $("#navigation_dropdown").append($("<option></option>").val("fine_tuning_regions").text("Fine-Tuning Regions"));
     }
     if (num_test_regions > 0) {
         $("#navigation_dropdown").append($("<option></option>").val("test_regions").text("Test Regions"));
@@ -1290,12 +1290,12 @@ function get_num_regions(region_key) {
 }
 
 
-function image_is_fully_annotated_for_training(annotations, image_name, image_w, image_h) {
-    if (annotations[image_name]["training_regions"].length == 0) {
+function image_is_fully_annotated_for_fine_tuning(annotations, image_name, image_w, image_h) {
+    if (annotations[image_name]["fine_tuning_regions"].length == 0) {
         return false;
     }
-    let training_region = annotations[image_name]["training_regions"][0];
-    if (((training_region[0] == 0) && (training_region[1] == 0)) && ((training_region[2] == image_h) && (training_region[3] == image_w))) {
+    let fine_tuning_region = annotations[image_name]["fine_tuning_regions"][0];
+    if (((fine_tuning_region[0] == 0) && (fine_tuning_region[1] == 0)) && ((fine_tuning_region[2] == image_h) && (fine_tuning_region[3] == image_w))) {
         return true;
     }
     return false;
@@ -1313,14 +1313,14 @@ function image_is_fully_annotated_for_testing(annotations, image_name, image_w, 
 }
 
 function image_is_fully_annotated(annotations, image_name, image_w, image_h) {
-    return (image_is_fully_annotated_for_training(annotations, image_name, image_w, image_h) || image_is_fully_annotated_for_testing(annotations, image_name, image_w, image_h));
+    return (image_is_fully_annotated_for_fine_tuning(annotations, image_name, image_w, image_h) || image_is_fully_annotated_for_testing(annotations, image_name, image_w, image_h));
 }
 
 
 function set_cur_bounds() {
     let navigation_type = $("#navigation_dropdown").val();
 
-    if ((navigation_type === "regions_of_interest") || (navigation_type === "training_regions" || navigation_type === "test_regions")) {
+    if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
         let bounds = annotations[cur_img_name][navigation_type][cur_region_index];
 
@@ -1543,7 +1543,7 @@ function create_customize_overlay_row(overlay_name) {
         "prediction": "Predictions",
         "annotation": "Annotations",
         "region_of_interest": "Regions of Interest",
-        "training_region": "Fine-Tuning Regions",
+        "fine_tuning_region": "Fine-Tuning Regions",
         "test_region": "Test Regions"
     };
     let disp_name = overlay_name_to_display_name[overlay_name];
@@ -1904,7 +1904,7 @@ function update_overlay_color_css_rules() {
     }
 
     $("#annotation_radio").css("background-color", "#eee");
-    $("#training_region_radio").css("background-color", "#eee");
+    $("#fine_tuning_region_radio").css("background-color", "#eee");
     $("#test_region_radio").css("background-color", "#eee");
     $("#region_of_interest_radio").css("background-color", "#eee");
     $("#" + cur_edit_layer + "_radio").css("background-color", cur_color);
@@ -1943,22 +1943,22 @@ function set_overlay_color_css_rules() {
         fill_rule + 
     "}");
 
-    if (overlay_appearance["style"]["training_region"] === "fillRect") {
-        fill_rule = "fill: " + overlay_appearance["colors"]["training_region"] + "55; ";
+    if (overlay_appearance["style"]["fine_tuning_region"] === "fillRect") {
+        fill_rule = "fill: " + overlay_appearance["colors"]["fine_tuning_region"] + "55; ";
     }
     else {
         fill_rule = "fill: none; ";
     }
-    add_css_rule(".a9s-annotationlayer .a9s-annotation.editable .training_region:hover .a9s-inner { " + 
+    add_css_rule(".a9s-annotationlayer .a9s-annotation.editable .fine_tuning_region:hover .a9s-inner { " + 
     fill_rule + " }");
 
-    add_css_rule(".a9s-annotationlayer .a9s-annotation .training_region .a9s-inner { " + 
-        "stroke: " + overlay_appearance["colors"]["training_region"] + " !important; " +
+    add_css_rule(".a9s-annotationlayer .a9s-annotation .fine_tuning_region .a9s-inner { " + 
+        "stroke: " + overlay_appearance["colors"]["fine_tuning_region"] + " !important; " +
         fill_rule + 
     "}");
     
-    add_css_rule(".a9s-annotationlayer .a9s-annotation.training_region .a9s-inner { " + 
-        "stroke: " + overlay_appearance["colors"]["training_region"] + " !important; " +
+    add_css_rule(".a9s-annotationlayer .a9s-annotation.fine_tuning_region .a9s-inner { " + 
+        "stroke: " + overlay_appearance["colors"]["fine_tuning_region"] + " !important; " +
         fill_rule + 
     "}");
 
@@ -2011,8 +2011,8 @@ function set_overlay_color_css_rules() {
         overlay_appearance["colors"]["annotation"] +
                     "}");
 
-    add_css_rule(".custom_radio_container input:checked ~ .custom_radio#training_region_radio { background-color: " +
-        overlay_appearance["colors"]["training_region"] +
+    add_css_rule(".custom_radio_container input:checked ~ .custom_radio#fine_tuning_region_radio { background-color: " +
+        overlay_appearance["colors"]["fine_tuning_region"] +
                     "}");
 
           

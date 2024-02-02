@@ -7,7 +7,6 @@ let image_to_dzi;
 let predictions;
 let overlay_appearance;
 let tags;
-let scheduler_alive;
 
 let viewer;
 let anno;
@@ -29,11 +28,10 @@ let cur_bounds = null;
 let map_url = null;
 let min_max_rec = null;
 
-let num_training_images;
 let model_unassigned = true;
 let num_images_fully_trained_on;
 
-let waiting_for_model_switch = false;
+// let waiting_for_model_switch = false;
 let switch_model_data = {};
 
 
@@ -41,7 +39,6 @@ let switch_model_data = {};
 let selected_annotation_index = -1;
 let selected_annotation = null;
 let cur_edit_layer = "annotation";
-let locked_training_regions;
 
 
 let num_regions_fully_trained_on;
@@ -108,8 +105,8 @@ let selected_keydown_handler = async function(e) {
             else if (cur_edit_layer === "region_of_interest") {
                 sel_box_array = annotations[cur_img_name]["regions_of_interest"];
             }
-            else if (cur_edit_layer === "training_region") {
-                sel_box_array = annotations[cur_img_name]["training_regions"];
+            else if (cur_edit_layer === "fine_tuning_region") {
+                sel_box_array = annotations[cur_img_name]["fine_tuning_regions"];
             }
             else {
                 sel_box_array = annotations[cur_img_name]["test_regions"];
@@ -155,8 +152,7 @@ let selected_keydown_handler = async function(e) {
                 update_region_name();
                 create_navigation_table();
             }
-            else if (cur_edit_layer === "training_region") {
-                locked_training_regions[cur_img_name].splice(selected_annotation_index, 1);
+            else if (cur_edit_layer === "fine_tuning_region") {
                 update_region_name();
                 create_navigation_table();
             }
@@ -189,12 +185,12 @@ let selected_keydown_handler = async function(e) {
             let illegal_intersection = false;
 
             source_box_array = annotations[cur_img_name]["test_regions"];
-            target_box_array = annotations[cur_img_name]["training_regions"];
+            target_box_array = annotations[cur_img_name]["fine_tuning_regions"];
             selected_region = source_box_array[held_annotation_index];
 
 
             loop1:
-            for (let region_key of ["training_regions", "test_regions"]) {
+            for (let region_key of ["fine_tuning_regions", "test_regions"]) {
                 for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
                     if (i == held_annotation_index) {
                         continue;
@@ -211,8 +207,6 @@ let selected_keydown_handler = async function(e) {
                 target_box_array.push(selected_region);
                 selected_annotation = null;
                 selected_annotation_index = -1;
-
-                locked_training_regions[cur_img_name].push(false);   
 
                 update_navigation_dropdown();
                 update_region_name();
@@ -628,8 +622,8 @@ function create_anno() {
         else if (cur_edit_layer == "region_of_interest") {
             sel_box_array = annotations[cur_img_name]["regions_of_interest"];
         }
-        else if (cur_edit_layer === "training_region") {
-            sel_box_array = annotations[cur_img_name]["training_regions"];
+        else if (cur_edit_layer === "fine_tuning_region") {
+            sel_box_array = annotations[cur_img_name]["fine_tuning_regions"];
         }
         else {
             sel_box_array = annotations[cur_img_name]["test_regions"];
@@ -637,15 +631,8 @@ function create_anno() {
 
         if (!(illegal_box)) {
             let illegal_intersection = false;
-            if (cur_edit_layer === "annotation") {
-                for (let i = 0; i < annotations[cur_img_name]["training_regions"].length; i++) {
-                    if ((box_intersects_region(box, annotations[cur_img_name]["training_regions"][i])) && locked_training_regions[cur_img_name][i]) {
-                        illegal_intersection = true;
-                        break;
-                    }
-                }
-            }
-            else if (cur_edit_layer === "region_of_interest") {
+
+            if (cur_edit_layer === "region_of_interest") {
                 if (annotations[cur_img_name]["regions_of_interest"].length >= 99) {
                     illegal_intersection = true;
                 }
@@ -654,10 +641,10 @@ function create_anno() {
                     illegal_intersection = true;
                 }
             }
-            else if ((cur_edit_layer === "training_region") || (cur_edit_layer === "test_region")) {
+            else if ((cur_edit_layer === "fine_tuning_region") || (cur_edit_layer === "test_region")) {
 
                     loop1:
-                    for (let region_key of ["training_regions", "test_regions"]) {
+                    for (let region_key of ["fine_tuning_regions", "test_regions"]) {
                         
                         if (annotations[cur_img_name][region_key].length >= 99) {
                             illegal_intersection = true;
@@ -677,12 +664,8 @@ function create_anno() {
                     annotations[cur_img_name]["classes"].push(parseInt($("#class_select").val()));
                 }
                 update_navigation_dropdown();
-                if (cur_edit_layer === "training_region") {
-                    locked_training_regions[cur_img_name].push(false);
-                    update_region_name();
-                    create_navigation_table();
-                }
-                else if (cur_edit_layer === "annotation") {
+
+                if (cur_edit_layer === "annotation") {
                     if (annotations[cur_img_name]["source"] === "NA") {
                         annotations[cur_img_name]["source"] = "manually_annotated_from_scratch";
                     }
@@ -789,30 +772,23 @@ function create_anno() {
             else if (cur_edit_layer === "region_of_interest") {
                 sel_box_array = annotations[cur_img_name]["regions_of_interest"];
             }
-            else if (cur_edit_layer === "training_region") {
-                sel_box_array = annotations[cur_img_name]["training_regions"];
+            else if (cur_edit_layer === "fine_tuning_region") {
+                sel_box_array = annotations[cur_img_name]["fine_tuning_regions"];
             }
             else {
                 sel_box_array = annotations[cur_img_name]["test_regions"];
             }
 
             let illegal_intersection = false;
-            if (cur_edit_layer === "annotation") {
-                for (let i = 0; i < annotations[cur_img_name]["training_regions"].length; i++) {
-                    if ((box_intersects_region(updated_box, annotations[cur_img_name]["training_regions"][i])) && locked_training_regions[cur_img_name][i]) {
-                        illegal_intersection = true;
-                        break;
-                    }
-                }
-            }
-            else if (cur_edit_layer === "region_of_interest") {
+
+            if (cur_edit_layer === "region_of_interest") {
                 if (polygon_is_self_intersecting(updated_box)) {
                     illegal_intersection = true;
                 }
             }
-            else if ((cur_edit_layer === "training_region") || (cur_edit_layer === "test_region")) {
+            else if ((cur_edit_layer === "fine_tuning_region") || (cur_edit_layer === "test_region")) {
                 loop1:
-                for (let region_key of ["training_regions", "test_regions"]) {
+                for (let region_key of ["fine_tuning_regions", "test_regions"]) {
                     for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
                         if ((region_key === cur_edit_layer + "s") && (i == selected_annotation_index)) {
                             continue;
@@ -865,8 +841,8 @@ function anno_and_pred_onRedraw() {
     if ((cur_panel === "annotation") || (cur_panel === "prediction")) {
         boxes_to_add["region_of_interest"] = {};
         boxes_to_add["region_of_interest"]["boxes"] = annotations[cur_img_name]["regions_of_interest"];
-        boxes_to_add["training_region"] = {};
-        boxes_to_add["training_region"]["boxes"] = annotations[cur_img_name]["training_regions"];
+        boxes_to_add["fine_tuning_region"] = {};
+        boxes_to_add["fine_tuning_region"]["boxes"] = annotations[cur_img_name]["fine_tuning_regions"];
         boxes_to_add["test_region"] = {};
         boxes_to_add["test_region"]["boxes"] = annotations[cur_img_name]["test_regions"];
     }
@@ -1140,7 +1116,7 @@ function anno_and_pred_onRedraw() {
         }
     }
 
-    if ((navigation_type === "regions_of_interest") || (navigation_type === "training_regions" || navigation_type === "test_regions")) {
+    if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
         let region = annotations[cur_img_name][navigation_type][cur_region_index];
         let image_px_width = metadata["images"][cur_img_name]["width_px"];
         let image_px_height = metadata["images"][cur_img_name]["height_px"];
@@ -1190,7 +1166,7 @@ function anno_and_pred_onRedraw() {
     }
     if (cur_bounds != null) {
 
-        if ((navigation_type === "regions_of_interest") || (navigation_type === "training_regions" || navigation_type === "test_regions")) {
+        if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
             let region = annotations[cur_img_name][navigation_type][cur_region_index];
 
@@ -1373,8 +1349,8 @@ function create_viewer(viewer_id) {
                 else if (cur_edit_layer === "region_of_interest") {
                     sel_box_array = annotations[cur_img_name]["regions_of_interest"];
                 }
-                else if (cur_edit_layer === "training_region") {
-                    sel_box_array = annotations[cur_img_name]["training_regions"];
+                else if (cur_edit_layer === "fine_tuning_region") {
+                    sel_box_array = annotations[cur_img_name]["fine_tuning_regions"];
                 }
                 else {
                     sel_box_array = annotations[cur_img_name]["test_regions"];
@@ -1405,15 +1381,12 @@ function create_viewer(viewer_id) {
                         if ((imagePoint.x >= box[1] && imagePoint.x <= box[3]) && (imagePoint.y >= box[0] && imagePoint.y <= box[2])) {
                             
 
+                            inside_box = true;
 
-                            if ((cur_edit_layer !== "training_region") || (!(locked_training_regions[cur_img_name][i]))) {
-                                inside_box = true;
+                            let box_area = (box[3] - box[1]) * (box[2] - box[0]);
 
-                                let box_area = (box[3] - box[1]) * (box[2] - box[0]);
-
-                                candidate_box_areas.push(box_area);
-                                candidate_box_indices.push(i);
-                            }
+                            candidate_box_areas.push(box_area);
+                            candidate_box_indices.push(i);
 
                         }
                     }
@@ -1425,15 +1398,6 @@ function create_viewer(viewer_id) {
                 if (inside_box) {
                     let box = sel_box_array[selected_annotation_index];
 
-                    if (cur_edit_layer === "annotation") {
-                        for (let i = 0; i < annotations[cur_img_name]["training_regions"].length; i++) {
-                            if ((box_intersects_region(box, annotations[cur_img_name]["training_regions"][i])) && (locked_training_regions[cur_img_name][i])) {
-
-                                selected_annotation_index = -1;
-                                return;
-                            }
-                        }
-                    }
                     annotation_uuid = uuidv4();
                     let box_str;
                     let selector_type;
@@ -1643,10 +1607,10 @@ function show_image(image_name) {
     change_image(image_name + "/" + cur_region_index);
 }
 
-function continue_with_save() {
-    close_modal();
-    save_annotations();
-}
+// function continue_with_save() {
+//     close_modal();
+//     save_annotations();
+// }
 
 function save_annotations(callback=null) {
 
@@ -1654,14 +1618,9 @@ function save_annotations(callback=null) {
     $("#save_button").hide();
     $("#fake_save_button").show();
 
-    let new_training_regions = 0;
     for (let image_name of Object.keys(annotations)) {
-        for (let i = 0; i < locked_training_regions[image_name].length; i++) {
-            if (!(locked_training_regions[image_name][i])) {
-                new_training_regions++;
-            }
-        }
-        for (let key of ["boxes", "training_regions", "test_regions"]) {
+
+        for (let key of ["boxes", "fine_tuning_regions", "test_regions"]) {
             for (let i = 0; i < annotations[image_name][key].length; i++) {
                 box = annotations[image_name][key][i];
                 annotations[image_name][key][i] = [
@@ -1699,7 +1658,6 @@ function save_annotations(callback=null) {
         excess_green_record: JSON.stringify(excess_green_record),
         tags: JSON.stringify(tags),
         is_public: metadata["is_public"],
-        num_training_regions_increased: new_training_regions > 0 ? "yes" : "no",
         object_classes: metadata["object_classes"].join(",")
     },
     
@@ -1709,16 +1667,6 @@ function save_annotations(callback=null) {
             show_modal_message("Error", "An error occurred while saving: " + response.message);
         }
         else {
-            for (let image_name of Object.keys(annotations)) {
-                for (let i = 0; i < locked_training_regions[image_name].length; i++) {
-                    locked_training_regions[image_name][i] = true;
-                }
-            }
-
-            let num_training_regions = get_num_regions(["training_regions"]);
-            if (!(model_unassigned)) {
-                $("#regions_fully_fine_tuned_on").html(`Fully trained on <span style="color: white">${num_regions_fully_trained_on}</span> of <span style="color: white">${num_training_regions}</span> available fine-tuning regions.`);
-            }
             
             $("#save_icon").css("color", "white");
             $("#fake_save_button").hide();
@@ -2143,7 +2091,7 @@ function update_results_comment_input() {
 function submit_result_request() {
 
     let at_least_one_region = false;
-    for (let region_key of ["regions_of_interest", "training_regions", "test_regions"]) {
+    for (let region_key of ["regions_of_interest", "fine_tuning_regions", "test_regions"]) {
         for (let image_name of Object.keys(annotations)) {
             if (annotations[image_name][region_key].length > 0) {
                 at_least_one_region = true;
@@ -2292,10 +2240,44 @@ function submit_result_request() {
 
 }
 
+
+function submit_fine_tuning_request() {
+    disable_model_actions();
+
+    // let num_fine_tuning_regions = 0;
+    // for (let image_name of Object.keys(annotations)) {
+    //     num_fine_tuning_regions += annotations[image_name]["fine_tuning_regions"].length;
+    // }
+
+    // if (num_fine_tuning_regions == 0) {
+    //     show_modal_message("Error", "The image set must contain at least one fine-tuning region before fine-tuning can be initiated");
+    // }
+
+    let callback = function() {
+
+        $.post($(location).attr("href"),
+        {
+            action: "fine_tune"
+        },
+        function(response, status) {
+            // close_modal();
+            if (response.error) {
+                show_modal_message("Error", response.message);
+            }
+        });
+
+    }
+
+    save_annotations(callback);
+
+
+}
+
 function submit_prediction_request_confirmed(image_list, region_list, save_result, result_regions_only, calculate_vegetation_coverage) {
 
-    disable_green_buttons(["request_result_button", "predict_single_button", "predict_all_button"]);
-
+    // disable_green_buttons(["request_result_button", "predict_single_button", "predict_all_button"]);
+    disable_model_actions();
+    close_modal();
 
     $.post($(location).attr("href"),
     {
@@ -2309,7 +2291,7 @@ function submit_prediction_request_confirmed(image_list, region_list, save_resul
         results_comment: $("#results_comment_input").val()
     },
     function(response, status) {
-        close_modal();
+
         if (response.error) {
             show_modal_message("Error", response.message);
         }
@@ -2425,8 +2407,8 @@ function show_model_details(model_creator, model_name) {
                     let boxes_to_add = {};
                     boxes_to_add["region_of_interest"] = {};
                     boxes_to_add["region_of_interest"]["boxes"] = annotations[current_image_set_image_name]["regions_of_interest"];
-                    boxes_to_add["training_region"] = {};
-                    boxes_to_add["training_region"]["boxes"] = annotations[current_image_set_image_name]["training_regions"];
+                    boxes_to_add["fine_tuning_region"] = {};
+                    boxes_to_add["fine_tuning_region"]["boxes"] = annotations[current_image_set_image_name]["fine_tuning_regions"];
                     boxes_to_add["test_region"] = {};
                     boxes_to_add["test_region"]["boxes"] = annotations[current_image_set_image_name]["test_regions"]
                     boxes_to_add["annotation"] = {};
@@ -2443,7 +2425,7 @@ function show_model_details(model_creator, model_name) {
                     let max_x = min_x + viewport_w;
                     let max_y = min_y + viewport_h;
 
-                    let draw_order = ["region_of_interest", "training_region", "test_region", "annotation"];
+                    let draw_order = ["region_of_interest", "fine_tuning_region", "test_region", "annotation"];
                     
                     for (let key of draw_order) { 
                         
@@ -2786,7 +2768,7 @@ function change_image_set(image_set_index) {
             model_image_set_cur_bounds = null;
             for (let image_name of Object.keys(model_image_set_annotations)) {
 
-                for (let region_key of ["training_regions", "test_regions"]) {
+                for (let region_key of ["fine_tuning_regions", "test_regions"]) {
                     for (let i = 0; i < model_image_set_annotations[image_name][region_key].length; i++) {
                         model_image_set_dzi_image_paths.push(
                             get_AC_PATH() + "/usr/data/" + image_set["username"] + "/image_sets/" +
@@ -2914,25 +2896,32 @@ function select_model(model_creator, model_name) {
 
 function set_model_weights_to_random() {
 
+    disable_model_actions();
+    let num_classes = metadata["object_classes"].length;
+
+    show_modal_message("Please Wait", 
+    `<div style="height: 50px">` +
+        `<div>Switching models...</div>` +
+        `<div class="loader"></div>` +
+    `</div>`);
+
+
     $.post($(location).attr("href"),
     {
-        action: "switch_to_random_model",
-        num_classes: metadata["object_classes"].length
+        action: "switch_model", 
+        model_name: "random_weights_" + String(num_classes),
+        model_creator: ""
     },
     function(response, status) {
 
         if (response.error) {
-            show_modal_message(`Error`, response.message);
+            show_modal_message(`Error`, `An error occurred while switching models. ` +
+                                        `Please report this issue to the site administrator.`);
         }
         else {
-            waiting_for_model_switch = true;
-            show_modal_message(`Please Wait`, 
-                `<div id="switch_anno_message">Switching models...</div><div id="switch_anno_loader" class="loader"></div>`);
-            $("#modal_close").hide();
-
+            close_modal();
         }
     });
-
 }
 
 
@@ -3252,7 +3241,7 @@ function add_prediction_buttons() {
         all_text = "All Regions";
         let num_regions = 0;
         for (let image_name of Object.keys(annotations)) {
-            for (let region_key of ["regions_of_interest", "training_regions", "test_regions"]) {
+            for (let region_key of ["regions_of_interest", "fine_tuning_regions", "test_regions"]) {
                 num_regions += annotations[image_name][region_key].length;
             }
         }
@@ -3343,7 +3332,7 @@ function get_image_list_and_region_list_for_predicting_on_all(predict_on_images)
     else {
         for (let image_name of Object.keys(annotations)) {
             let image_region_list = [];
-            for (let region_key of ["regions_of_interest", "training_regions", "test_regions"]) {
+            for (let region_key of ["regions_of_interest", "fine_tuning_regions", "test_regions"]) {
                 for (let region of annotations[image_name][region_key]) {
                     image_region_list.push(region);
                 }
@@ -3360,33 +3349,16 @@ function get_image_list_and_region_list_for_predicting_on_all(predict_on_images)
 }
 
 
-function possibly_switch_model(model_creator, model_name) {
-    let num_training_regions = get_num_regions("training_regions");
-    if (num_training_regions > 0) {
-        show_modal_message(`Warning! You might lose work!`,
-        `<div>Please note that switching to a new model will cause the following changes to occur:</div>` +
-            `<ul>` +
-                `<li style="margin: 10px 0px">The current model weights will be destroyed and will be replaced with the newly selected model weights. Any fine-tuning work will be lost.` +
-                
-                `<li style="margin: 10px 0px">All fine-tuning regions will be changed to test regions. This allows you to decide which regions will be used to fine-tune the new model. You can change a test region into a fine-tuning region by selecting it and pressing the <span style='border: 1px solid white; font-size: 16px; padding: 0px 5px; margin: 0px 5px'>m</span> key.</li>` +
-            `</ul>` +
-        `<div style="height: 20px"></div>` +
-        `<div id="modal_button_container" style="text-align: center">` +
-            `<button class="button-green button-green-hover" `+
-                    `style="width: 240px" onclick="switch_model('${model_creator}', '${model_name}')">Switch To Selected Model</button>` +
-            `<div style="display: inline-block; width: 10px"></div>` +
-            `<button class="button-green button-green-hover" ` +
-                    `style="width: 150px" onclick="close_modal()">Cancel</button>` +
-        `</div>`, 800
-        );
-    }
-    else {
-        switch_model(model_creator, model_name);
-    }
-}
-
 
 function switch_model(model_creator, model_name) {
+
+    disable_model_actions();
+
+    show_modal_message("Please Wait", 
+        `<div style="height: 50px">` +
+            `<div>Switching models...</div>` +
+            `<div class="loader"></div>` +
+        `</div>`);
 
     $.post($(location).attr("href"),
     {
@@ -3397,13 +3369,11 @@ function switch_model(model_creator, model_name) {
     function(response, status) {
 
         if (response.error) {
-            show_modal_message(`Error`, response.message);
+            show_modal_message(`Error`, `An error occurred while switching models. ` +
+                                        `Please report this issue to the site administrator.`);
         }
         else {
-            waiting_for_model_switch = true;
-            show_modal_message(`Please Wait`, 
-            `<div id="switch_anno_message">Switching models...</div><div id="switch_anno_loader" class="loader"></div>`);
-            $("#modal_close").hide();
+            close_modal();
         }
     });
 }
@@ -3434,6 +3404,30 @@ function create_navigator_viewer() {
 
 
 
+function enable_model_actions() {
+    let buttons = [
+        "switch_model_button",
+        "fine_tune_model_button",
+        "predict_single_button", 
+        "predict_all_button", 
+        "request_result_button"
+    ];
+    enable_green_buttons(buttons);
+}
+
+
+function disable_model_actions() {
+    let buttons = [
+        "switch_model_button",
+        "fine_tune_model_button",
+        "predict_single_button", 
+        "predict_all_button", 
+        "request_result_button"
+    ];
+    disable_green_buttons(buttons);
+}
+
+
 $(document).ready(function() {
 
     image_set_info = data["image_set_info"];
@@ -3445,20 +3439,6 @@ $(document).ready(function() {
     predictions = data["predictions"];
     overlay_appearance = data["overlay_appearance"];
     tags = data["tags"];
-    scheduler_alive = data["scheduler_alive"];
-
-
-    if (scheduler_alive) {
-        $("#status_blob").removeClass("dead_blob");
-        $("#status_blob").addClass("alive_blob");
-    }
-    else {
-        $("#status_blob").removeClass("alive_blob");
-        $("#status_blob").addClass("dead_blob");
-
-        $("#backend_status").html("Unresponsive");
-        $("#backend_status_details").html("Please notify the site administrator.");
-    }
 
 
     if (data["maintenance_time"] !== "") {
@@ -3513,13 +3493,6 @@ $(document).ready(function() {
 
     update_navigation_dropdown();
 
-    locked_training_regions = {};
-    for (let image_name of Object.keys(annotations)) {
-        locked_training_regions[image_name] = [];
-        for (let i = 0; i < annotations[image_name]["training_regions"].length; i++) {
-            locked_training_regions[image_name].push(true);
-        }
-    }
 
     if ((can_calculate_density(metadata, camera_specs))) {
         gsd = get_gsd();
@@ -3537,245 +3510,97 @@ $(document).ready(function() {
         window.location.href = get_AC_PATH() + "/home/" + username;
     });
 
-    socket.on("scheduler_dead", function(d) {
-        scheduler_alive = false;
 
-        $("#status_blob").removeClass("alive_blob");
-        $("#status_blob").addClass("dead_blob");
+    socket.on("workers_update", function(update) {
 
-        $("#backend_status").html("Unresponsive");
-        $("#backend_status_details").html("Please notify the site administrator.");
+        let num_workers = parseInt(update["num_workers"]);
+        let num_workers_text;
+        if (num_workers == 1) {
+            num_workers_text = "worker thread available.";
+        }
+        else {
+            num_workers_text = "worker threads available.";
+        }
+
+        $("#num_workers").html(num_workers);
+        $("#num_workers_text").html(num_workers_text);
 
     });
 
-    socket.on("image_set_status_change", function(update) {
+    socket.on("image_set_update", function(update) {
+
+        console.log("got image set update", update);
+
+        $("#model_name").html(update["model_name"]);
+        
+        let state_name = update["state_name"];
+        let progress = update["progress"];
+        let error_message = update["error_message"];
+        let prediction_image_names = update["prediction_image_names"];
 
 
-        if (scheduler_alive) {
+        $("#image_set_state").html(state_name);
+        if (error_message === "") {
+            // $("#image_set_state_progress").css("color", "white");
+            $("#image_set_state_progress").html(progress);
+        }
+        else {
+            // $("#image_set_state_progress").css("color", "rgb(237, 10, 10)");
+            $("#image_set_state_progress").html("-- ERROR --");
+        }
 
-            if (update["switch_request"] === "True") {
-                waiting_for_model_switch = true;
+        if (state_name === "Idle" && error_message === "") {
+            enable_model_actions();
+        }
+        else {
+            disable_model_actions();
+        }
 
-                show_modal_message(`Please Wait`, 
-                    `<div id="switch_anno_message">Switching models...</div><div id="switch_anno_loader" class="loader"></div>`);
-                $("#modal_close").hide();
-            }
-            else if (waiting_for_model_switch) {
-                waiting_for_model_switch = false;
-                for (let image_name of Object.keys(annotations)) {
-                    for (let i = 0; i < annotations[image_name]["training_regions"].length; i++) {
-                        annotations[image_name]["test_regions"].push(annotations[image_name]["training_regions"][i]);
-                    }
-                    annotations[image_name]["training_regions"] = [];
-                    locked_training_regions[image_name] = [];
-                }
+        model_unassigned = update["model_name"] === "";
+
+
+
+        if (error_message !== "") {
+            let error_message = `An error has occurred: <br><br>` + update["error_message"] +
+                                `<br><br>Please report this error to the site administrator.`;
+            show_modal_message("Error", error_message);
+
+        }
+        if (prediction_image_names !== "") {
             
-                
-                update_navigation_dropdown();
 
-                cur_panel = "annotation";
-
-                $("#navigation_dropdown").val("images").change();
-                close_modal();
-            }
-
-            num_regions_fully_trained_on = update["num_regions_fully_trained_on"];
-
-            model_unassigned = (!("model_name" in update)) || (update["model_name"] === "---");
-
-            let model_name;
-            if ("model_name" in update) {
-                model_name = update["model_name"];
-            }
-            else {
-                model_name = "---";
-            }
-            $("#model_name").html(model_name);
-
-            if (model_unassigned) {
-                $("#model_details").hide();
-                $("#no_model_message").show();
-            }
-            else {
-
-                $("#model_details").show();
-                $("#no_model_message").hide();
-
-                let num_training_regions = get_num_regions("training_regions");
-
-                $("#regions_fully_fine_tuned_on").html(`Fully trained on <span style="color: white">${num_regions_fully_trained_on}</span> of <span style="color: white">${num_training_regions}</span> available fine-tuning regions.`);
-            }
-
-            if (update["outstanding_prediction_requests"] === "True") {
-                disable_green_buttons(["request_result_button", "predict_single_button", "predict_all_button"]);
-            }
-            else {
-                enable_green_buttons(["request_result_button", "predict_single_button", "predict_all_button"]);
-            }
-            if (model_unassigned) {
-                $("#train_block_text").html("---");
-                $("#train_block_switch").prop("checked", false);
-                $("#train_block_switch").prop('disabled', true);
-                $("#train_block_label").css("opacity", 0.5);
-                $("#train_block_slider").css("cursor", "default");
-            }
-            else {
-
-                if (update["sys_training_blocked"] === "True") {
-                    $("#train_block_text").html("Yes");
-                    $("#train_block_switch").prop("checked", true);
-
-                    $("#train_block_switch").prop('disabled', true);
-                    $("#train_block_label").css("opacity", 0.5);
-                    $("#train_block_slider").css("cursor", "default");
-
-                    $("#train_block_message").html("Training blocked due to system error.");
-
+            $.post($(location).attr('href'),
+            {
+                action: "retrieve_predictions",
+                image_names: prediction_image_names
+            },
+        
+            function(response, status) {
+        
+                if (response.error) {
+                    show_modal_message("Error", response.message);
+        
                 }
-
                 else {
 
-                    $("#train_block_switch").prop('disabled', false);
-                    $("#train_block_label").css("opacity", 1);
-                    $("#train_block_slider").css("cursor", "pointer");
+                    let prediction_image_name_lst = prediction_image_names.split(",");
 
-                    $("#train_block_message").html("");
+                    for (let prediction_image_name of prediction_image_name_lst) {
+                        predictions[prediction_image_name] = response.predictions[prediction_image_name];
 
-                    if (update["usr_training_blocked"] === "True") {
-                        $("#train_block_text").html("Yes");
-                        $("#train_block_switch").prop("checked", true);
+                        if (prediction_image_name in voronoi_data && "prediction" in voronoi_data[prediction_image_name]) {
+                            delete voronoi_data[prediction_image_name]["prediction"];
+                        }
                     }
-                    else {
-                        $("#train_block_text").html("No");
-                        $("#train_block_switch").prop("checked", false);
+
+                    if ((cur_panel === "prediction") && (prediction_image_names.includes(cur_img_name))) {
+                        show_prediction();
                     }
                 }
-            }
-
+            });
+            
         }
 
-
-    });
-
-    socket.on("scheduler_status_change", function(update) {
-        // console.log(update);
-
-
-        let update_timestamp = parseInt(update["timestamp"]);
-        let update_num = parseInt(update["update_num"]);
-        if (scheduler_alive && (update_num > cur_update_num)) {
-
-            cur_update_num = update_num;
-            let status = update["status"];
-            let update_username = update["username"];
-            let update_farm_name = update["farm_name"];
-            let update_field_name = update["field_name"];
-            let update_mission_date = update["mission_date"];
-            let date = timestamp_to_date(update_timestamp);
-            let display_statuses = ["Fine-Tuning", "Predicting", "Collecting Metrics", "Calculating Vegetation Coverage", 
-                                    "Calculating Voronoi Areas", "Switching Models", "Idle", "Training"];
-            let update_is_for_this_set = ((update_username === username && update_farm_name === image_set_info["farm_name"]) &&
-            (update_field_name === image_set_info["field_name"] && update_mission_date === image_set_info["mission_date"]));
-
-
-            if (display_statuses.includes(status)) {
-
-                if (status === "Predicting") {
-
-                    $("#backend_status").html(`Predicting`);
-                    if ("percent_complete" in update) {
-                        let percent_complete = (update["percent_complete"]) + "%";
-                        $("#backend_status_details").html(percent_complete);
-                    }
-                    else if ("Saving Predictions" in update) {
-                        $("#backend_status_details").html("Saving Predictions");
-                    }
-                }
-                else if ((status === "Fine-Tuning") || (status === "Training")) {
-                    let epochs_since_improvement = update["epochs_since_improvement"];
-                    let epoch_word = "epochs";
-                    if (epochs_since_improvement == 1) {
-                        epoch_word = "epoch";
-                    }
-                    $("#backend_status").html(status);
-                    $("#backend_status_details").html(`${epochs_since_improvement} ${epoch_word} since improvement`);
-                }
-                else {
-                    $("#backend_status").html(status);
-                    $("#backend_status_details").html("");
-                }
-
-                $("#backend_update_time").html(date);
-
-                if (update_is_for_this_set) {
-                    $("#backend_details").css("opacity", 1.0);
-                }
-                else {
-                    $("#backend_details").css("opacity", 0.5);
-                }
-
-                $("#backend_username").html(update_username);
-                $("#backend_farm_name").html(update_farm_name);
-                $("#backend_field_name").html(update_field_name);
-                $("#backend_mission_date").html(update_mission_date);
-
-            }
-
-
-            if (update_is_for_this_set) {
-
-                if ("error_message" in update) {
-                    let error_message = `An error occurred during ` + update["error_setting"] + 
-                                            `:<br><br>` + update["error_message"];
-                
-
-                    if (update["error_setting"] === "prediction") {
-                        error_message = error_message + `<br><br>Please report this error to the site administrator.`;
-                    }
-                    else if (update["error_setting"] === "training") {
-                        error_message = error_message + `<br><br>The model will be prevented from training until the error is resolved. Please contact the site administrator.`;
-                    }
-                    show_modal_message("Error", error_message);
-
-                }
-                else if ("prediction_image_names" in update) {
-                    
-                    let prediction_image_names = update["prediction_image_names"].split(",");
-                    $.post($(location).attr('href'),
-                    {
-                        action: "retrieve_predictions",
-                        image_names: update["prediction_image_names"]
-                    },
-                
-                    function(response, status) {
-                
-                        if (response.error) {
-                            show_modal_message("Error", response.message);
-                
-                        }
-                        else {
-
-                            for (let prediction_image_name of prediction_image_names) {
-                                predictions[prediction_image_name] = response.predictions[prediction_image_name];
-
-                                if (prediction_image_name in voronoi_data && "prediction" in voronoi_data[prediction_image_name]) {
-                                    delete voronoi_data[prediction_image_name]["prediction"];
-                                }
-                            }
-
-                            if ((cur_panel === "prediction") && (prediction_image_names.includes(cur_img_name))) {
-                                show_prediction();
-                            }
-                        }
-                    });
-                    
-                }
-            }
-
-
-
-
-        }
 
     });
 
@@ -3861,41 +3686,7 @@ $(document).ready(function() {
     
     $("#save_button").click(async function() {
         await unselect_selected_annotation();
-
-        let new_training_regions = 0;
-        for (let image_name of Object.keys(annotations)) {
-            for (let i = 0; i < locked_training_regions[image_name].length; i++) {
-                if (!(locked_training_regions[image_name][i])) {
-                    new_training_regions++;
-                }
-            }
-        }
-        if (new_training_regions > 0) {
-            let msg;
-            if (new_training_regions == 1) {
-                msg = "You have added a new fine-tuning region. " +
-                "Once the save operation completes, you will be prevented from editing this region.";
-            }
-            else {
-                msg = "You have added new fine-tuning regions. " +
-                "Once the save operation completes, you will be prevented from editing these regions.";
-            }
-            show_modal_message(
-                `Notice`,
-                `<div style="height: 30px">${msg}</div>` +
-                `<div style="height: 20px"></div>` +
-                `<div id="modal_button_container" style="text-align: center">` +
-                    `<button id="confirm_save" class="button-green button-green-hover" `+
-                            `style="width: 180px; margin: 2px" onclick="continue_with_save()">Continue with Save</button>` +
-                    `<button id="cancel_delete" class="button-green button-green-hover" ` +
-                            `style="width: 180px; margin: 2px" onclick="close_modal()">Cancel</button>` +
-                    `<div style="height: 20px" id="loader_container"></div>` +
-                `</div>`
-            )
-        }
-        else {
-            save_annotations();
-        }
+        save_annotations();
     });
 
     $("#next_tile_button").click(function() {
@@ -4194,6 +3985,20 @@ $(document).ready(function() {
     });
 
 
+    $("#fine_tune_model_button").click(function() {
+        if (model_unassigned) {
+            show_modal_message("No Model Selected", "A model must be selected before fine-tuning can be applied.");
+        }
+        else {
+            submit_fine_tuning_request();
+        }
+    });
+
+    $("#switch_model_button").click(function() {
+        change_model();
+    });
+
+
     $("#use_predictions_button").click(function() {
         $("#modal_head").empty();
         $("#modal_body").empty();
@@ -4246,41 +4051,6 @@ $(document).ready(function() {
 
     $("#scores_switch").change(function() {
         viewer.raiseEvent('update-viewport');
-    });
-
-    $("#train_block_switch").click(function() {
-        
-        let block_training = $("#train_block_switch").is(":checked");
-        let block_op;
-        if (block_training) {
-            $("#train_block_text").html("Yes");
-            block_op = "block";
-        }
-        else {
-            $("#train_block_text").html("No");
-            block_op = "unblock";
-        }
-        
-        $.post($(location).attr('href'),
-        {
-            action: "block_training",
-            block_op: block_op
-        },
-        
-        function(response, status) {
-
-            if (response.error) {
-                if (block_training) {
-                    $("#train_block_text").html("No");
-                }
-                else {
-                    $("#train_block_text").html("Yes");
-                }
-                $("#train_block_switch").change();
-                show_modal_message("Error", "An error occurred during the attempt to block training.")
-            }
-
-        });
     });
 
 
@@ -4402,7 +4172,7 @@ $(document).ready(function() {
         add_prediction_buttons();
 
         let navigation_type = $("#navigation_dropdown").val();
-        if ((navigation_type == "regions_of_interest") || (navigation_type === "training_regions" || navigation_type == "test_regions")) {
+        if ((navigation_type == "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type == "test_regions")) {
             $("input:radio[name=edit_layer_radio]").prop("disabled", true);
             $("#active_layer_table").css("opacity", 0.5);
             $("#show_segmentation_button").hide();
@@ -4770,8 +4540,8 @@ function gridview_onRedraw() {
 
     boxes_to_add["region_of_interest"] = {};
     boxes_to_add["region_of_interest"]["boxes"] = annotations[cur_img_name]["regions_of_interest"];
-    boxes_to_add["training_region"] = {};
-    boxes_to_add["training_region"]["boxes"] = annotations[cur_img_name]["training_regions"];
+    boxes_to_add["fine_tuning_region"] = {};
+    boxes_to_add["fine_tuning_region"]["boxes"] = annotations[cur_img_name]["fine_tuning_regions"];
     boxes_to_add["test_region"] = {};
     boxes_to_add["test_region"]["boxes"] = annotations[cur_img_name]["test_regions"];
     boxes_to_add["annotation"] = {};

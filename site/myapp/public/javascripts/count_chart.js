@@ -263,7 +263,7 @@ function set_count_chart_data() {
             for (let image_name of Object.keys(annotations)) {
                 let image_w = metadata["images"][cur_img_name]["width_px"];
                 let image_h = metadata["images"][cur_img_name]["height_px"]
-                let fully_annotated_for_training = image_is_fully_annotated_for_training(
+                let fully_annotated_for_fine_tuning = image_is_fully_annotated_for_fine_tuning(
                     annotations, 
                     image_name, 
                     image_w,
@@ -277,15 +277,15 @@ function set_count_chart_data() {
                     image_h
                 );
 
-                if (fully_annotated_for_training || fully_annotated_for_testing) {
+                if (fully_annotated_for_fine_tuning || fully_annotated_for_testing) {
 
                     let nav_item = image_name + "/-1";
                     count_chart_data[nav_item] = {"annotation":  0, "prediction": 0};
                     count_chart_data[nav_item]["annotation"] = 0;
 
                     let region_key;
-                    if (fully_annotated_for_training) {
-                        region_key = "training_regions";
+                    if (fully_annotated_for_fine_tuning) {
+                        region_key = "fine_tuning_regions";
                     }
                     else {
                         region_key = "test_regions";

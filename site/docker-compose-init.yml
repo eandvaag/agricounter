@@ -29,6 +29,7 @@ services:
       AC_PORT: "${AC_PORT}"
       AC_PY_PORT: "${AC_PY_PORT}"
       AC_PATH: "${AC_PATH}"
+      AC_API_KEY: "${AC_API_KEY}"
     depends_on:
       - db
     ports:

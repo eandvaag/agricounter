@@ -42,6 +42,7 @@ def create():
     site_env["AC_PORT"] = args["site_port"]
     site_env["AC_PY_PORT"] = args["backend_python_port"]
     site_env["AC_PATH"] = args["url_prefix"]
+    site_env["AC_API_KEY"] = args["api_key"]
 
 
     conf["services"]["myapp"]["ports"] = [str(args["site_port"]) + ":" + str(args["site_port"])]
@@ -84,17 +85,17 @@ def create():
         "            }"
     )
 
-    for user in args["initial_users"]:
-        f.write(
-            ",\n" +
-            "            {\n" +
-            "                username: '" + user["username"] + "',\n" +
-            "                password: bcrypt.hashSync('" + user["password"] + "', salt),\n" +
-            "                is_admin: false,\n"
-            "                createdAt: new Date(),\n" +
-            "                updatedAt: new Date()\n" +
-            "            }"
-        )
+    # for user in args["initial_users"]:
+    #     f.write(
+    #         ",\n" +
+    #         "            {\n" +
+    #         "                username: '" + user["username"] + "',\n" +
+    #         "                password: bcrypt.hashSync('" + user["password"] + "', salt),\n" +
+    #         "                is_admin: false,\n"
+    #         "                createdAt: new Date(),\n" +
+    #         "                updatedAt: new Date()\n" +
+    #         "            }"
+    #     )
 
     f.write(
         "\n" +

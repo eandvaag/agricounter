@@ -94,7 +94,6 @@ function show_results_tab() {
 
     let tab_ids = [
         "completed_results_tab_btn",
-        "pending_results_tab_btn",
         "aborted_results_tab_btn"
     ];
 
@@ -107,14 +106,10 @@ function show_results_tab() {
     $("#" + active_results_tab_btn).addClass("tab-btn-active");
 
     $("#completed_results").hide();
-    $("#pending_results").hide();
     $("#aborted_results").hide();
 
     if (active_results_tab_btn === "completed_results_tab_btn") {
         $("#completed_results").show();
-    }
-    else if (active_results_tab_btn === "pending_results_tab_btn") {
-        $("#pending_results").show();
     }
     else {
         $("#aborted_results").show();
@@ -686,7 +681,7 @@ function show_overview() {
 
             $("#image_stats_table").append(`<tr>` +
                 `<td style="padding: 2px 0px"><div class="table_header2" style="width: ${label_width};">Fine-Tuning Regions</div></td>` +
-                `<td><div style="text-align: left; width: ${value_width}; margin-left: 10px">${annotation_info["num_training_regions"]}</div></td>` +
+                `<td><div style="text-align: left; width: ${value_width}; margin-left: 10px">${annotation_info["num_fine_tuning_regions"]}</div></td>` +
                 `</tr>`);
 
             $("#image_stats_table").append(`<tr>` +
@@ -946,7 +941,7 @@ function create_result_entry(result) {
         result_name = result_name.substring(0, 24) + " ... " + result_name.substring(result_name.length - 24);
     }
 
-    let start_date = timestamp_to_date(result["start_time"]);
+    let start_date = timestamp_to_date(result["request_time"]);
     let end_date, aborted_date;
     let completed = "end_time" in result && (!("aborted_time" in result));
     let aborted = "aborted_time" in result;
@@ -968,8 +963,8 @@ function create_result_entry(result) {
         disp_end_title = " ";
     }
 
-    let destroy_button_container_id = "destroy_button_container_" + result["start_time"];
-    let main_result_container_id = "main_result_container_" + result["start_time"];
+    let destroy_button_container_id = "destroy_button_container_" + result["request_time"];
+    let main_result_container_id = "main_result_container_" + result["request_time"];
 
 
 
@@ -1090,12 +1085,6 @@ function create_result_entry(result) {
 
 
     }
-    else {
-        $("#pending_results_table").append(template);
-
-        $("#" + main_result_container_id).append(
-            `<div style="width: 190px"><div class="loader"></div></div>`);
-    }
 
 
     return template;
@@ -1125,9 +1114,6 @@ function show_results(results) {
         `<ul class="nav" id="results_nav">` +
             `<li id="completed_results_tab_btn" class="nav">` +
                 `<a class="nav"><span><i class="fa-solid fa-circle-check" style="margin-right: 3px"></i> Completed</span></a>` +
-            `</li>` +
-            `<li id="pending_results_tab_btn" class="nav">` +
-                `<a class="nav"><span><i class="fa-solid fa-clock" style="margin-right: 3px"></i> Pending</span></a>` +
             `</li>` +
             `<li id="aborted_results_tab_btn" class="nav">` +
                 `<a class="nav"><span><i class="fa-solid fa-circle-xmark" style="margin-right: 3px"></i> Aborted</span></a>` +
@@ -1162,14 +1148,6 @@ function show_results(results) {
 
             `<div class="scrollable_area" style="border-radius: 10px; height: ${completed_results_container_height}; width: 1450px; margin: 0 auto; overflow-y: scroll">` +
                 `<table id="completed_results_table" style="border-collapse: collapse"></table>` +
-            `</div>` +
-        `</div>` +
-
-
-        `<div id="pending_results" hidden>` +
-            `<div style="height: 90px"></div>` +
-            `<div class="scrollable_area" style="border-radius: 10px; height: ${completed_results_container_height}; width: 1450px; margin: 0 auto; overflow-y: scroll">` +
-                `<table id="pending_results_table" style="border-collapse: collapse"></table>` +
             `</div>` +
         `</div>` +
 
@@ -1218,19 +1196,6 @@ function show_results(results) {
 
     });
 
-    let pending_results = results.pending_results.sort(function(a, b) {
-        return b["end_time"] - a["end_time"];
-    });
-    if (pending_results.length > 0) {
-        for (let result of pending_results) {
-            create_result_entry(result);
-        }
-    }
-    else {
-        $("#pending_results").empty();
-        $("#pending_results").append(`<div style="height: 120px"></div>`);
-        $("#pending_results").append(`<div>No Pending Results Found</div>`);
-    }
     let aborted_results = results.aborted_results.sort(function(a, b) {
         return b["end_time"] - a["end_time"];
     });
@@ -1249,11 +1214,6 @@ function show_results(results) {
 
     $("#completed_results_tab_btn").click(function() {
         active_results_tab_btn = "completed_results_tab_btn";
-        show_results_tab();
-    });
-
-    $("#pending_results_tab_btn").click(function() {
-        active_results_tab_btn = "pending_results_tab_btn";
         show_results_tab();
     });
 
@@ -1303,7 +1263,7 @@ function show_image_set_details() {
         `<br><br><div>The following error occurred while processing the image set:</div><br><div>` + error_message + `</div><br>`);
 
         $("#tab_details").append(
-            `<br><hr style="width: 100px"><button class="button-red button-red-hover" style="width: 220px; height: 35px;" onclick="delete_request()">`+
+            `<br><button class="button-red button-red-hover" style="width: 220px; height: 35px;" onclick="delete_request()">`+
             `<i class="fa-regular fa-circle-xmark" style="margin-right:8px"></i>Delete Image Set</button>`);
 
     }
@@ -1423,9 +1383,6 @@ $(document).ready(function() {
 
         if (viewing["train"] === "available") {
             show_available_train();
-        }
-        else if (viewing["train"] === "pending") {
-            show_pending_train();
         }
         else if (viewing["train"] === "aborted") {
             show_aborted_train();

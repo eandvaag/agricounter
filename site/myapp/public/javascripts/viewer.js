@@ -217,8 +217,8 @@ function create_viewer() {
             boxes_to_add["region_of_interest"]["boxes"] = annotations[cur_img_name]["regions_of_interest"];
             boxes_to_add["region_of_interest"] = {};
             boxes_to_add["region_of_interest"]["boxes"] = annotations[cur_img_name]["regions_of_interest"];
-            boxes_to_add["training_region"] = {};
-            boxes_to_add["training_region"]["boxes"] = annotations[cur_img_name]["training_regions"];
+            boxes_to_add["fine_tuning_region"] = {};
+            boxes_to_add["fine_tuning_region"]["boxes"] = annotations[cur_img_name]["fine_tuning_regions"];
             boxes_to_add["test_region"] = {};
             boxes_to_add["test_region"]["boxes"] = annotations[cur_img_name]["test_regions"]
 
@@ -481,7 +481,7 @@ function create_viewer() {
                 }
             }
 
-            if ((navigation_type === "regions_of_interest") || (navigation_type === "training_regions" || navigation_type === "test_regions")) {
+            if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
                 let region = annotations[cur_img_name][navigation_type][cur_region_index];
                 let image_px_width = metadata["images"][cur_img_name]["width_px"];
@@ -531,7 +531,7 @@ function create_viewer() {
             }
             if (cur_bounds != null) {
 
-                if ((navigation_type === "regions_of_interest") || (navigation_type === "training_regions" || navigation_type === "test_regions")) {
+                if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
                     let region = annotations[cur_img_name][navigation_type][cur_region_index];
         

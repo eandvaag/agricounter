@@ -1,12 +1,14 @@
-import pandas as pd
-import pandas.io.formats.excel
-from natsort import index_natsorted
+import logging
+import os
 import numpy as np
+import shutil
 
 
-from io_utils import w3c_io
+from io_utils import json_io
 from models.common import box_utils
 from lsnms import nms as lsnms_nms
+
+
 
 
 
@@ -172,46 +174,3 @@ def add_class_detections(image_predictions, config): #, opt_thresh_val):
         #image_predictions[image_name]["pred_opt_class_counts"] = pred_opt_class_counts
 
 
-
-# def create_metrics_skeleton(dataset):
-#     metrics = {
-#         "point": {},
-#         "boxplot": {},
-#         "image": {}
-#     }
-#     for image in dataset.images:
-#         metrics["image"][image.image_name] = {}
-#     return metrics
-
-
-# def create_predictions_skeleton(dataset):
-
-#     return {"farm_name": dataset.farm_name, #config["target_farm_name"],
-#             "field_name": dataset.field_name, #config["target_field_name"],
-#             "mission_date": dataset.mission_date, #config["target_mission_date"],
-#             "image_predictions": {}, 
-#             "patch_predictions": {}
-#             # "metrics": 
-#             #     {
-#             #         # "training": 
-#             #         # {
-#             #         #     "point": {},
-#             #         #     "boxplot": {}
-#             #         # },
-#             #         # "validation":
-#             #         # {
-#             #         #     "point": {},
-#             #         #     "boxplot": {}
-#             #         # },
-#             #         # "test":
-#             #         # {
-#             #         #     "point": {},
-#             #         #     "boxplot": {}
-#             #         # },
-#             #         "all":
-#             #         {
-#             #             "point": {},
-#             #             "boxplot": {}
-#             #         },                    
-#             #     }
-#             }
