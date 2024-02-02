@@ -1,18 +1,14 @@
 import logging
-import argparse
 import tqdm
 import os
 import time
-import random
 import math as m
 import numpy as np
 import tensorflow as tf
 from mean_average_precision import MetricBuilder
-from matplotlib.patches import Circle, Wedge, Polygon
-from matplotlib.collections import PatchCollection
-import matplotlib.pyplot as plt
 
-from scipy.spatial import Voronoi, voronoi_plot_2d
+
+from scipy.spatial import Voronoi
 import shapely.geometry
 import shapely.ops
 
@@ -21,14 +17,11 @@ import pandas as pd
 import pandas.io.formats.excel
 from natsort import index_natsorted
 
-#from styleframe import StyleFrame
-
-
 
 from models.common import box_utils, annotation_utils, poly_utils
 
 
-from io_utils import json_io, w3c_io
+from io_utils import json_io
 
 
 
@@ -215,7 +208,7 @@ def get_global_accuracy(annotations, full_predictions, assessment_images, iou_th
 #     #     predictions["metrics"]["boxplot"] = {}
 
 #     # datasets = {
-#     #     "training": image_set.training_dataset,
+#     #     "fine_tuning": image_set.fine_tuning_dataset,
 #     #     "validation": image_set.validation_dataset,
 #     #     "test", image_set.test_dataset
 #     # }
@@ -629,7 +622,7 @@ def collect_image_set_metrics(predictions, annotations, metadata):
             for image_name in predictions.keys():
                 metrics[obj_class][metric_key][image_name] = {}
 
-                for region_key in ["regions_of_interest", "training_regions", "test_regions"]:
+                for region_key in ["regions_of_interest", "fine_tuning_regions", "test_regions"]:
                     metrics[obj_class][metric_key][image_name][region_key] = []
 
 
@@ -650,7 +643,7 @@ def collect_image_set_metrics(predictions, annotations, metadata):
                 pred_boxes = pred_boxes[pred_class_mask]
                 pred_scores = pred_scores[pred_class_mask]
 
-            for region_key in ["regions_of_interest", "training_regions", "test_regions"]:
+            for region_key in ["regions_of_interest", "fine_tuning_regions", "test_regions"]:
             
 
                 for region in annotations[image_name][region_key]:
@@ -792,7 +785,7 @@ def collect_image_set_metrics_old(predictions, annotations, metadata):
         pred_scores = np.array(predictions[image_name]["scores"])
 
 
-        for region_key in ["regions_of_interest", "training_regions", "test_regions"]:
+        for region_key in ["regions_of_interest", "fine_tuning_regions", "test_regions"]:
             # for metric_key in metric_keys:
             #     metrics[metric_key][image_name][region_key] = {}[]
 
@@ -969,7 +962,7 @@ def collect_image_set_metrics_old(predictions, annotations, metadata):
     #     image_classes = annotations[image_name]["classes"]
     #     image_status = annotations[image_name]["status"]
         
-    #     if image_status == "completed_for_training" or image_status == "completed_for_testing":
+    #     if image_status == "completed_for_fine_tuning" or image_status == "completed_for_testing":
 
     #         image_metrics[image_name] = {}
 
@@ -1372,7 +1365,7 @@ def create_images_sheet(args, updated_metrics):
         "Mission Date",
         "Image Name",
         "Regions of Interest",
-        "Training Regions",
+        "Fine-Tuning Regions",
         "Test Regions",
         "Image Is Fully Annotated",
         "Source Of Annotations",
@@ -1491,7 +1484,7 @@ def create_images_sheet(args, updated_metrics):
 
         # image_abs_boxes = annotations[image_name]["boxes"]
         regions_of_interest = annotations[image_name]["regions_of_interest"]
-        training_regions = annotations[image_name]["training_regions"]
+        fine_tuning_regions = annotations[image_name]["fine_tuning_regions"]
         test_regions = annotations[image_name]["test_regions"]
 
         # if annotations[image_name]["predictions_used_as_annotations"]:
@@ -1504,7 +1497,7 @@ def create_images_sheet(args, updated_metrics):
         image_height_px = metadata["images"][image_name]["height_px"]
         image_width_px = metadata["images"][image_name]["width_px"]
 
-        if annotation_utils.is_fully_annotated_for_training(annotations, image_name, image_width_px, image_height_px):
+        if annotation_utils.is_fully_annotated_for_fine_tuning(annotations, image_name, image_width_px, image_height_px):
             fully_annotated = "yes: for fine-tuning"
 
         elif annotation_utils.is_fully_annotated_for_testing(annotations, image_name, image_width_px, image_height_px):
@@ -1540,7 +1533,7 @@ def create_images_sheet(args, updated_metrics):
         d["Mission Date"].append(mission_date)
         d["Image Name"].append(image_name)
         d["Regions of Interest"].append(len(regions_of_interest))
-        d["Training Regions"].append(len(training_regions))
+        d["Fine-Tuning Regions"].append(len(fine_tuning_regions))
         d["Test Regions"].append(len(test_regions))
         d["Image Is Fully Annotated"].append(fully_annotated)
         d["Source Of Annotations"].append(annotations_source)
@@ -1660,7 +1653,7 @@ def create_images_sheet(args, updated_metrics):
                     d[metric + " (" + object_class + ")"].append("NA")
             elif fully_annotated == "yes: for fine-tuning":
                 for metric in metrics_lst:
-                    metric_val = updated_metrics[object_class][metric][image_name]["training_regions"][0]
+                    metric_val = updated_metrics[object_class][metric][image_name]["fine_tuning_regions"][0]
                     if isinstance(metric_val, float):
                         metric_val = round(metric_val, 2)
                     d[metric + " (" + object_class + ")"].append(metric_val)
@@ -1817,7 +1810,7 @@ def create_images_sheet(args, updated_metrics):
         #         ms_coco_mAP = "NA"
 
         # else:
-        #     if image_status == "completed_for_training" or image_status == "completed_for_testing":
+        #     if image_status == "completed_for_fine_tuning" or image_status == "completed_for_testing":
         #         ms_coco_mAP = round(calculate_MS_COCO_mAP_for_image(predictions, annotations, image_name), 2)
 
 
@@ -2001,10 +1994,10 @@ def create_areas_spreadsheet(results_dir, regions_only=False):
         pred_mask = predicted_scores > 0.50
         sel_predicted_boxes = predicted_boxes[pred_mask]
 
-        for region_type in ["regions_of_interest", "training_regions", "test_regions"]:
+        for region_type in ["regions_of_interest", "fine_tuning_regions", "test_regions"]:
             if region_type == "regions_of_interest":
                 region_label = "interest"
-            elif region_type == "training_regions":
+            elif region_type == "fine_tuning_regions":
                 region_label = "fine_tuning"
             else:
                 region_label = "test"
@@ -2318,7 +2311,7 @@ def create_regions_sheet(args, updated_metrics):
         # metrics["F1 Score (IoU=0.7)"][image_name] = {}
         # metrics["F1 Score (IoU=0.9)"][image_name] = {}
 
-        for region_type in ["regions_of_interest", "training_regions", "test_regions"]:
+        for region_type in ["regions_of_interest", "fine_tuning_regions", "test_regions"]:
 
 
             # metrics["MS COCO mAP"][image_name][region_type + "_regions"] = []
@@ -2332,7 +2325,7 @@ def create_regions_sheet(args, updated_metrics):
                 if region_type == "regions_of_interest":
                     region_name = "interest_" + (str(region_idx+1))
 
-                elif region_type == "training_regions":
+                elif region_type == "fine_tuning_regions":
                     region_name = "fine_tuning_" + (str(region_idx+1))
                 else:
                     region_name = "test_" + (str(region_idx+1))
@@ -2603,10 +2596,10 @@ def create_stats_sheet(args, regions_df):
 
     if len(regions_df.index) > 0:
 
-        for region_type in ["regions_of_interest", "training_regions", "test_regions"]: #["interest", "training", "test"]:
+        for region_type in ["regions_of_interest", "fine_tuning_regions", "test_regions"]: #["interest", "fine_tuning", "test"]:
             if region_type == "regions_of_interest":
                 disp_region_type = "interest"
-            elif region_type == "training_regions":
+            elif region_type == "fine_tuning_regions":
                 disp_region_type = "fine_tuning"
             else:
                 disp_region_type = "test"

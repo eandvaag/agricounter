@@ -7,13 +7,13 @@ from io_utils import json_io
 
 
 def is_fully_annotated(annotations, image_name, image_w, image_h):
-    return is_fully_annotated_for_training(annotations, image_name, image_w, image_h) or is_fully_annotated_for_testing(annotations, image_name, image_w, image_h)
+    return is_fully_annotated_for_fine_tuning(annotations, image_name, image_w, image_h) or is_fully_annotated_for_testing(annotations, image_name, image_w, image_h)
 
 
-def is_fully_annotated_for_training(annotations, image_name, image_w, image_h):
-    if len(annotations[image_name]["training_regions"]) == 0:
+def is_fully_annotated_for_fine_tuning(annotations, image_name, image_w, image_h):
+    if len(annotations[image_name]["fine_tuning_regions"]) == 0:
         return False
-    region = annotations[image_name]["training_regions"][0]
+    region = annotations[image_name]["fine_tuning_regions"][0]
     return (region[0] == 0 and region[1] == 0) and (region[2] == image_h and region[3] == image_w)
 
 def is_fully_annotated_for_testing(annotations, image_name, image_w, image_h):
@@ -72,12 +72,12 @@ def get_num_annotations(annotations, region_keys):
 
 
 
-def get_num_training_regions(annotations):
-    num_training_regions = 0
+def get_num_fine_tuning_regions(annotations):
+    num_fine_tuning_regions = 0
     for image_name in annotations.keys():
-        num_training_regions += len(annotations[image_name]["training_regions"])
+        num_fine_tuning_regions += len(annotations[image_name]["fine_tuning_regions"])
 
-    return num_training_regions
+    return num_fine_tuning_regions
 
 
 

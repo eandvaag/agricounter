@@ -6,20 +6,9 @@
     "postgres_db_username": "agricounter_db_user",
     "postgres_db_password": "secretDBkeypass",
     "postgres_db_port": "8120",
+    "api_key": "protectedpyproc39",
     "admin_username": "admin",
     "admin_password": "undi$closed37",
-    "initial_users": [
-         {
-            "username": "user0",
-            "password": "detect$obj21"
-         },
-         {
-            "username": "fhb",
-            "password": "blightPa$$23"
-         }
-
-
-    ],
     "initial_objects": [
         "Canola Seedling",
         "Wheat Head"

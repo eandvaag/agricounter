@@ -6,6 +6,17 @@ let landing = require('../controllers/landing');
 let socket_api = require("../socket_api");
 
 
+function check_api_key(req, res, next) {
+    const api_key = req.get("API-Key");
+    if (!api_key || api_key !== process.env.AC_API_KEY) {
+        res.status(401).json({error: "unauthorized"});
+    }
+    else {
+        next();
+    }
+}
+
+
 router.get('/', landing.get_sign_in);
 router.post('/', landing.post_sign_in);
 
@@ -29,11 +40,11 @@ router.post('/viewer/:username/:farm_name/:field_name/:mission_date/:result_uuid
 
 router.post('/overlay_appearance_change/:username', landing.post_overlay_appearance_change);
 
-router.post('/status_notification', socket_api.post_status_notification);
-router.post('/upload_notification', socket_api.post_upload_notification);
-router.post('/results_notification', socket_api.post_results_notification);
-router.post('/model_notification', socket_api.post_model_notification);
-
+router.post('/image_set_notification', check_api_key, socket_api.post_image_set_notification);
+router.post('/upload_notification', check_api_key, socket_api.post_upload_notification);
+router.post('/results_notification', check_api_key, socket_api.post_results_notification);
+router.post('/model_notification', check_api_key, socket_api.post_model_notification);
+router.post('/workers_notification', check_api_key, socket_api.post_workers_notification);
 
 
 module.exports = router;

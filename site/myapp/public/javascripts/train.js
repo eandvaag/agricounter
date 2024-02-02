@@ -80,8 +80,8 @@ function get_num_useable_boxes(annotations) {
     for (let image_name of Object.keys(annotations)) {
         for (let i = 0; i < annotations[image_name]["boxes"].length; i++) {
             let intersects = false;
-            for (let j = 0; j < annotations[image_name]["training_regions"].length; j++) {
-                if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["training_regions"][j])) {
+            for (let j = 0; j < annotations[image_name]["fine_tuning_regions"].length; j++) {
+                if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["fine_tuning_regions"][j])) {
                     intersects = true;
                     break;
                 }
@@ -346,8 +346,8 @@ function create_viewer(id_prefix, dzi_image_paths) {
                 let boxes_to_add = {};
                 boxes_to_add["region_of_interest"] = {};
                 boxes_to_add["region_of_interest"]["boxes"] = annotations[id_prefix][cur_img_name]["regions_of_interest"];
-                boxes_to_add["training_region"] = {};
-                boxes_to_add["training_region"]["boxes"] = annotations[id_prefix][cur_img_name]["training_regions"];
+                boxes_to_add["fine_tuning_region"] = {};
+                boxes_to_add["fine_tuning_region"]["boxes"] = annotations[id_prefix][cur_img_name]["fine_tuning_regions"];
                 boxes_to_add["test_region"] = {};
                 boxes_to_add["test_region"]["boxes"] = annotations[id_prefix][cur_img_name]["test_regions"]
                 boxes_to_add["annotation"] = {};
@@ -375,7 +375,7 @@ function create_viewer(id_prefix, dzi_image_paths) {
 
                 let draw_order;
                 if (region == null) {
-                    draw_order = ["region_of_interest", "training_region", "test_region", "annotation"];
+                    draw_order = ["region_of_interest", "fine_tuning_region", "test_region", "annotation"];
                 }
                 else {
                     draw_order = ["annotation"];
@@ -584,9 +584,9 @@ function inspect_image_set(image_set_text_id, for_target) {
                 image_names = [];
                 cur_regions = [];
                 for (let image_name of Object.keys(response.annotations)) {
-                    for (let i = 0; i < response.annotations[image_name]["training_regions"].length; i++) {
+                    for (let i = 0; i < response.annotations[image_name]["fine_tuning_regions"].length; i++) {
                         image_names.push(image_name);
-                        cur_regions.push(response.annotations[image_name]["training_regions"][i]);
+                        cur_regions.push(response.annotations[image_name]["fine_tuning_regions"][i]);
                     }
                     for (let i = 0; i < response.annotations[image_name]["test_regions"].length; i++) {
                         image_names.push(image_name);

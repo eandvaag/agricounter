@@ -117,8 +117,8 @@ function draw_map_chart() {
 
             let color;
 
-            if (image_is_fully_annotated_for_training(annotations, image_name, image_width_px, image_height_px)) {
-                color = overlay_appearance["colors"]["training_region"];
+            if (image_is_fully_annotated_for_fine_tuning(annotations, image_name, image_width_px, image_height_px)) {
+                color = overlay_appearance["colors"]["fine_tuning_region"];
             }
             else if (image_is_fully_annotated_for_testing(annotations, image_name, image_width_px, image_height_px)) {
                 color = overlay_appearance["colors"]["test_region"];

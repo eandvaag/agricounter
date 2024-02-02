@@ -1,61 +1,12 @@
 import logging
 import os
-import glob
 import imagesize
 import cv2
 import requests
 
-from io_utils import json_io, w3c_io, exif_io
+from io_utils import json_io, exif_io
 
 
-
-
-class ImgSet(object):
-    def __init__(self):
-        pass
-
-
-class DataSet(object):
-    def __init__(self, dataset_conf, selected_image_names=[]): #, all_images=False):
-
-        usr_data_root = os.path.join("usr", "data")
-
-        self.farm_name = dataset_conf["farm_name"]
-        self.field_name = dataset_conf["field_name"]
-        self.mission_date = dataset_conf["mission_date"]
-        self.image_set_name = self.farm_name + "-" + self.field_name + "-" + self.mission_date
-        #self.patch_extraction_params = dataset_conf["patch_extraction_params"]
-
-        self.image_set_root = os.path.join(usr_data_root, "image_sets", 
-                                      self.farm_name, self.field_name, self.mission_date)
-        
-        self.annotations_path = os.path.join(self.image_set_root, "annotations", "annotations_w3c.json")
-        self.images_root = os.path.join(self.image_set_root, "images")
-
-        annotations = w3c_io.load_annotations(self.annotations_path, {"plant": 0})
-
-        self.image_names = []
-        for f in glob.glob(os.path.join(self.images_root, "*")):
-            self.image_names.append(os.path.basename(f).split(".")[0])
-        self.selected_image_names = selected_image_names
-
-
-        self.images = []
-        self.completed_images = []
-        self.nonempty_completed_images = []
-        self.selected_images = []
-        for image_name in self.image_names:
-            #print("adding", image_name)
-            full_path = glob.glob(os.path.join(self.images_root, image_name + ".*"))[0]
-            #print("full_path", full_path)
-            image = Image(full_path)
-            self.images.append(image)
-            if image_name in selected_image_names:
-                self.selected_images.append(image)
-            if annotations[image_name]["status"] == "completed":
-                self.completed_images.append(image)
-                if annotations[image_name]["boxes"].size > 0:
-                    self.nonempty_completed_images.append(image)
 
 
 

@@ -144,9 +144,9 @@ html
                                                                 input(type="radio" name="edit_layer_radio" value="region_of_interest")
                                                                 span(class="custom_radio" id="region_of_interest_radio")
 
-                                                            label(class="custom_radio_container" id="training_region_label") Fine-Tuning Region
-                                                                input(type="radio" name="edit_layer_radio" value="training_region")
-                                                                span(class="custom_radio" id="training_region_radio")
+                                                            label(class="custom_radio_container" id="fine_tuning_region_label") Fine-Tuning Region
+                                                                input(type="radio" name="edit_layer_radio" value="fine_tuning_region")
+                                                                span(class="custom_radio" id="fine_tuning_region_radio")
 
                                                             label(class="custom_radio_container" id="test_region_label") Test Region
                                                                 input(type="radio" name="edit_layer_radio" value="test_region")
@@ -287,122 +287,282 @@ html
                             
                                                         div(style="height: 40px")
 
-                                                        table
+
+                                                        table(class="transparent_table")
                                                             tr
                                                                 td(style="text-align: left")
-                                                                    h(class="header2" style="width: 100px;") Model
+                                                                    h(class="header2") Model
                                                                 td(style="width: 100%")
-
                                                                 td
-                                                                    button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 90px" onclick="change_model()")
+                                                                    button(class="button-green button-green-hover" id="switch_model_button" style="padding: 2px; font-size: 14px; width: 90px")
                                                                         i(class="fa-solid fa-cube" style="margin-right: 4px") 
                                                                         |
                                                                         | Select 
 
 
-                                                        div(style="height: 110px; border: 1px solid white; border-radius: 10px")
-                                                            div(id="no_model_message" style="padding-top: 42px; color: #ddccbb; font-weight: 400" hidden)
-                                                                em No model selected.
-                                                            div(id="model_details" hidden)
-                                                                div(style="height: 10px")
-                                                                div(id="model_name")
-                                                                div(style="height: 10px")
-
-                                                                div(style="border: 1px solid white; width: 250px; margin: 0 auto; height: 45px; border-radius: 25px")
-                                                                    div(id="regions_fully_fine_tuned_on" style="padding: 5px 15px; font-size: 14px; color: #ddccbb; font-weight: 400")
-
-
-                                                                table(style="font-size: 14px")
-
-                                                                    tr 
-                                                                        td
-                                                                            div(style="height: 3px") 
-                                                                        td
-                                                                            div(style="height: 3px") 
-
-                                                                    tr
-                                                                        td(style="text-align: right")
-                                                                            div(style="color: #ddccbb; font-weight: 400; width: 138px") Fine-Tuning Blocked?
-
-                                                                        td(style="text-align: left; padding-left: 15px;")
-                                                                            div(style="width: 55px; display: inline-block")
-                                                                                h(id="train_block_text")
-
-                                                                            span
-                                                                                label(class="small_switch" id="train_block_label")
-                                                                                    input(id="train_block_switch" type="checkbox" disabled)
-                                                                                    span(class="small_switch_slider round" id="train_block_slider")
 
                                                         
+                                                        div(style="height: 30px; border: 1px solid white; border-radius: 10px")
+                                                            div(style="height: 5px")
+                                                            div(id="model_name")
+
+                                                        //- table(class="transparent_table")
+                                                        //-     tr
+                                                        //-         td(style="text-align: left")
+                                                        //-             h(class="header2" style="width: 130px") State
+                                                        //-         td(style="width: 100%")
+
                                                         div(style="height: 5px")
-                                                        div(id="train_block_message" style="height: 10px; font-size: 14px; color: #ed452b") 
-                                                        hr
+
+                                                        div(style="height: 45px; border: 1px solid white; border-radius: 10px")
+                                                            div(style="height: 5px")
+                                                            div(id="image_set_state")
+                                                            div(style="height: 2px")
+                                                            div(id="image_set_state_progress" style="font-size: 13px")
+
+                                                        div(style="height: 5px")
 
 
-
-
-
-                                                        table(class="transparent_table")
-                                                            tr
-                                                                td(style="text-align: left")
-                                                                    h(class="header2" style="width: 130px") Backend Status
-                                                                td(style="width: 100%")
+                                                        //- div(style="color: #ddccbb")
+                                                        //-     // id="num_workers")
+                                                        //-     span(style="color: white" id="num_workers_text") 
+                                                        table 
+                                                            tr(style="height: 20px")
+                                                                td(style="width: 50%")
                                                                 td
-                                                                    div(style="width: 30px")
-                                                                        div(id="status_blob" onclick="user_health_check()" style="cursor: pointer")
+                                                                    div(style="font-size: 13px; text-align: right; width: 15px; color: #ddccbb" id="num_workers")
+                                                                td 
+                                                                    div(style="width: 2px")
+                                                                td
+                                                                    div(style="font-size: 13px; text-align: left; width: 150px" id="num_workers_text") 
+                                                                
+                                                                td(style="width: 50%")
 
-
-                                                        div(style="height: 130px; border: 1px solid white; border-radius: 10px")
-                                                            div(id="backend_details")
-                                                                div(style="height: 10px")
-                                                                div(id="backend_status")
-                                                                div(id="backend_status_details" style="font-size: 13px; height: 15px")
-                                                                div(style="height: 5px")
-                                                                table(class="transparent_table" style="font-size: 14px")
-
-                                                                    tr
-                                                                        td(style="text-align: right")
-                                                                            div(style="color: #ddccbb; font-weight: 400; width: 90px") Username 
-                                                                        td(style="text-align: left; padding-left: 15px; width: 100%;")
-                                                                            div(id="backend_username" )
-                                                                    tr
-                                                                        td(style="text-align: right")
-                                                                            div(style="color: #ddccbb; font-weight: 400; width: 90px") Farm Name 
-                                                                        td(style="text-align: left; padding-left: 15px; width: 100%;")
-                                                                            div(id="backend_farm_name")                                                                
-                                                                    tr
-                                                                        td(style="text-align: right")
-                                                                            div(style="color: #ddccbb; font-weight: 400; width: 90px") Field Name 
-                                                                        td(style="text-align: left; padding-left: 15px; width: 100%;")
-                                                                            div(id="backend_field_name")
-                                                                    tr
-                                                                        td(style="text-align: right")
-                                                                            div(style="color: #ddccbb; font-weight: 400; width: 90px") Mission Date 
-                                                                        td(style="text-align: left; padding-left: 15px; width: 100%;")
-                                                                            div(id="backend_mission_date")
-                                                        div(style="height: 5px")
-                                                        table
-                                                            tr
-                                                                td(style="text-align: right")
-                                                                    h(class="header2" style="width: 90px; font-size: 14px") Last Update
-
-                                                                td(style="width: 100%; font-size: 14px; text-align: left; padding-left: 15px;")
-                                                                    h(id="backend_update_time")
 
                                                         hr
 
                                                         table
                                                             tr
                                                                 td(style="text-align: left")
-                                                                    h(class="header2" style="width: 170px") Request Predictions
+                                                                    h(class="header2" style="width: 170px") Fine-Tune
                                                                 td(style="width: 100%")
 
+                                                        button(class="button-green button-green-hover" id="fine_tune_model_button" style="font-size: 16px; width: 260px") Request Fine-Tuning
+                                                        
+
+                                                        div(style="height: 5px")
+
+                                                        hr
+
+                                                        table
+                                                            tr
+                                                                td(style="text-align: left")
+                                                                    h(class="header2" style="width: 170px") Predict
+                                                                td(style="width: 100%")
+
+                                                        div(style="height: 5px")
+                                                        
                                                         div(id="predict_container")
 
                                                         div(style="height: 5px")
 
                                                         div(id="result_container")
-                                                            button(id="request_result_button" class="button-green button-green-hover" style="font-size: 16px; width: 260px;") Full Result
+                                                            button(id="request_result_button" class="button-green button-green-hover" style="font-size: 16px; width: 260px") Saved Result
+
+
+
+
+
+                                                        //- table(class="transparent_table")
+                                                        //-     tr
+                                                        //-         td(style="text-align: left")
+                                                        //-             h(class="header2" style="width: 130px") Model Actions
+                                                        //-         td(style="width: 100%")
+                                                        //-         td
+                                                        //-             div(style="width: 30px")
+                                                        //-                 div(id="status_blob")
+
+
+                                                        //- div(style="height: 80px; border: 1px solid white; border-radius: 10px")
+                                                        //-     div(style="height: 10px")
+                                                        //-     div(id="model_name")
+                                                        //-     div(id="image_set_state")
+                                                        //-     div(id="image_set_state_progress")
+
+                                                        //- div
+
+                                                        //-     button(class="button-green button-green-hover" id="switch_model_button" style="font-size: 16px") Select Model
+
+
+                                                        //-     button(class="button-green button-green-hover" id="fine_tune_model_button" style="font-size: 16px") Fine-Tune Model
+
+                                                        //-     table
+                                                        //-         tr
+                                                        //-             td(style="text-align: left")
+                                                        //-                 h(class="header2" style="width: 170px") Request Predictions
+                                                        //-             td(style="width: 100%")
+
+                                                        //-     div(id="predict_container")
+
+                                                        //-     div(style="height: 5px")
+
+                                                        //-     div(id="result_container")
+                                                        //-         button(id="request_result_button" class="button-green button-green-hover" style="font-size: 16px; width: 260px;") Full Result
+
+
+
+
+
+
+                                                        //- table
+                                                        //-     tr
+                                                        //-         td(style="text-align: left")
+                                                        //-             h(class="header2" style="width: 100px;") Model Actions
+                                                        //-         td(style="width: 100%")
+
+                                                        //-         //- td
+                                                        //-         //-     button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 90px" onclick="change_model()")
+                                                        //-         //-         i(class="fa-solid fa-cube" style="margin-right: 4px") 
+                                                        //-         //-         |
+                                                        //-         //-         | Select 
+
+                                                        //-     button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 90px" onclick="change_model()")
+
+
+                                                        //- table
+                                                        //-     tr
+                                                        //-         td(style="text-align: left")
+                                                        //-             h(class="header2" style="width: 100px;") Model
+                                                        //-         td(style="width: 100%")
+
+                                                        //-         td
+                                                        //-             button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 90px" onclick="change_model()")
+                                                        //-                 i(class="fa-solid fa-cube" style="margin-right: 4px") 
+                                                        //-                 |
+                                                        //-                 | Select 
+
+
+                                                        //- div(style="height: 110px; border: 1px solid white; border-radius: 10px")
+                                                        //-     div(id="no_model_message" style="padding-top: 42px; color: #ddccbb; font-weight: 400" hidden)
+                                                        //-         em No model selected.
+                                                        //-     div(id="model_details" hidden)
+                                                        //-         div(style="height: 10px")
+                                                        //-         div(id="model_name")
+                                                        //-         div(style="height: 10px")
+
+                                                        //-         div(style="border: 1px solid white; width: 250px; margin: 0 auto; height: 45px; border-radius: 25px")
+                                                        //-             div(id="regions_fully_fine_tuned_on" style="padding: 5px 15px; font-size: 14px; color: #ddccbb; font-weight: 400")
+
+
+                                                        //-         table(style="font-size: 14px")
+
+                                                        //-             tr 
+                                                        //-                 td
+                                                        //-                     div(style="height: 3px") 
+                                                        //-                 td
+                                                        //-                     div(style="height: 3px") 
+
+                                                        //-             tr
+                                                        //-                 td(style="text-align: right")
+                                                        //-                     div(style="color: #ddccbb; font-weight: 400; width: 138px") Fine-Tuning Blocked?
+
+                                                        //-                 td(style="text-align: left; padding-left: 15px;")
+                                                        //-                     div(style="width: 55px; display: inline-block")
+                                                        //-                         h(id="train_block_text")
+
+                                                        //-                     span
+                                                        //-                         label(class="small_switch" id="train_block_label")
+                                                        //-                             input(id="train_block_switch" type="checkbox" disabled)
+                                                        //-                             span(class="small_switch_slider round" id="train_block_slider")
+
+                                                        
+                                                        //- div(style="height: 5px")
+                                                        //- div(id="train_block_message" style="height: 10px; font-size: 14px; color: #ed452b") 
+                                                        //- hr
+
+                                                        //- table
+                                                        //-     tr
+                                                        //-         td(style="text-align: left")
+                                                        //-             h(class="header2" style="width: 170px") Request Predictions
+                                                        //-         td(style="width: 100%")
+
+                                                        //- div(id="predict_container")
+
+                                                        //- div(style="height: 5px")
+
+                                                        //- div(id="result_container")
+                                                        //-     button(id="request_result_button" class="button-green button-green-hover" style="font-size: 16px; width: 260px;") Full Result
+
+
+
+
+
+
+                                                        //- table(class="transparent_table")
+                                                        //-     tr
+                                                        //-         td(style="text-align: left")
+                                                        //-             h(class="header2" style="width: 130px") Image Set Status
+                                                        //-         td(style="width: 100%")
+                                                        //-         //- td
+                                                        //-         //-     div(style="width: 30px")
+                                                        //-         //-         div(id="status_blob" onclick="user_health_check()" style="cursor: pointer")
+
+
+                                                        //- div(style="height: 130px; border: 1px solid white; border-radius: 10px")
+                                                        //-     div(id="image_set_state")
+                                                        //-     div(id="image_set_state_progress")
+
+                                                        
+
+
+                                                        //- table(class="transparent_table")
+                                                        //-     tr
+                                                        //-         td(style="text-align: left")
+                                                        //-             h(class="header2" style="width: 130px") Backend Status
+                                                        //-         td(style="width: 100%")
+                                                        //-         td
+                                                        //-             div(style="width: 30px")
+                                                        //-                 div(id="status_blob" onclick="user_health_check()" style="cursor: pointer")
+
+
+                                                        //- div(style="height: 130px; border: 1px solid white; border-radius: 10px")
+                                                        //-     div(id="backend_details")
+                                                        //-         div(style="height: 10px")
+                                                        //-         div(id="backend_status")
+                                                        //-         div(id="backend_status_details" style="font-size: 13px; height: 15px")
+                                                        //-         div(style="height: 5px")
+                                                        //-         table(class="transparent_table" style="font-size: 14px")
+
+                                                        //-             tr
+                                                        //-                 td(style="text-align: right")
+                                                        //-                     div(style="color: #ddccbb; font-weight: 400; width: 90px") Username 
+                                                        //-                 td(style="text-align: left; padding-left: 15px; width: 100%;")
+                                                        //-                     div(id="backend_username" )
+                                                        //-             tr
+                                                        //-                 td(style="text-align: right")
+                                                        //-                     div(style="color: #ddccbb; font-weight: 400; width: 90px") Farm Name 
+                                                        //-                 td(style="text-align: left; padding-left: 15px; width: 100%;")
+                                                        //-                     div(id="backend_farm_name")                                                                
+                                                        //-             tr
+                                                        //-                 td(style="text-align: right")
+                                                        //-                     div(style="color: #ddccbb; font-weight: 400; width: 90px") Field Name 
+                                                        //-                 td(style="text-align: left; padding-left: 15px; width: 100%;")
+                                                        //-                     div(id="backend_field_name")
+                                                        //-             tr
+                                                        //-                 td(style="text-align: right")
+                                                        //-                     div(style="color: #ddccbb; font-weight: 400; width: 90px") Mission Date 
+                                                        //-                 td(style="text-align: left; padding-left: 15px; width: 100%;")
+                                                        //-                     div(id="backend_mission_date")
+                                                        //- div(style="height: 5px")
+                                                        //- table
+                                                        //-     tr
+                                                        //-         td(style="text-align: right")
+                                                        //-             h(class="header2" style="width: 90px; font-size: 14px") Last Update
+
+                                                        //-         td(style="width: 100%; font-size: 14px; text-align: left; padding-left: 15px;")
+                                                        //-             h(id="backend_update_time")
+
+                                                        //- hr
 
 
                                                         hr

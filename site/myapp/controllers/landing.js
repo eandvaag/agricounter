@@ -16,6 +16,7 @@ var socket_api = require('../socket_api');
 
 const USR_DATA_ROOT = path.join("usr", "data");
 const USR_SHARED_ROOT = path.join("usr", "shared");
+// const JOBS_DIR = path.join(USR_SHARED_ROOT, "jobs");
 
 let active_uploads = {};
 var Mutex = require('async-mutex').Mutex;
@@ -79,19 +80,19 @@ const init_cameras = {
 
 
 const default_overlay_appearance = {
-    "draw_order": ["region_of_interest", "training_region", "test_region", "annotation", "prediction"],
+    "draw_order": ["region_of_interest", "fine_tuning_region", "test_region", "annotation", "prediction"],
     "style": {
         "annotation": "strokeRect",
         "prediction": "strokeRect",
         "region_of_interest": "strokeRect",
-        "training_region": "strokeRect",
+        "fine_tuning_region": "strokeRect",
         "test_region": "strokeRect"
     },
     "colors": {
         "annotation": ["#0080ff", "#ff0033", "#59ff00", "#8000ff", "#ff6200", "#00ff77", "#fb00ff", "#ffff00", "#00ffe5"],
         "prediction": ["#7dbeff", "#ff8099", "#acff80", "#bf80ff", "#ffb080", "#80ffbb", "#fd80ff", "#ffff80", "#80fff2"],
         "region_of_interest": "#a291ba",
-        "training_region": "#a4ba91",
+        "fine_tuning_region": "#a4ba91",
         "test_region": "#91bab9"
     }
 };
@@ -103,14 +104,6 @@ const default_overlay_appearance = {
 
 
 
-
-
-
-
-
-
-
-let scheduler_alive = true;
 
 
 Date.prototype.isValid = function () {
@@ -128,14 +121,10 @@ if (process.env.NODE_ENV === "docker") {
 
     scheduler.on('close', (code) => {
         console.log(`Scheduler closed with code ${code}.`);
-        scheduler_alive = false;
-        socket_api.dead_scheduler();
     });
 
     scheduler.on('exit', (code) => {
         console.log(`Scheduler exited with code ${code}.`);
-        scheduler_alive = false;
-        socket_api.dead_scheduler();
     });
 
     scheduler.stderr.on('data', (data) => {
@@ -769,7 +758,7 @@ exports.post_overlay_appearance_change = function(req, res, next) {
         return res.json(response);
     }
 
-    let overlay_keys = ["annotation", "prediction", "region_of_interest", "training_region", "test_region"];
+    let overlay_keys = ["annotation", "prediction", "region_of_interest", "fine_tuning_region", "test_region"];
     for (let overlay_key of overlay_keys) {
 
         if (!(overlay_appearance["draw_order"]).includes(overlay_key)) {
@@ -1001,7 +990,6 @@ exports.get_workspace = function(req, res, next) {
                 data["predictions"] = predictions;
                 data["overlay_appearance"] = overlay_appearance;
                 data["maintenance_time"] = maintenance_time;
-                data["scheduler_alive"] = scheduler_alive;
 
                 res.render("workspace", {username: req.session.user.username, data: data});
 
@@ -1015,33 +1003,66 @@ exports.get_workspace = function(req, res, next) {
 
 function notify_scheduler(request) {
 
-    let data = JSON.stringify(request);
+    let response = {};
 
-    let options = {
-        hostname: process.env.AC_IP,
-        port: parseInt(process.env.AC_PY_PORT),
-        path: process.env.AC_PATH + '/add_request',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': data.length
-        }
-    };
+    return new Promise((resolve, reject) => {
 
-    let req = http.request(options, res => {
-        console.log(`statusCode: ${res.statusCode}`);
+        let data = JSON.stringify(request);
 
-        res.on("data", d => {
-            process.stdout.write(d);
+        let options = {
+            hostname: process.env.AC_IP,
+            port: parseInt(process.env.AC_PY_PORT),
+            path: process.env.AC_PATH + '/add_request',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': data.length
+            }
+        };
+
+        let req = http.request(options, res => {
+            console.log(`statusCode: ${res.statusCode}`);
+
+
+            let chunks = [];
+
+            res.on("data", function(chunk) {
+                // process.stdout.write(d);
+                chunks.push(chunk);
+            });
+
+            res.on("end", function() {
+                let body = Buffer.concat(chunks);
+                let result = JSON.parse(body);
+                console.log("Got result", result);
+                if (!("message" in result)) {
+                    response.error = true;
+                    response.message = "Got an unexpected response from the job scheduler.";
+                    resolve(response);
+                }
+                if (result["message"] === "ok") {
+                    response.error = false;
+                    response.message = "The job was successfully enqueued.";
+                    resolve(response);
+                }
+                else {
+                    response.error = true;
+                    response.message = result["message"];
+                    resolve(response);
+                }
+            });
         });
-    });
 
-    req.on("error", error => {
-        console.log(error);
-    });
+        req.on("error", error => {
+            console.log(error);
+            response.error = true;
+            response.message = "Failed to contact the job scheduler.";
+            resolve(response);
+        });
 
-    req.write(data);
-    req.end();
+        req.write(data);
+        req.end();
+    });
 }
 
 function results_name_is_valid(results_name) {
@@ -1111,38 +1132,6 @@ function get_models(model_paths, username, farm_name, field_name, mission_date, 
 
 
 
-function box_intersects_region(box, region) {
-    return ((box[1] < region[3] && box[3] > region[1]) && (box[0] < region[2] && box[2] > region[0]));
-}
-
-function get_num_useable_boxes(annotations) {
-    let num_boxes = 0;
-    for (let image_name of Object.keys(annotations)) {
-        for (let i = 0; i < annotations[image_name]["boxes"].length; i++) {
-            let intersects = false;
-            for (let j = 0; j < annotations[image_name]["training_regions"].length; j++) {
-                if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["training_regions"][j])) {
-                    intersects = true;
-                    break;
-                }
-            }
-            if (!(intersects)) {
-                for (let j = 0; j < annotations[image_name]["test_regions"].length; j++) {
-                    if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["test_regions"][j])) {
-                        intersects = true;
-                        break;
-                    }
-                }
-            }
-            if (intersects) {
-                num_boxes++;
-            }
-        }
-    }
-    return num_boxes;
-}
-
-
 exports.post_annotations_upload = function(req, res, next) {
     let response = {};
 
@@ -1208,7 +1197,6 @@ exports.post_annotations_upload = function(req, res, next) {
 
     new_annotations = existing_annotations;
 
-    let num_training_regions_increased = false;
     for (let entry_name of Object.keys(annotations)) {
 
         let image_name;
@@ -1250,7 +1238,7 @@ exports.post_annotations_upload = function(req, res, next) {
             "boxes": [],
             "classes": [],
             "regions_of_interest": [],
-            "training_regions": [],
+            "fine_tuning_regions": [],
             "test_regions": [],
             "source": "uploaded"
         };
@@ -1474,22 +1462,18 @@ exports.post_annotations_upload = function(req, res, next) {
                 //     }
                 // }
 
-                let internal_annotation_key;
-                if (annotation_key === "annotations") {
-                    internal_annotation_key = "boxes";
-                }
-                else if (annotation_key === "regions_of_interest") {
-                    internal_annotation_key = "regions_of_interest";
-                }
-                else if (annotation_key === "fine_tuning_regions") {
-                    internal_annotation_key = "training_regions";
-                    num_training_regions_increased = true;
-                }
-                else {
-                    internal_annotation_key = "test_regions"
-                }
+                // let internal_annotation_key;
+                // if (annotation_key === "annotations") {
+                //     internal_annotation_key = "boxes";
+                // }
+                // else if (annotation_key === "regions_of_interest") {
+                //     internal_annotation_key = "regions_of_interest";
+                // }
+                // else {
+                //     internal_annotation_key = "test_regions"
+                // }
 
-                new_annotations[image_name][internal_annotation_key].push([
+                new_annotations[image_name][annotation_key].push([
                     y_min, x_min, y_max, x_max
                 ]);
             }
@@ -1505,22 +1489,11 @@ exports.post_annotations_upload = function(req, res, next) {
         });
     }
 
-    if (num_training_regions_increased) {
-        let scheduler_request = {
-            "username": req.session.user.username,
-            "farm_name": farm_name,
-            "field_name": field_name,
-            "mission_date": mission_date,
-            "request_type": "training"
-        };
-        notify_scheduler(scheduler_request);
-    }
-
 
     let empty = true;
             
     for (let image_name of Object.keys(new_annotations)) {
-        if (new_annotations[image_name]["training_regions"].length > 0) {
+        if (new_annotations[image_name]["fine_tuning_regions"].length > 0) {
             empty = false;
             break;
         }
@@ -1633,7 +1606,7 @@ function verify_tags(tags) {
     // TODO
 }
 
-exports.post_workspace = function(req, res, next) {
+exports.post_workspace = async function(req, res, next) {
 
     let response = {};
 
@@ -1695,21 +1668,10 @@ exports.post_workspace = function(req, res, next) {
                 return res.json(response);
             }
 
-            if (req.body.num_training_regions_increased === "yes") {
-                let scheduler_request = {
-                    "username": req.session.user.username,
-                    "farm_name": farm_name,
-                    "field_name": field_name,
-                    "mission_date": mission_date,
-                    "request_type": "training"
-                };
-                notify_scheduler(scheduler_request);
-            }
-
             let empty = true;
             
             for (let image_name of Object.keys(annotations)) {
-                if (annotations[image_name]["training_regions"].length > 0) {
+                if (annotations[image_name]["fine_tuning_regions"].length > 0) {
                     empty = false;
                     break;
                 }
@@ -1840,20 +1802,10 @@ exports.post_workspace = function(req, res, next) {
 
             download_annotations[image_name]["classes"] = annotations[image_name]["classes"];
 
-            for (let annotation_key of ["boxes", "training_regions", "test_regions"]) {
+            for (let annotation_key of ["boxes", "fine_tuning_regions", "test_regions"]) {
 
-                let external_annotation_key;
-                if (annotation_key === "boxes") {
-                    external_annotation_key = "annotations";
-                }
-                else if (annotation_key === "training_regions") {
-                    external_annotation_key = "fine_tuning_regions";
-                }
-                else {
-                    external_annotation_key = "test_regions";
-                }
 
-                download_annotations[image_name][external_annotation_key] = []
+                download_annotations[image_name][annotation_key] = []
 
                 for (let i = 0; i < annotations[image_name][annotation_key].length; i++) {
                     let box = annotations[image_name][annotation_key][i];
@@ -1861,7 +1813,7 @@ exports.post_workspace = function(req, res, next) {
                         box[1], box[0], box[3], box[2]
                     ];
 
-                    download_annotations[image_name][external_annotation_key].push(download_box);
+                    download_annotations[image_name][annotation_key].push(download_box);
                 }
             }
         }
@@ -2099,19 +2051,92 @@ exports.post_workspace = function(req, res, next) {
         response.error = false;
         return res.json(response);
     }
+    else if (action === "fine_tune") {
+
+        console.log("got to fine_tune");
+
+
+        // let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", 
+        //                                 farm_name, field_name, mission_date);
+
+        
+        // let ret = set_enqueued_state(image_set_dir, "Fine-Tuning");
+        // if (ret != 0) {
+        //     console.log(error);
+        //     response.message = "Failed to set state for fine-tuning request.";
+        //     response.error = true;
+        //     return res.json(response);
+        // }
+
+
+        // let request_uuid = uuidv4().toString();
+        let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+        let request = {
+            // "uuid": request_uuid,
+            "key": job_key,
+            "task": "fine_tune",
+            "request_time": Math.floor(Date.now() / 1000),
+            "username": req.session.user.username,
+            "farm_name": farm_name,
+            "field_name": field_name,
+            "mission_date": mission_date
+        };
+
+
+        // let request_path = path.join(JOBS_DIR, request_uuid + ".json");
+
+        // try {
+        //     fs.writeFileSync(request_path, JSON.stringify(request));
+        // }
+        // catch (error) {
+        //     console.log(error);
+        //     response.message = "Failed to create fine-tuning request.";
+        //     response.error = true;
+        //     return res.json(response);
+        // }
+
+
+        // let scheduler_request = {
+        //     "uuid": request_uuid
+        // };
+        response = await notify_scheduler(request); //scheduler_request);
+
+        return res.json(response);
+
+    }
     else if (action === "predict") {
 
         console.log("got to predict");
+
+        // let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username,
+        //     "image_sets", farm_name, field_name, mission_date);
+
+
+        // let ret = set_enqueued_state(image_set_dir, "Predicting");
+        // if (ret != 0) {
+        //     console.log(error);
+        //     response.message = "Failed to set state for prediction request.";
+        //     response.error = true;
+        //     return res.json(response);
+        // }
+
 
         let image_names = JSON.parse(req.body.image_names);
         let regions = JSON.parse(req.body.regions)
         let save_result = req.body.save_result === "True";
         let regions_only = req.body.regions_only === "True";
         let calculate_vegetation_coverage = req.body.calculate_vegetation_coverage === "True";
-        let request_uuid = uuidv4().toString();
+        // let request_uuid = uuidv4().toString();
+        let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
         let request = {
-            "request_uuid": request_uuid,
-            "start_time": Math.floor(Date.now() / 1000),
+            // "uuid": request_uuid,
+            "key": job_key,
+            "task": "predict",
+            "request_time": Math.floor(Date.now() / 1000),
+            "username": req.session.user.username,
+            "farm_name": farm_name,
+            "field_name": field_name,
+            "mission_date": mission_date,
             "image_names": image_names,
             "regions": regions,
             "save_result": save_result,
@@ -2119,7 +2144,6 @@ exports.post_workspace = function(req, res, next) {
             "calculate_vegetation_coverage": calculate_vegetation_coverage
         };
 
-        let request_path;
         if (save_result) {
             let results_name = req.body.results_name;
             if (!(results_name_is_valid(results_name))) {
@@ -2137,42 +2161,34 @@ exports.post_workspace = function(req, res, next) {
 
             request["results_name"] = results_name;
             request["results_comment"] = results_comment;
-
-            request_path = path.join(USR_DATA_ROOT, req.session.user.username,
-                "image_sets", farm_name, field_name, mission_date,
-                "model", "prediction", "image_set_requests", "pending", request_uuid + ".json");            
-        }
-        else {
-
-            request_path = path.join(USR_DATA_ROOT, req.session.user.username,
-                                "image_sets", farm_name, field_name, mission_date,
-                                "model", "prediction", "image_requests", request_uuid + ".json");
+      
         }
 
-        try {
-            fs.writeFileSync(request_path, JSON.stringify(request));
-        }
-        catch (error) {
-            console.log(error);
-            response.message = "Failed to create prediction request.";
-            response.error = true;
-            return res.json(response);
-        }
 
-        if (save_result) {
-            socket_api.results_notification(req.session.user.username, farm_name, field_name, mission_date);
-        }
+        // let request_path = path.join(JOBS_DIR, request_uuid + ".json");
 
-        let scheduler_request = {
-            "username": req.session.user.username,
-            "farm_name": farm_name,
-            "field_name": field_name,
-            "mission_date": mission_date,
-            "request_type": "prediction"
-        };
-        notify_scheduler(scheduler_request);
+        // try {
+        //     fs.writeFileSync(request_path, JSON.stringify(request));
+        // }
+        // catch (error) {
+        //     console.log(error);
+        //     response.message = "Failed to create prediction request.";
+        //     response.error = true;
+        //     return res.json(response);
+        // }
 
-        response.error = false;
+        // // if (save_result) {
+        // //     socket_api.results_notification(req.session.user.username, farm_name, field_name, mission_date);
+        // // }
+
+
+        // let scheduler_request = {
+        //     "uuid": request_uuid
+        // };
+
+        response = await notify_scheduler(request);
+
+        // response.error = false;
         return res.json(response);
     }
     else if (action === "retrieve_predictions") {
@@ -2182,8 +2198,13 @@ exports.post_workspace = function(req, res, next) {
 
         for (let image_name of image_names) {
 
-            let prediction_path = path.join(image_set_dir, "model", "prediction",
-                    "images", image_name, "predictions.json");
+            let prediction_path = path.join(
+                image_set_dir, 
+                "model", 
+                "prediction",
+                image_name, 
+                "predictions.json"
+            );
 
 
             let image_predictions;
@@ -2223,119 +2244,79 @@ exports.post_workspace = function(req, res, next) {
             return res.json(response);
         });
     }
-    else if (action === "block_training") {
-
-        let block_op = req.body.block_op;
-        let usr_block_path = path.join(USR_DATA_ROOT, req.session.user.username,
-            "image_sets", farm_name, field_name, mission_date,
-            "model", "training", "usr_block.json");
-        if (block_op === "block") {
-            // create block file
-            console.log("creating usr block file");
-            try {
-                fs.writeFileSync(usr_block_path, JSON.stringify({}));
-            }
-            catch (error) {
-                console.log(error);
-                response.error = true;
-                return res.json(response);
-            }
-        }
-        else {
-            // delete block file
-            console.log("deleting usr block file");
-            try {
-                fs.unlinkSync(usr_block_path);
-            }
-            catch (error) {
-                console.log(error);
-                response.error = true;
-                return res.json(response);                
-            }
-
-            let scheduler_request = {
-                "username": req.session.user.username,
-                "farm_name": farm_name,
-                "field_name": field_name,
-                "mission_date": mission_date,
-                "request_type": "training"
-            };
-            notify_scheduler(scheduler_request);
-        }
-
-        response.error = false;
-        return res.json(response);
-    }
-
-    else if (action === "switch_to_random_model") {
-        let num_classes = req.body.num_classes;
-        let switch_req_path = path.join(image_set_dir, "model", "switch_request.json");
-
-        let switch_request = {
-            "model_creator": "",
-            "model_name": "random_weights_" + num_classes
-        };
-
-        try {
-            fs.writeFileSync(switch_req_path, JSON.stringify(switch_request));
-        }
-        catch (error) {
-            console.log(error);
-            response.message = "Failed to create switch request.";
-            response.error = true;
-            return res.json(response);
-        }
-        let scheduler_request = {
-            "username": req.session.user.username,
-            "farm_name": farm_name,
-            "field_name": field_name,
-            "mission_date": mission_date,
-            "request_type": "switch"
-        };
-        notify_scheduler(scheduler_request);
-
-        response.error = false;
-        return res.json(response);
-
-    }
     else if (action === "switch_model") {
 
-        let model_creator = req.body.model_creator;
-        let model_name = req.body.model_name;
 
-        let switch_req_path = path.join(image_set_dir, "model", "switch_request.json");
+        // let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username,
+        //                               "image_sets", farm_name, field_name, mission_date);
 
-        let switch_request = {
-            "model_creator": model_creator,
-            "model_name": model_name,
-        };
 
-        try {
-            fs.writeFileSync(switch_req_path, JSON.stringify(switch_request));
-        }
-        catch (error) {
-            console.log(error);
-            response.message = "Failed to create switch request.";
-            response.error = true;
+        // let ret = set_enqueued_state(image_set_dir, "Switching");
+        // if (ret != 0) {
+        //     console.log(error);
+        //     response.message = "Failed to set state for switch request.";
+        //     response.error = true;
+        //     return res.json(response);
+        // }
+
+
+        let switch_command = "python ../../backend/src/switch.py " + 
+                             req.session.user.username + " " +
+                             farm_name + " " + 
+                             field_name + " " + 
+                             mission_date + " " + 
+                             req.body.model_name + " "
+                             req.body.model_creator;
+                             
+
+        let result = exec(switch_command, {shell: "/bin/bash"}, function (error, stdout, stderr) {
+            if (error) {
+                console.log(error.stack);
+                console.log('Error code: '+error.code);
+                console.log('Signal received: '+error.signal);
+                response.error = true;
+            }
+            else {
+                response.error = false;
+            }
             return res.json(response);
-        }
-        let scheduler_request = {
-            "username": req.session.user.username,
-            "farm_name": farm_name,
-            "field_name": field_name,
-            "mission_date": mission_date,
-            "request_type": "switch"
-        };
-        notify_scheduler(scheduler_request);
-
-        response.error = false;
-        return res.json(response);
+        });
 
     }
 }
 
 
+// function set_enqueued_state(image_set_dir, state_name) {
 
+//     let status_path = path.join(image_set_dir, "model", "status.json");
+//     let status;
+//     try {
+//         status = JSON.parse(fs.readFileSync(status_path, 'utf8'));
+//     }
+//     catch (error) {
+//         response.error = true;
+//         return -1;
+//     }
+
+//     if (status["state_name"] !== "Idle" || status["error_message"] !== "") {
+//         return -1; 
+//     }
+
+//     status["state_name"] = state_name;
+//     status["progress"] = "Enqueued";
+//     status["error_message"] = "";
+//     status["prediction_image_names"] = "";
+
+
+//     try {d
+//         fs.writeFileSync(status_path, JSON.stringify(status));
+//     }
+//     catch (error) {
+//         return -1;
+//     }
+
+//     return 0;
+// }
 
 function isNumeric(str) {
     if (typeof str != "string") return false // we only process strings!  
@@ -2938,7 +2919,7 @@ exports.post_image_set_upload = async function(req, res, next) {
 }
 
 
-exports.post_home = function(req, res, next) {
+exports.post_home = async function(req, res, next) {
 
     let action = req.body.action;
     let response = {};
@@ -3205,13 +3186,13 @@ exports.post_home = function(req, res, next) {
             "num_annotations": 0,
             "num_images": 0,
             "num_regions_of_interest": 0,
-            "num_training_regions": 0,
+            "num_fine_tuning_regions": 0,
             "num_test_regions": 0
         };
         for (let image_name of Object.keys(annotations)) {
             annotation_info["num_annotations"] += annotations[image_name]["boxes"].length;
             annotation_info["num_regions_of_interest"] += annotations[image_name]["regions_of_interest"].length;
-            annotation_info["num_training_regions"] += annotations[image_name]["training_regions"].length;
+            annotation_info["num_fine_tuning_regions"] += annotations[image_name]["fine_tuning_regions"].length;
             annotation_info["num_test_regions"] += annotations[image_name]["test_regions"].length;
             annotation_info["num_images"]++;
         }
@@ -3353,7 +3334,7 @@ exports.post_home = function(req, res, next) {
             if (socket_api.workspace_id_to_key[socket_id] === key) {
                 console.log("The workspace is in use", key);
                 response.error = true;
-                response.message = "The requested annotation file is currently in use. Please try again later.";
+                response.message = "This workspace is currently in use. Please try again later.";
                 return res.json(response);
             }
         }
@@ -3394,13 +3375,13 @@ exports.post_home = function(req, res, next) {
 
         let model_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
                                   farm_name, field_name, mission_date, "model");
-        let prediction_dir = path.join(model_dir, "prediction");
         let results_dir = path.join(model_dir, "results");
 
-        response.pending_results = [];
         response.aborted_results = [];
         response.completed_results = [];
-        glob(path.join(prediction_dir, "image_set_requests", "pending", "*"), function(error, pending_paths) {
+
+
+        glob(path.join(results_dir, "aborted", "*"), function(error, aborted_dirs) {
 
             if (error) {
                 console.log(error);
@@ -3408,28 +3389,29 @@ exports.post_home = function(req, res, next) {
                 return res.json(response);
             }
 
-            for (let pending_path of pending_paths) {
+            for (let aborted_dir of aborted_dirs) {
+                let request_path = path.join(aborted_dir, "request.json");
                 try {
-                    response.pending_results.push(JSON.parse(fs.readFileSync(pending_path, 'utf8')));
+                    response.aborted_results.push(JSON.parse(fs.readFileSync(request_path, 'utf8')));
                 }
                 catch (error) {
                     console.log(error);
-                    // response.error = true;
-                    // return res.json(response);
+                    response.error = true;
+                    return res.json(response);
                 }
             }
 
-            glob(path.join(prediction_dir, "image_set_requests", "aborted", "*"), function(error, aborted_paths) {
-
+            glob(path.join(results_dir, "available", "*"), function(error, completed_dirs) {
                 if (error) {
                     console.log(error);
                     response.error = true;
                     return res.json(response);
                 }
 
-                for (let aborted_path of aborted_paths) {
+                for (let completed_dir of completed_dirs) {
+                    let request_path = path.join(completed_dir, "request.json");
                     try {
-                        response.aborted_results.push(JSON.parse(fs.readFileSync(aborted_path, 'utf8')));
+                        response.completed_results.push(JSON.parse(fs.readFileSync(request_path, 'utf8')));
                     }
                     catch (error) {
                         console.log(error);
@@ -3438,27 +3420,8 @@ exports.post_home = function(req, res, next) {
                     }
                 }
 
-                glob(path.join(results_dir, "*"), function(error, completed_dirs) {
-                    if (error) {
-                        console.log(error);
-                        response.error = true;
-                        return res.json(response);
-                    }
-
-                    for (let completed_dir of completed_dirs) {
-                        try {
-                            response.completed_results.push(JSON.parse(fs.readFileSync(path.join(completed_dir, "request.json"), 'utf8')));
-                        }
-                        catch (error) {
-                            console.log(error);
-                            response.error = true;
-                            return res.json(response);
-                        }
-                    }
-
-                    response.error = false;
-                    return res.json(response);
-                });
+                response.error = false;
+                return res.json(response);
             });
         });
 
@@ -3482,36 +3445,26 @@ exports.post_home = function(req, res, next) {
             return res.json(response);
         }
 
+        let result_dir;
         if (result_type === "completed") {
-
-            let result_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
-                                  farm_name, field_name, mission_date, "model", "results", result_id);
-
-            try {
-                fs.rmSync(result_dir, { recursive: true, force: false });
-            }
-            catch (error) {
-                console.log(error);
-                response.message = "Failed to destroy result.";
-                response.error = true;
-                return res.json(response);
-            }
+            result_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+            farm_name, field_name, mission_date, "model", "results", "available", result_id);
         }
-        else if (result_type === "aborted") {
-            
-            let request_path = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
-                                   farm_name, field_name, mission_date, "model", "prediction", 
-                                   "image_set_requests", "aborted", result_id + ".json");
-            try {
-                fs.unlinkSync(request_path);
-            }
-            catch (error) {
-                console.log(error);
-                response.message = "Failed to destroy result.";
-                response.error = true;
-                return res.json(response);
-            }
+        else {
+            result_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+            farm_name, field_name, mission_date, "model", "results", "aborted", result_id);
         }
+
+        try {
+            fs.rmSync(result_dir, { recursive: true, force: false });
+        }
+        catch (error) {
+            console.log(error);
+            response.message = "Failed to destroy result.";
+            response.error = true;
+            return res.json(response);
+        }
+
 
         socket_api.results_notification(req.session.user.username, farm_name, field_name, mission_date);
 
@@ -3870,7 +3823,7 @@ exports.post_home = function(req, res, next) {
             "public": req.body.is_public,
             "object_classes": model_classes,
             "image_sets": submission_image_sets,
-            "submission_time": parseInt(Date.now() / 1000)
+            "submission_time": Math.floor(Date.now() / 1000)
         };
 
         let log_path = path.join(pending_model_path, "log.json");
@@ -3891,19 +3844,39 @@ exports.post_home = function(req, res, next) {
         }
 
 
-        let scheduler_request = {
+
+        // let request_uuid = uuidv4().toString();
+        let job_key = req.session.user.username;
+
+        let request = {
+            // "uuid": request_uuid,
+            "key": job_key,
+            "task": "train",
+            "request_time": Math.floor(Date.now() / 1000),
             "model_name": req.body.model_name,
-            "model_creator": req.session.user.username,
-            "request_type": "baseline_training",
-            "public": req.body.is_public,
-        };
+            "is_public": req.body.is_public,
+        }
 
-        console.log("scheduler_request", scheduler_request);
 
-        notify_scheduler(scheduler_request);
+        // let request_path = path.join(JOBS_DIR, request_uuid + ".json");
 
-        response.error = false;
-        response.message = "Your training request has been successfully submitted.";
+        // try {
+        //     fs.writeFileSync(request_path, JSON.stringify(request));
+        // }
+        // catch (error) {
+        //     console.log(error);
+        //     response.message = "Failed to create training request.";
+        //     response.error = true;
+        //     return res.json(response);
+        // }
+
+
+        // let scheduler_request = {d
+        //     "uuid": request_uuid
+        // };
+        response = await notify_scheduler(request);
+
+        // response.error = false;
         return res.json(response);
 
     }

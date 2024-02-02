@@ -38,6 +38,11 @@ def reset_loss_record(image_set_dir):
 #def update_training_tf_record(username, farm_name, field_name, mission_date, training_image_names):
 
 # def update_training_tf_records(image_set_dir, changed_training_image_names, annotations):
+    
+
+
+
+
 def update_training_tf_records(image_set_dir, annotations):
     logger = logging.getLogger(__name__)
 

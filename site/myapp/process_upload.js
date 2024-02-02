@@ -33,7 +33,7 @@ function upload_notify(username, farm_name, field_name, mission_date) {
         username: username,
         farm_name: farm_name,
         field_name: field_name,
-        mission_date: mission_date
+        mission_date: mission_date,
     });
 
     let options = {
@@ -44,6 +44,7 @@ function upload_notify(username, farm_name, field_name, mission_date) {
         headers: {
             'Content-Type': 'application/json',
             'Content-Length': data.length,
+            'API-Key': process.env.AC_API_KEY
         },
         rejectUnauthorized: false
     };
@@ -92,18 +93,22 @@ async function process_upload(username, farm_name, field_name, mission_date, obj
     let annotations_dir = path.join(mission_dir, "annotations");
     let metadata_dir = path.join(mission_dir, "metadata");
     
-    let patches_dir = path.join(mission_dir, "patches");
+    
     let excess_green_dir = path.join(mission_dir, "excess_green");
 
     let model_dir = path.join(mission_dir, "model");
+    let patches_dir = path.join(model_dir, "patches");
     let training_dir = path.join(model_dir, "training");
     let prediction_dir = path.join(model_dir, "prediction");
-    let image_requests_dir = path.join(prediction_dir, "image_requests");
-    let image_set_requests_dir = path.join(prediction_dir, "image_set_requests");
-    let pending_dir = path.join(image_set_requests_dir, "pending");
-    let aborted_dir = path.join(image_set_requests_dir, "aborted");
+    // let prediction_images_dir = path.join(prediction_dir, "images");
+    // let image_requests_dir = path.join(prediction_dir, "image_requests");
+    // let image_set_requests_dir = path.join(prediction_dir, "image_set_requests");
+    // let pending_dir = path.join(image_set_requests_dir, "pending");
+    // let aborted_dir = path.join(image_set_requests_dir, "aborted");
     let weights_dir = path.join(model_dir, "weights");
     let results_dir = path.join(model_dir, "results");
+    let results_available_dir = path.join(model_dir, "results", "available");
+    let results_aborted_dir = path.join(model_dir, "results", "aborted");
 
 
     glob(path.join(images_dir, "*"), function(error, image_paths) {
@@ -150,17 +155,19 @@ async function process_upload(username, farm_name, field_name, mission_date, obj
             fs.mkdirSync(dzi_images_dir, { recursive: true });
             fs.mkdirSync(annotations_dir, { recursive: true });
             fs.mkdirSync(metadata_dir, { recursive: true });
-            fs.mkdirSync(patches_dir, { recursive: true });
             fs.mkdirSync(excess_green_dir, { recursive: true });
             fs.mkdirSync(model_dir, { recursive: true });
+            fs.mkdirSync(patches_dir, { recursive: true });
             fs.mkdirSync(training_dir, { recursive: true });
             fs.mkdirSync(prediction_dir, { recursive: true });
-            fs.mkdirSync(image_requests_dir, { recursive: true });
-            fs.mkdirSync(image_set_requests_dir, { recursive: true });
-            fs.mkdirSync(pending_dir, { recursive: true });
-            fs.mkdirSync(aborted_dir, { recursive: true });
+            // fs.mkdirSync(image_requests_dir, { recursive: true });
+            // fs.mkdirSync(image_set_requests_dir, { recursive: true });
+            // fs.mkdirSync(pending_dir, { recursive: true });
+            // fs.mkdirSync(aborted_dir, { recursive: true });
             fs.mkdirSync(weights_dir, { recursive: true });
             fs.mkdirSync(results_dir, { recursive: true});
+            fs.mkdirSync(results_available_dir, { recursive: true});
+            fs.mkdirSync(results_aborted_dir, { recursive: true});
         }
         catch (error) {
             write_and_notify(upload_status_path, {"status": "failed", "error": error.toString()}, notify_data);
@@ -168,9 +175,14 @@ async function process_upload(username, farm_name, field_name, mission_date, obj
         }
 
         let status = {
-            "model_name": "---",
-            "model_creator": "---",
-            "num_regions_fully_trained_on": 0
+            "model_name": "",
+            "model_creator": "",
+            // "num_regions_fully_trained_on": 0,
+            "state_name": "Idle",
+            "progress": "",
+            "error_message": "",
+            "prediction_image_names": ""
+
         };
 
         let status_path = path.join(model_dir, "status.json");
@@ -191,7 +203,7 @@ async function process_upload(username, farm_name, field_name, mission_date, obj
                 "boxes": [],
                 "classes": [],
                 "regions_of_interest": [],
-                "training_regions": [],
+                "fine_tuning_regions": [],
                 "test_regions": [],
                 "source": "NA"
             }

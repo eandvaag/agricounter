@@ -70,6 +70,7 @@ export AC_IP="YOUR_IP_ADDRESS_HERE"
 export AC_PORT="8110"
 export AC_PY_PORT="8111"
 export AC_PATH="/agricounter"
+export AC_API_KEY="YOUR_SECRET_API_KEY_HERE"
 ```
 
 

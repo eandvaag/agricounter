@@ -38,7 +38,7 @@ def create_vegetation_record_for_orthomosaic(image_set_dir, excess_green_record,
         delayed(get_vegetation_percentages_for_chunk)(
             excess_green_record, metadata, annotations, predictions, image.image_path, chunk_coords) for chunk_coords in chunk_coords_lst)
 
-    region_keys = ["regions_of_interest", "training_regions", "test_regions"]
+    region_keys = ["regions_of_interest", "fine_tuning_regions", "test_regions"]
     cls_names = metadata["object_classes"] + ["All Classes"]
 
     vegetation_record = {}
@@ -130,14 +130,14 @@ def get_vegetation_percentages_for_chunk(excess_green_record, metadata, annotati
     #     "vegetation_percentage": {
     #         "chunk": chunk_vegetation_pixel_count,
     #         "regions_of_interest": [],
-    #         "training_regions": [],
+    #         "fine_tuning_regions": [],
     #         "test_regions": []
     #         # "tiles": []
     #     },
     #     "obj_vegetation_percentage": {
     #         "chunk": obj_chunk_vegetation_pixel_count,
     #         "regions_of_interest": [],
-    #         "training_regions": [],
+    #         "fine_tuning_regions": [],
     #         "test_regions": []
     #         # "tiles": []
     #     }
@@ -148,18 +148,18 @@ def get_vegetation_percentages_for_chunk(excess_green_record, metadata, annotati
         "vegetation_pixel_counts": {
             "chunk": chunk_vegetation_pixel_count,
             "regions_of_interest": [],
-            "training_regions": [],
+            "fine_tuning_regions": [],
             "test_regions": []
         },
         "obj_vegetation_pixel_counts": {},
         #     "chunk": obj_chunk_vegetation_pixel_count,
         #     "regions_of_interest": [],
-        #     "training_regions": [],
+        #     "fine_tuning_regions": [],
         #     "test_regions": []
         # },
         "area_pixel_counts": {
             "regions_of_interest": [],
-            "training_regions": [],
+            "fine_tuning_regions": [],
             "test_regions": []
         }
     }
@@ -195,17 +195,17 @@ def get_vegetation_percentages_for_chunk(excess_green_record, metadata, annotati
     # result = {
     #     "vegetation_percentage": {
     #         "chunk": chunk_vegetation_pixel_count,
-    #         "training_regions": [],
+    #         "fine_tuning_regions": [],
     #         "test_regions": []
     #     },
     #     "obj_vegetation_percentage": {
     #         "chunk": obj_chunk_vegetation_pixel_count,
-    #         "training_regions": [],
+    #         "fine_tuning_regions": [],
     #         "test_regions": []
     #     }
 
     #     # "chunk": chunk_vegetation_pixel_count,
-    #     # "training_regions": [],
+    #     # "fine_tuning_regions": [],
     #     # "test_regions": []
     # }
 
@@ -261,11 +261,11 @@ def get_vegetation_percentages_for_chunk(excess_green_record, metadata, annotati
         result["obj_vegetation_pixel_counts"][cls_name] = {
             "chunk": obj_chunk_vegetation_pixel_count,
             "regions_of_interest": [],
-            "training_regions": [],
+            "fine_tuning_regions": [],
             "test_regions": []            
         }
 
-        region_keys = ["regions_of_interest", "training_regions", "test_regions"]
+        region_keys = ["regions_of_interest", "fine_tuning_regions", "test_regions"]
         for region_key in region_keys:
             for region in annotations[image_name][region_key]:
                 if region_key == "regions_of_interest":
@@ -338,8 +338,8 @@ def create_vegetation_record_for_image_set(image_set_dir, excess_green_record, m
     # for image_name in annotations.keys():
     #     if image_name not in vegetation_record or excess_green_record[image_name]["sel_val"] != vegetation_record[image_name]["sel_val"]:
     #         needs_update.append(image_name)
-    #     elif not np.array_equal(np.array(vegetation_record[image_name]["training_regions_coordinates"]), 
-    #                             np.array(annotations[image_name]["training_regions"])):
+    #     elif not np.array_equal(np.array(vegetation_record[image_name]["fine_tuning_regions_coordinates"]), 
+    #                             np.array(annotations[image_name]["fine_tuning_regions"])):
     #         needs_update.append(image_name)
     #     elif not np.array_equal(np.array(vegetation_record[image_name]["test_regions_coordinates"]), 
     #                             np.array(annotations[image_name]["test_regions"])):
@@ -363,8 +363,8 @@ def create_vegetation_record_for_image_set(image_set_dir, excess_green_record, m
         vegetation_record[image_name] = result[1] #{}
         # vegetation_record[image_name]["sel_val"] = excess_green_record[image_name]["sel_val"]
         # vegetation_record[image_name]["image"] = vegetation_results["image"]
-        # vegetation_record[image_name]["training_regions_coordinates"] = annotations[image_name]["training_regions"]
-        # vegetation_record[image_name]["training_regions"] = vegetation_results["training_regions"]
+        # vegetation_record[image_name]["fine_tuning_regions_coordinates"] = annotations[image_name]["fine_tuning_regions"]
+        # vegetation_record[image_name]["fine_tuning_regions"] = vegetation_results["fine_tuning_regions"]
         # vegetation_record[image_name]["test_regions_coordinates"] = annotations[image_name]["test_regions"]
         # vegetation_record[image_name]["test_regions"] = vegetation_results["test_regions"]
 
@@ -394,14 +394,14 @@ def get_vegetation_percentages_for_image(image_set_dir, excess_green_record, met
         "vegetation_percentage": {
             "image": image_vegetation_percentage,
             "regions_of_interest": [],
-            "training_regions": [],
+            "fine_tuning_regions": [],
             "test_regions": []
         },
         "obj_vegetation_percentage": {}
         # "obj_vegetation_percentage": {
         #     "image": obj_image_vegetation_percentage,
         #     "regions_of_interest": [],
-        #     "training_regions": [],
+        #     "fine_tuning_regions": [],
         #     "test_regions": []
         # }
     }
@@ -442,11 +442,11 @@ def get_vegetation_percentages_for_image(image_set_dir, excess_green_record, met
         result["obj_vegetation_percentage"][cls_name] = {
             "image": obj_image_vegetation_percentage,
             "regions_of_interest": [],
-            "training_regions": [],
+            "fine_tuning_regions": [],
             "test_regions": []            
         }
 
-        region_keys = ["regions_of_interest", "training_regions", "test_regions"]
+        region_keys = ["regions_of_interest", "fine_tuning_regions", "test_regions"]
         for region_key in region_keys:
             for region in annotations[image_name][region_key]:
 
