@@ -48,7 +48,7 @@ NUM_EPOCHS_TO_TRAIN = 1000 #200
 
 
 
-def post_process_sample(detections, resize_ratio, patch_coords, config, region, apply_nms=True, score_threshold=0.5): #, round_scores=True):
+def post_process_sample(detections, resize_ratio, patch_coords, config, region_bbox, apply_nms=True, score_threshold=0.5): #, round_scores=True):
 
     detections = np.array(detections)
 
@@ -72,9 +72,9 @@ def post_process_sample(detections, resize_ratio, patch_coords, config, region, 
     pred_boxes, pred_scores, pred_classes = pred_boxes[score_mask], pred_scores[score_mask], pred_classes[score_mask]
 
     pred_boxes = box_utils.clip_boxes_np(pred_boxes, [0, 0, patch_coords[2] - patch_coords[0], patch_coords[3] - patch_coords[1]])
-    if region is not None:
-        pred_boxes = box_utils.clip_boxes_np(pred_boxes, [region[0] - patch_coords[0], region[1] - patch_coords[1],
-                                                          region[2] - patch_coords[0], region[3] - patch_coords[1]])
+    if region_bbox is not None:
+        pred_boxes = box_utils.clip_boxes_np(pred_boxes, [region_bbox[0] - patch_coords[0], region_bbox[1] - patch_coords[1],
+                                                          region_bbox[2] - patch_coords[0], region_bbox[3] - patch_coords[1]])
 
     pred_boxes = np.rint(pred_boxes).astype(np.int32)
     pred_scores = pred_scores.astype(np.float32)
@@ -207,11 +207,10 @@ def get_number_of_prediction_batches(request, patch_size, overlap_px, config):
     for i in range(len(request["image_names"])):
         for region in request["regions"][i]:
 
-            if type(region[0]) is list:
-                region = poly_utils.get_poly_bbox(region)
+            bbox_region = poly_utils.get_poly_bbox(region)
 
-            region_width = region[3] - region[1]
-            region_height = region[2] - region[0]
+            region_width = bbox_region[3] - bbox_region[1]
+            region_height = bbox_region[2] - bbox_region[0]
 
             incr = patch_size - overlap_px
             w_covered = max(region_width - patch_size, 0)
@@ -302,76 +301,69 @@ def predict(job):
 
         for region in job["regions"][image_index]:
 
-            is_poly = type(region[0]) is list
-            if is_poly:
-                poly_region = region
-                region = poly_utils.get_poly_bbox(region)
+            region_bbox = poly_utils.get_poly_bbox(region)
 
             batch_patch_arrays = []
             batch_ratios = []
             batch_patch_coords = []
 
             col_covered = False
-            patch_min_y = region[0]
+            patch_min_y = region_bbox[0]
             while not col_covered:
                 patch_max_y = patch_min_y + patch_size
                 max_content_y = patch_max_y
-                if patch_max_y >= region[2]:
-                    max_content_y = region[2]
+                if patch_max_y >= region_bbox[2]:
+                    max_content_y = region_bbox[2]
                     col_covered = True
 
                 row_covered = False
-                patch_min_x = region[1]
+                patch_min_x = region_bbox[1]
                 while not row_covered:
 
                     patch_max_x = patch_min_x + patch_size
                     max_content_x = patch_max_x
-                    if patch_max_x >= region[3]:
-                        max_content_x = region[3]
+                    if patch_max_x >= region_bbox[3]:
+                        max_content_x = region_bbox[3]
                         row_covered = True
+
 
                     
                     patch_coords = [patch_min_y, patch_min_x, patch_max_y, patch_max_x]
 
-                    
-                    patch_array = np.zeros(shape=(patch_size, patch_size, 3), dtype=np.uint8)
-                    if is_ortho:
-                        image_array = ds.ReadAsArray(patch_min_x, patch_min_y, (max_content_x-patch_min_x), (max_content_y-patch_min_y))
-                        image_array = np.transpose(image_array, (1, 2, 0))
-                        patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array
-                    else:
-                        patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array[patch_min_y:max_content_y, patch_min_x:max_content_x]
+                    patch_poly = [
+                        [patch_min_y, patch_min_x],
+                        [patch_min_y, patch_max_x],
+                        [patch_max_y, patch_max_x],
+                        [patch_max_y, patch_min_x]
+                    ]
+                    intersects, intersect_regions = poly_utils.get_intersection_polys(region, patch_poly)
 
-                    skip = False
-                    if is_poly:
-                        patch_poly = [
-                            [patch_min_y, patch_min_x],
-                            [patch_min_y, patch_max_x],
-                            [patch_max_y, patch_max_x],
-                            [patch_max_y, patch_min_x]
-                        ]
-                        intersects, intersect_regions = poly_utils.get_intersection_polys(poly_region, patch_poly)
+                    if intersects:
 
-                        if intersects:
-                            tmp_img = PILImage.new("L", (patch_size, patch_size))
-                            skip = False
-                            for intersect_region in intersect_regions:
-                                polygon = []
-                                for coord in intersect_region:
-                                    polygon.append((min(patch_size, max(0, round(coord[1] - patch_min_x))), 
-                                                    min(patch_size, max(0, round(coord[0] - patch_min_y)))))
-
-                                if len(polygon) == 1:
-                                    PILImageDraw.Draw(tmp_img).point(polygon, fill=1)
-                                else:
-                                    PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
-                            mask = np.array(tmp_img) != 1
-                            patch_array[mask] = [0, 0, 0]
+                        patch_array = np.zeros(shape=(patch_size, patch_size, 3), dtype=np.uint8)
+                        if is_ortho:
+                            image_array = ds.ReadAsArray(patch_min_x, patch_min_y, (max_content_x-patch_min_x), (max_content_y-patch_min_y))
+                            image_array = np.transpose(image_array, (1, 2, 0))
+                            patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array
                         else:
-                            skip = True
+                            patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array[patch_min_y:max_content_y, patch_min_x:max_content_x]
+
+                            tmp_img = PILImage.new("L", (patch_size, patch_size))
+
+                        for intersect_region in intersect_regions:
+                            polygon = []
+                            for coord in intersect_region:
+                                polygon.append((min(patch_size, max(0, round(coord[1] - patch_min_x))), 
+                                                min(patch_size, max(0, round(coord[0] - patch_min_y)))))
+
+                            if len(polygon) == 1:
+                                PILImageDraw.Draw(tmp_img).point(polygon, fill=1)
+                            else:
+                                PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
+                        mask = np.array(tmp_img) != 1
+                        patch_array[mask] = [0, 0, 0]
 
 
-                    if not skip:
 
                         patch_array = tf.cast(patch_array, dtype=tf.float32)
                         patch_ratio = np.array(patch_array.shape[:2]) / np.array(config["arch"]["input_image_shape"][:2])
@@ -403,7 +395,7 @@ def predict(job):
 
                             if store_patch_predictions:
                                 pred_patch_abs_boxes, pred_patch_scores, _ = \
-                                    post_process_sample(pred_bbox, ratio, patch_coords, config, region, apply_nms=False, score_threshold=0.01) #config["inference"]["score_thresh"])
+                                    post_process_sample(pred_bbox, ratio, patch_coords, config, region_bbox, apply_nms=False, score_threshold=0.01) #config["inference"]["score_thresh"])
                                 
                                 if image_name not in patch_predictions:
                                     patch_predictions[image_name] = {
@@ -419,7 +411,7 @@ def predict(job):
                             
 
                             pred_patch_abs_boxes, pred_patch_scores, pred_patch_classes = \
-                                    post_process_sample(pred_bbox, ratio, patch_coords, config, region, score_threshold=0.01) #config["inference"]["score_thresh"])
+                                    post_process_sample(pred_bbox, ratio, patch_coords, config, region_bbox, score_threshold=0.01) #config["inference"]["score_thresh"])
 
 
 
@@ -436,7 +428,7 @@ def predict(job):
                                                                 pred_patch_scores,
                                                                 pred_patch_classes,
                                                                 patch_coords, 
-                                                                region,
+                                                                region_bbox,
                                                                 trim=True)
 
                             predictions[image_name]["boxes"].extend(pred_image_abs_boxes.tolist())
@@ -455,7 +447,7 @@ def predict(job):
                         if m.floor(percent_complete) > m.floor(prev_percent_complete):
                             emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                                       {"state_name": emit.PREDICTING, 
-                                                       "progress": str(percent_complete) + "% complete"}) 
+                                                       "progress": str(percent_complete) + "% Complete"}) 
 
                 
                     patch_min_x += (patch_size - overlap_px)
@@ -515,10 +507,7 @@ def predict(job):
             existing_classes = np.array(existing_predictions[image_name]["classes"])
             mask = np.full(existing_boxes.shape[0], True)
             for region in job["regions"][image_index]:
-                if type(region[0]) is list:
-                    inds = poly_utils.get_contained_inds_for_points(existing_box_centres, [region])
-                else:
-                    inds = box_utils.get_contained_inds_for_points(existing_box_centres, [region])
+                inds = poly_utils.get_contained_inds_for_points(existing_box_centres, [region])
                 mask[inds] = False
             existing_boxes = existing_boxes[mask]
             existing_scores = existing_scores[mask]
@@ -534,7 +523,7 @@ def predict(job):
         json_io.save_json(predictions_path, new_predictions)
 
     if job["save_result"]:
-        results_dir = os.path.join(model_dir, "results", "available", job["uuid"])
+        results_dir = os.path.join(model_dir, "results", "available", job["result_uuid"])
         if not os.path.exists(results_dir):
             os.makedirs(results_dir)
         
@@ -566,19 +555,19 @@ def train(job):
     
     logger = logging.getLogger(__name__)
 
-    username = job["username"]
+    model_creator = job["model_creator"]
     model_name = job["model_name"]
     
     tf.keras.backend.clear_session()
 
-    usr_dir = os.path.join("usr", "data", username)
-    models_dir = os.path.join(usr_dir, "models")
+    model_creator_dir = os.path.join("usr", "data", model_creator)
+    models_dir = os.path.join(model_creator_dir, "models")
     pending_dir = os.path.join(models_dir, "pending")
     baseline_pending_dir = os.path.join(pending_dir, model_name)
 
 
-    weights_dir = os.path.join(baseline_pending_dir, "weights")
-    training_dir = os.path.join(baseline_pending_dir, "training")
+    weights_dir = os.path.join(baseline_pending_dir, "model", "weights")
+    training_dir = os.path.join(baseline_pending_dir, "model", "training")
 
     training_tf_record_paths = [os.path.join(training_dir, "training-patches-record.tfrec")]
     
@@ -824,9 +813,13 @@ def fine_tune(job):
 
             logger.info("Epochs since substantial training loss improvement: {}".format(epochs_since_substantial_improvement))
 
+            if epochs_since_substantial_improvement == 1:
+                progress = str(epochs_since_substantial_improvement) + " Epoch Since Improvement"
+            else:
+                progress = str(epochs_since_substantial_improvement) + " Epochs Since Improvement"
             emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                         {"state_name": emit.FINE_TUNING, 
-                                         "progress": str(epochs_since_substantial_improvement) + " Epochs Since Improvement"})
+                                         "progress": progress})
 
             if epochs_since_substantial_improvement >= EPOCHS_WITHOUT_IMPROVEMENT_TOLERANCE:
                 shutil.copyfile(best_weights_path, cur_weights_path)

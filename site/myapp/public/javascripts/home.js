@@ -1047,7 +1047,7 @@ function create_result_entry(result) {
         let mission_date = $("#mission_combo").val();
 
         let href = get_AC_PATH() + "/viewer/" + username + "/" +
-                           farm_name + "/" + field_name + "/" + mission_date + "/" + result["request_uuid"];
+                           farm_name + "/" + field_name + "/" + mission_date + "/" + result["result_uuid"];
 
         $("#" + main_result_container_id).append(
                 `<button onclick=view_result('${href}') class="button-green button-green-hover" style="font-size: 16px; width: 190px; height: 50px; border-radius: 100px">` +
@@ -1058,7 +1058,7 @@ function create_result_entry(result) {
         );
         $("#" + destroy_button_container_id).append(
             `<button class="button-red button-red-hover" style="width: 160px; font-size: 14px; padding: 3px;" ` +
-                    `onclick="delete_result_request('completed', '${result["request_uuid"]}')">` +
+                    `onclick="delete_result_request('completed', '${result["result_uuid"]}')">` +
                 `<i class="fa-regular fa-circle-xmark" style="margin-right: 14px"></i><div style="display: inline-block; text-align: left; width: 100px">Destroy Result</div>` +
             `</button>`
         );
@@ -1075,7 +1075,7 @@ function create_result_entry(result) {
         );
         $("#" + destroy_button_container_id).append(
             `<button class="button-red button-red-hover" style="width: 160px; font-size: 14px; padding: 3px;" ` +
-                    `onclick="delete_result_request('aborted', '${result["request_uuid"]}')">` +
+                    `onclick="delete_result_request('aborted', '${result["result_uuid"]}')">` +
                 `<i class="fa-regular fa-circle-xmark" style="margin-right: 14px"></i><div style="display: inline-block; text-align: left; width: 100px">Destroy Result</div>` +
             `</button>`
         );
@@ -1383,6 +1383,9 @@ $(document).ready(function() {
 
         if (viewing["train"] === "available") {
             show_available_train();
+        }
+        else if (viewing["train"] === "pending") {
+            show_pending_train();
         }
         else if (viewing["train"] === "aborted") {
             show_aborted_train();

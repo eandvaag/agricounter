@@ -2,6 +2,9 @@ import logging
 from shapely import Point, Polygon
 import numpy as np
 
+from models.common import box_utils
+
+
 
 def get_contained_inds_for_points(points, regions):
 
@@ -84,3 +87,42 @@ def get_poly_area(p):
 def get_poly_bbox(p):
     p_arr = np.array(p)
     return [int(np.min(p_arr[:, 0])), int(np.min(p_arr[:, 1])), int(np.max(p_arr[:, 0])), int(np.max(p_arr[:, 1]))]
+
+
+
+
+
+
+
+def get_bbox_visibility_mask(boxes, patch_clipped_boxes, region, vis_thresh):
+
+    visibilities = []
+
+    box_areas = box_utils.box_areas_np(boxes)
+    # clipped_boxes = clip_boxes_np(boxes, patch_coords)
+    for i in range(boxes.shape[0]):
+
+        pcb = patch_clipped_boxes[i]
+
+        poly_pcb =  [
+            [pcb[0], pcb[1]],
+            [pcb[0], pcb[3]],
+            [pcb[2], pcb[3]],
+            [pcb[2], pcb[1]]
+        ]
+        
+
+
+        p_a = Polygon(poly_pcb)
+        p_b = Polygon(region)
+        r = p_a.intersection(p_b, grid_size=1)
+
+        # area of the twice-clipped box divided by original box area
+        visibility = r.area / box_areas[i]
+        visibilities.append(visibility)
+
+    mask = np.array(visibilities) > vis_thresh
+
+    return mask
+
+

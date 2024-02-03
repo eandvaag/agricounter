@@ -9,30 +9,32 @@ html
 
         link(href=process.env.AC_PATH + "/annotorious/annotorious.min.css" rel="stylesheet")
         link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" rel="stylesheet")
-        link(href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css")
+        //- link(href=process.env.AC_PATH + "/external_stylesheets/font-awesome-6.1.2.css" rel="stylesheet")
+        link(href=process.env.AC_PATH + "/external_stylesheets/dropzone-6.0.0.css" rel="stylesheet")
         link(href=process.env.AC_PATH + '/stylesheets/main.css' rel='stylesheet' id="main-stylesheet")
         link(href=process.env.AC_PATH + '/stylesheets/d3.css' rel='stylesheet')
 
         script(src=process.env.AC_PATH + "/osd/openseadragon.js")
         script(src=process.env.AC_PATH + "/annotorious/openseadragon-annotorious.min.js")
 
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/annotorious-better-polygon.js')
+        script(src=process.env.AC_PATH + "/external_javascripts/jquery-3.6.0.js")
+        script(src=process.env.AC_PATH + "/external_javascripts/dropzone-6.0.0-min.js")
+        script(src=process.env.AC_PATH + "/external_javascripts/d3.v4.js")
+        script(src=process.env.AC_PATH + "/external_javascripts/socket.io-4.5.0-min.js")
+        script(src=process.env.AC_PATH + '/external_javascripts/annotorious-better-polygon.js')
+        script(src=process.env.AC_PATH + '/external_javascripts/voronoi.js')
 
-        script(src="https://code.jquery.com/jquery-3.6.0.js")
-        script(src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js")
-        script(src="https://d3js.org/d3.v4.js")
-        script(src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous")
+        script(src=process.env.AC_PATH + '/javascripts/workspace.js')
+        script(src=process.env.AC_PATH + '/javascripts/count_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/score_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/ridgeline_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/map_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/common.js')
+        script(src=process.env.AC_PATH + '/javascripts/modal.js')
+        script(src=process.env.AC_PATH + '/javascripts/canvas_overlay.js')
+        script(src=process.env.AC_PATH + '/javascripts/poly.js')
 
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/workspace.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/count_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/score_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/ridgeline_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/map_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/common.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/modal.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/canvas_overlay.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/voronoi.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/poly.js')
+
 
 
     body
@@ -304,7 +306,7 @@ html
                                                         
                                                         div(style="height: 30px; border: 1px solid white; border-radius: 10px")
                                                             div(style="height: 5px")
-                                                            div(id="model_name")
+                                                            div(id="model_name" style="font-style: italic")
 
                                                         //- table(class="transparent_table")
                                                         //-     tr

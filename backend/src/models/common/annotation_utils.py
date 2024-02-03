@@ -1,7 +1,7 @@
 import math as m
 import numpy as np
 
-from models.common import box_utils
+from models.common import box_utils, poly_utils
 
 from io_utils import json_io
 
@@ -11,22 +11,25 @@ def is_fully_annotated(annotations, image_name, image_w, image_h):
 
 
 def is_fully_annotated_for_fine_tuning(annotations, image_name, image_w, image_h):
-    if len(annotations[image_name]["fine_tuning_regions"]) == 0:
-        return False
-    region = annotations[image_name]["fine_tuning_regions"][0]
-    return (region[0] == 0 and region[1] == 0) and (region[2] == image_h and region[3] == image_w)
+    image_area = image_w * image_h;
+    for region in annotations[image_name]["fine_tuning_regions"]:
+
+        reg_area = poly_utils.get_poly_area(region)
+        if reg_area == image_area:
+            return True
+        
+    return False
 
 def is_fully_annotated_for_testing(annotations, image_name, image_w, image_h):
-    if len(annotations[image_name]["test_regions"]) == 0:
-        return False
-    region = annotations[image_name]["test_regions"][0]
-    return (region[0] == 0 and region[1] == 0) and (region[2] == image_h and region[3] == image_w)
 
-    # for i in range(len(annotations[image_name]["test_regions"])):
-    #     region = annotations[image_name]["test_regions"][i]
-    #     if (region[0] == 0 and region[1] == 0) and (region[2] == image_h and region[3] == image_w):
-    #         return True
-    # return False
+    image_area = image_w * image_h;
+    for region in annotations[image_name]["test_regions"]:
+
+        reg_area = poly_utils.get_poly_area(region)
+        if reg_area == image_area:
+            return True
+        
+    return False
 
 def load_annotations(annotations_path):
     annotations = json_io.load_json(annotations_path)
@@ -65,7 +68,10 @@ def get_num_annotations(annotations, region_keys):
         for region_key in region_keys:
             regions.extend(annotations[image_name][region_key])
 
-        inds = box_utils.get_contained_inds(boxes, regions)
+
+        centres = (boxes[..., :2] + boxes[..., 2:]) / 2.0
+        inds = poly_utils.get_contained_inds_for_points(centres, regions)
+
         num_annotations += inds.size
 
     return num_annotations
@@ -116,7 +122,9 @@ def get_average_box_dim(dim, annotations, region_keys, measure):
         if region_keys is not None:
             for region_key in region_keys:
                 regions.extend(annotations[image_name][region_key])
-            inds = box_utils.get_contained_inds(boxes, regions)
+            # inds = box_utils.get_contained_inds(boxes, regions)
+            centres = (boxes[..., :2] + boxes[..., 2:]) / 2.0
+            inds = poly_utils.get_contained_inds_for_points(centres, regions)
             region_boxes = boxes[inds]
         else:
             region_boxes = boxes

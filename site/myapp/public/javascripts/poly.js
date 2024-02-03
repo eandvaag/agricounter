@@ -73,26 +73,36 @@ function get_bounding_box_for_polygon(poly) {
 }
 
 
+function clip_polygons_yx(subjectPolygon_yx, clipPolygon_yx) {
+    let subjectPolygon_xy = [];
+    for (let c of subjectPolygon_yx) {
+        subjectPolygon_xy.push([c[1], c[0]]);
+    }
 
+    let clipPolygon_xy = [];
+    for (let c of clipPolygon_yx) {
+        clipPolygon_xy.push([c[1], c[0]]);
+    }
+
+    return clip_polygons_xy(subjectPolygon_xy, clipPolygon_xy)
+
+}
 
 // https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping#JavaScript
 /*
     accepts x, y coordinates
 */
-function clip_polygons(subjectPolygon, clipPolygon) {
-    let flip_subjectPolygon;
-    let flip_clipPolygon;
+function clip_polygons_xy(subjectPolygon_xy, clipPolygon_xy) {
 
-    // if (coord_format === "xy") {
-    // }
 
-    flip_subjectPolygon = [];
-    for (let c of subjectPolygon) {
-        flip_subjectPolygon.push([c[0], c[1]]);
+    let copy_subjectPolygon_xy = [];
+    for (let c of subjectPolygon_xy) {
+        copy_subjectPolygon_xy.push([c[0], c[1]]);
     }
-    flip_clipPolygon = [];
-    for (let c of clipPolygon) {
-        flip_clipPolygon.push([c[0], c[1]]);
+    
+    let copy_clipPolygon_xy = [];
+    for (let c of clipPolygon_xy) {
+        copy_clipPolygon_xy.push([c[0], c[1]]);
     }
             
     var cp1, cp2, s, e;
@@ -107,10 +117,10 @@ function clip_polygons(subjectPolygon, clipPolygon) {
             n3 = 1.0 / (dc[0] * dp[1] - dc[1] * dp[0]);
         return [(n1*dp[0] - n2*dc[0]) * n3, (n1*dp[1] - n2*dc[1]) * n3];
     };
-    var outputList = flip_subjectPolygon;
-    cp1 = flip_clipPolygon[flip_clipPolygon.length-1];
-    for (var j in flip_clipPolygon) {
-        cp2 = flip_clipPolygon[j];
+    var outputList = copy_subjectPolygon_xy;
+    cp1 = copy_clipPolygon_xy[copy_clipPolygon_xy.length-1];
+    for (var j in copy_clipPolygon_xy) {
+        cp2 = copy_clipPolygon_xy[j];
         var inputList = outputList;
         outputList = [];
         s = inputList[inputList.length - 1]; //last on the input list

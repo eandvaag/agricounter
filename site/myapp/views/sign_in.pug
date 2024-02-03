@@ -6,13 +6,12 @@ html
         meta(name="viewport" content="width=device-width, initial-scale=1")
 
         link(rel="icon" href=process.env.AC_PATH + "/images/favicon.ico")
-        link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css")
+        link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" rel="stylesheet")
+        //- link(href=process.env.AC_PATH + "/external_stylesheets/font-awesome-6.1.2.css" rel="stylesheet")
         link(href=process.env.AC_PATH + '/stylesheets/main.css' rel='stylesheet')
 
-        
-        
-        script(src="https://code.jquery.com/jquery-3.6.0.js")
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/sign_in.js')
+        script(src=process.env.AC_PATH + "/external_javascripts/jquery-3.6.0.js")
+        script(src=process.env.AC_PATH + '/javascripts/sign_in.js')
 
     body
 

@@ -268,11 +268,11 @@ def get_vegetation_percentages_for_chunk(excess_green_record, metadata, annotati
         region_keys = ["regions_of_interest", "fine_tuning_regions", "test_regions"]
         for region_key in region_keys:
             for region in annotations[image_name][region_key]:
-                if region_key == "regions_of_interest":
-                    chunk_poly = [[chunk_coords[0], chunk_coords[1]], [chunk_coords[2], chunk_coords[1]], [chunk_coords[2], chunk_coords[3]], [chunk_coords[0], chunk_coords[3]]]
-                    intersects, intersect_regions = poly_utils.get_intersection_polys(region, chunk_poly)
-                else:
-                    intersects, intersect_region = box_utils.get_intersection_rect(region, chunk_coords)
+                # if region_key == "regions_of_interest":
+                chunk_poly = [[chunk_coords[0], chunk_coords[1]], [chunk_coords[2], chunk_coords[1]], [chunk_coords[2], chunk_coords[3]], [chunk_coords[0], chunk_coords[3]]]
+                intersects, intersect_regions = poly_utils.get_intersection_polys(region, chunk_poly)
+                # else:
+                    # intersects, intersect_region = box_utils.get_intersection_rect(region, chunk_coords)
                 if not intersects:
                     result["vegetation_pixel_counts"][region_key].append(0)
                     result["obj_vegetation_pixel_counts"][cls_name][region_key].append(0)
@@ -285,32 +285,32 @@ def get_vegetation_percentages_for_chunk(excess_green_record, metadata, annotati
                     #     intersect_region[3] - chunk_coords[1]
                     # ]
 
-                    if region_key == "regions_of_interest":
-                        tmp_img = PILImage.new("L", (chunk_w, chunk_h))
+                    # if region_key == "regions_of_interest":
+                    tmp_img = PILImage.new("L", (chunk_w, chunk_h))
 
-                        # print("intersect_regions: {}".format(intersect_regions))
-                        
-                        for intersect_region in intersect_regions:
-                            polygon = []
-                            for coord in intersect_region:
-                                polygon.append((min(chunk_w, max(0, round(coord[1] - chunk_coords[1]))), 
-                                                min(chunk_h, max(0, round(coord[0] - chunk_coords[0])))))
-                            # print("chunk_min_y: {}. chunk_min_x: {}, polygon: {}".format(chunk_coords[0], chunk_coords[1], polygon))
-                            
-                            # print("\tpolygon: {}".format(polygon))
-                            if len(polygon) == 1:
-                                PILImageDraw.Draw(tmp_img).point(polygon, fill=1)
-                            else:
-                                PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
-                        mask = np.array(tmp_img) == 1
-                        intersect_vals = exg_array[mask]
-                        obj_intersect_vals = obj_exg_array[mask]
-                    else:
-                        intersect_vals = exg_array[intersect_region[0] - chunk_coords[0]:intersect_region[2] - chunk_coords[0], 
-                                                intersect_region[1] - chunk_coords[1]:intersect_region[3] - chunk_coords[1]]
+                    # print("intersect_regions: {}".format(intersect_regions))
                     
-                        obj_intersect_vals = obj_exg_array[intersect_region[0] - chunk_coords[0]:intersect_region[2] - chunk_coords[0], 
-                                        intersect_region[1] - chunk_coords[1]:intersect_region[3] - chunk_coords[1]]
+                    for intersect_region in intersect_regions:
+                        polygon = []
+                        for coord in intersect_region:
+                            polygon.append((min(chunk_w, max(0, round(coord[1] - chunk_coords[1]))), 
+                                            min(chunk_h, max(0, round(coord[0] - chunk_coords[0])))))
+                        # print("chunk_min_y: {}. chunk_min_x: {}, polygon: {}".format(chunk_coords[0], chunk_coords[1], polygon))
+                        
+                        # print("\tpolygon: {}".format(polygon))
+                        if len(polygon) == 1:
+                            PILImageDraw.Draw(tmp_img).point(polygon, fill=1)
+                        else:
+                            PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
+                    mask = np.array(tmp_img) == 1
+                    intersect_vals = exg_array[mask]
+                    obj_intersect_vals = obj_exg_array[mask]
+                    # else:
+                    #     intersect_vals = exg_array[intersect_region[0] - chunk_coords[0]:intersect_region[2] - chunk_coords[0], 
+                    #                             intersect_region[1] - chunk_coords[1]:intersect_region[3] - chunk_coords[1]]
+                    
+                    #     obj_intersect_vals = obj_exg_array[intersect_region[0] - chunk_coords[0]:intersect_region[2] - chunk_coords[0], 
+                    #                     intersect_region[1] - chunk_coords[1]:intersect_region[3] - chunk_coords[1]]
 
                     
                     # intersect_area = (intersect_region[2] - intersect_region[0]) * (intersect_region[3] - intersect_region[1])
@@ -450,18 +450,18 @@ def get_vegetation_percentages_for_image(image_set_dir, excess_green_record, met
         for region_key in region_keys:
             for region in annotations[image_name][region_key]:
 
-                if region_key == "regions_of_interest":
-                    polygon = []
-                    for coord in region:
-                        polygon.append((round(coord[1]), round(coord[0])))
-                    tmp_img = PILImage.new("L", (exg_array.shape[1], exg_array.shape[0]))
-                    PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
-                    mask = np.array(tmp_img) == 1
-                    region_vals = exg_array[mask]
-                    obj_region_vals = obj_exg_array[mask]
-                else:
-                    region_vals = exg_array[region[0]:region[2], region[1]:region[3]]
-                    obj_region_vals = obj_exg_array[region[0]:region[2], region[1]:region[3]]
+                # if region_key == "regions_of_interest":
+                polygon = []
+                for coord in region:
+                    polygon.append((round(coord[1]), round(coord[0])))
+                tmp_img = PILImage.new("L", (exg_array.shape[1], exg_array.shape[0]))
+                PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
+                mask = np.array(tmp_img) == 1
+                region_vals = exg_array[mask]
+                obj_region_vals = obj_exg_array[mask]
+                # else:
+                #     region_vals = exg_array[region[0]:region[2], region[1]:region[3]]
+                #     obj_region_vals = obj_exg_array[region[0]:region[2], region[1]:region[3]]
 
                 vegetation_percentage = round(float((np.sum(region_vals > sel_val) / region_vals.size) * 100), 2)
                 result["vegetation_percentage"][region_key].append(vegetation_percentage)

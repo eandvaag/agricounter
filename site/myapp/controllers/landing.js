@@ -91,9 +91,9 @@ const default_overlay_appearance = {
     "colors": {
         "annotation": ["#0080ff", "#ff0033", "#59ff00", "#8000ff", "#ff6200", "#00ff77", "#fb00ff", "#ffff00", "#00ffe5"],
         "prediction": ["#7dbeff", "#ff8099", "#acff80", "#bf80ff", "#ffb080", "#80ffbb", "#fd80ff", "#ffff80", "#80fff2"],
-        "region_of_interest": "#a291ba",
-        "fine_tuning_region": "#a4ba91",
-        "test_region": "#91bab9"
+        "region_of_interest": "#ffb494",
+        "fine_tuning_region": "#adff94",
+        "test_region": "#cd94ff"
     }
 };
 
@@ -1243,81 +1243,82 @@ exports.post_annotations_upload = function(req, res, next) {
             "source": "uploaded"
         };
 
-        if ("regions_of_interest" in annotations[entry_name]) {
-            if (!(Array.isArray(annotations[entry_name]["regions_of_interest"]))) {
-                return res.status(422).json({
-                    error: "The uploaded annotations file contains an invalid value (not an array). Problematic key: " + entry_name + "."
-                });
-            }
-            let num_regions = annotations[entry_name]["regions_of_interest"].length;
-            if (num_regions > 99) {
-                return res.status(422).json({
-                    error: "The uploaded annotations file contains too many regions of interest" +
-                            " for image " + entry_name + ". A maximum of 99 regions of interest " + 
-                            " are allowed per image. " + num_regions + " were provided."
-                });
-            }
-
-            for (let i = 0; i < annotations[entry_name]["regions_of_interest"].length; i++) {
-                let poly = annotations[image_name]["regions_of_interest"][i];
-                
-                if (!(Array.isArray(poly))) {
+        for (let key of ["regions_of_interest", "fine_tuning_regions", "test_regions"])
+            if (key in annotations[entry_name]) {
+                if (!(Array.isArray(annotations[entry_name][key]))) {
                     return res.status(422).json({
-                        error: "The uploaded annotations file contains an invalid polygon (not an array). Problematic key: " + entry_name + "."
+                        error: "The uploaded annotations file contains an invalid value (not an array). Problematic key: " + entry_name + "."
                     });
                 }
-                if (poly.length < 3) {
+                let num_regions = annotations[entry_name][key].length;
+                if (num_regions > 99) {
                     return res.status(422).json({
-                        error: "The uploaded annotations file contains an invalid polygon (number of points is less than 3). Problematic key: " + entry_name + "."
+                        error: "The uploaded annotations file contains too many regions" +
+                                " for image " + entry_name + ". A maximum of 99 of each type of region " + 
+                                " is allowed per image. " + num_regions + " were provided."
                     });
                 }
 
-                let image_w = metadata["images"][image_name]["width_px"];
-                let image_h = metadata["images"][image_name]["height_px"];
-
-                let uploaded_poly = [];
-                for (let pt of poly) {
-                    if (!(Array.isArray(pt))) {
+                for (let i = 0; i < annotations[entry_name][key].length; i++) {
+                    let poly = annotations[image_name][key][i];
+                    
+                    if (!(Array.isArray(poly))) {
                         return res.status(422).json({
-                            error: "The uploaded annotations file contains an invalid polygon (at least one point is not an array). Problematic key: " + entry_name + "."
+                            error: "The uploaded annotations file contains an invalid polygon (not an array). Problematic key: " + entry_name + "."
                         });
                     }
-                    if (pt.length != 2) {
+                    if (poly.length < 3) {
                         return res.status(422).json({
-                            error: "The uploaded annotations file contains an invalid polygon (at least one point is not an array of length 2). Problematic key: " + entry_name + "."
-                        });
-                    }
-
-                    if ((pt[0] < 0 || pt[0] > image_w) || (pt[1] < 0 || pt[1] > image_h)) {
-                        return res.status(422).json({
-                            error: "The uploaded annotations file contains a polygon with a point located outside of the image boundaries. Problematic key: " + entry_name + "."
+                            error: "The uploaded annotations file contains an invalid polygon (number of points is less than 3). Problematic key: " + entry_name + "."
                         });
                     }
 
-                    let all_numbers = pt.every(element => { return typeof element === "number"; });
-                    if (!(all_numbers)) {
-                        return res.status(422).json({
-                            error: "The uploaded annotations file contains a polygon coordinate with non-numeric values. Problematic key: " + entry_name + "."
-                        });
+                    let image_w = metadata["images"][image_name]["width_px"];
+                    let image_h = metadata["images"][image_name]["height_px"];
+
+                    let uploaded_poly = [];
+                    for (let pt of poly) {
+                        if (!(Array.isArray(pt))) {
+                            return res.status(422).json({
+                                error: "The uploaded annotations file contains an invalid polygon (at least one point is not an array). Problematic key: " + entry_name + "."
+                            });
+                        }
+                        if (pt.length != 2) {
+                            return res.status(422).json({
+                                error: "The uploaded annotations file contains an invalid polygon (at least one point is not an array of length 2). Problematic key: " + entry_name + "."
+                            });
+                        }
+
+                        if ((pt[0] < 0 || pt[0] > image_w) || (pt[1] < 0 || pt[1] > image_h)) {
+                            return res.status(422).json({
+                                error: "The uploaded annotations file contains a polygon with a point located outside of the image boundaries. Problematic key: " + entry_name + "."
+                            });
+                        }
+
+                        let all_numbers = pt.every(element => { return typeof element === "number"; });
+                        if (!(all_numbers)) {
+                            return res.status(422).json({
+                                error: "The uploaded annotations file contains a polygon coordinate with non-numeric values. Problematic key: " + entry_name + "."
+                            });
+                        }
+
+
+                        uploaded_poly.push([pt[1], pt[0]]);
                     }
 
-
-                    uploaded_poly.push([pt[1], pt[0]]);
+                    new_annotations[image_name][key].push(
+                        uploaded_poly
+                    );
                 }
-
-                new_annotations[image_name]["regions_of_interest"].push(
-                    uploaded_poly
-                );
             }
-        }
 
         let annotation_lst_length = 0;
         let class_lst_length = 0;
         if ("classes" in annotations[entry_name]) {
             class_lst_length = annotations[entry_name]["classes"].length;
         }
-        if ("annotations" in annotations[entry_name]) {
-            annotation_lst_length = annotations[entry_name]["annotations"].length;
+        if ("boxes" in annotations[entry_name]) {
+            annotation_lst_length = annotations[entry_name]["boxes"].length;
         }
         if (annotation_lst_length != class_lst_length) {
             return res.status(422).json({
@@ -1349,35 +1350,15 @@ exports.post_annotations_upload = function(req, res, next) {
         }
 
 
-        for (let annotation_key of ["annotations", "fine_tuning_regions", "test_regions"]) {
-            if (!(annotation_key in annotations[entry_name])) {
-                continue;
-            }
-            if (!(Array.isArray(annotations[entry_name][annotation_key]))) {
+        if ("boxes" in annotations[entry_name])  {
+            if (!(Array.isArray(annotations[entry_name]["boxes"]))) {
                 return res.status(422).json({
                     error: "The uploaded annotations file contains an invalid value (not an array). Problematic key: " + entry_name + "."
                 });
             }
-            if ((annotation_key === "fine_tuning_regions") || (annotation_key === "test_regions")) {
-                let annotation_key_text;
-                if (annotation_key === "fine_tuning_regions") {
-                    annotation_key_text = "fine tuning regions";
-                }
-                else {
-                    annotation_key_text = "test regions";
-                }
-                let num_regions = annotations[entry_name][annotation_key].length;
-                if (num_regions > 99) {
-                    return res.status(422).json({
-                        error: "The uploaded annotations file contains too many " + annotation_key_text + 
-                                " for image " + entry_name + ". A maximum of 99 " + annotation_key_text + 
-                                " are allowed per image. " + num_regions + " were provided."
-                    });
-                }
-            }
 
-            for (let i = 0; i < annotations[entry_name][annotation_key].length; i++) {
-                let box = annotations[entry_name][annotation_key][i];
+            for (let i = 0; i < annotations[entry_name]["boxes"].length; i++) {
+                let box = annotations[entry_name]["boxes"][i];
                 if (!(Array.isArray(box))) {
                     return res.status(422).json({
                         error: "The uploaded annotations file contains an invalid box (not an array). Problematic key: " + entry_name + "."
@@ -1473,7 +1454,7 @@ exports.post_annotations_upload = function(req, res, next) {
                 //     internal_annotation_key = "test_regions"
                 // }
 
-                new_annotations[image_name][annotation_key].push([
+                new_annotations[image_name]["boxes"].push([
                     y_min, x_min, y_max, x_max
                 ]);
             }
@@ -1787,35 +1768,34 @@ exports.post_workspace = async function(req, res, next) {
             download_annotations[image_name] = {};
 
 
-            download_annotations[image_name]["regions_of_interest"] = [];
-            for (let i = 0; i < annotations[image_name]["regions_of_interest"].length; i++) {
-                let download_region = [];
-                for (let j = 0; j < annotations[image_name]["regions_of_interest"][i].length; j++) {
-                    let pt = annotations[image_name]["regions_of_interest"][i][j];
-                    let download_pt = [
-                        pt[1], pt[0]
-                    ];
-                    download_region.push(download_pt);
+            for (let annotation_key of ["regions_of_interest", "fine_tuning_regions", "test_regions"]) {
+                for (let i = 0; i < annotations[image_name][annotation_key].length; i++) {
+                    let download_region = [];
+                    for (let j = 0; j < annotations[image_name][annotation_key][i].length; j++) {
+                        let pt = annotations[image_name][annotation_key][i][j];
+                        let download_pt = [
+                            pt[1], pt[0]
+                        ];
+                        download_region.push(download_pt);
+                    }
+                    download_annotations[image_name][annotation_key].push(download_region);
                 }
-                download_annotations[image_name]["regions_of_interest"].push(download_region);
+
             }
 
             download_annotations[image_name]["classes"] = annotations[image_name]["classes"];
 
-            for (let annotation_key of ["boxes", "fine_tuning_regions", "test_regions"]) {
+            download_annotations[image_name]["boxes"] = []
 
+            for (let i = 0; i < annotations[image_name]["boxes"].length; i++) {
+                let box = annotations[image_name]["boxes"][i];
+                let download_box = [
+                    box[1], box[0], box[3], box[2]
+                ];
 
-                download_annotations[image_name][annotation_key] = []
-
-                for (let i = 0; i < annotations[image_name][annotation_key].length; i++) {
-                    let box = annotations[image_name][annotation_key][i];
-                    let download_box = [
-                        box[1], box[0], box[3], box[2]
-                    ];
-
-                    download_annotations[image_name][annotation_key].push(download_box);
-                }
+                download_annotations[image_name]["boxes"].push(download_box);
             }
+
         }
 
         let annotations_download_path = path.join(image_set_dir, "annotations", "download_annotations.json");
@@ -2159,6 +2139,7 @@ exports.post_workspace = async function(req, res, next) {
                 return res.json(response);
             }
 
+            request["result_uuid"] = uuidv4().toString();
             request["results_name"] = results_name;
             request["results_comment"] = results_comment;
       
@@ -3853,8 +3834,9 @@ exports.post_home = async function(req, res, next) {
             "key": job_key,
             "task": "train",
             "request_time": Math.floor(Date.now() / 1000),
+            "model_creator": req.session.user.username,
             "model_name": req.body.model_name,
-            "is_public": req.body.is_public,
+            "public": req.body.is_public,
         }
 
 
@@ -3904,7 +3886,7 @@ exports.get_viewer = function(req, res, next) {
         let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
                                       farm_name, field_name, mission_date);
 
-        let sel_results_dir = path.join(image_set_dir, "model", "results", result_uuid);
+        let sel_results_dir = path.join(image_set_dir, "model", "results", "available", result_uuid);
 
 
         if (!(fpath_exists(sel_results_dir))) {
