@@ -377,13 +377,13 @@ def collect_results(job):
     image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
 
     model_dir = os.path.join(image_set_dir, "model")
-    results_dir = os.path.join(model_dir, "results", "available", job["uuid"])
+    result_dir = os.path.join(model_dir, "results", "available", job["result_uuid"])
 
 
-    full_predictions_path = os.path.join(results_dir, "full_predictions.json")
+    full_predictions_path = os.path.join(result_dir, "full_predictions.json")
     full_predictions = json_io.load_json(full_predictions_path)
 
-    predictions_path = os.path.join(results_dir, "predictions.json")
+    predictions_path = os.path.join(result_dir, "predictions.json")
     predictions = json_io.load_json(predictions_path)
 
 
@@ -399,7 +399,7 @@ def collect_results(job):
     metrics = inference_metrics.collect_image_set_metrics(predictions, annotations, metadata)
 
     
-    metrics_path = os.path.join(results_dir, "metrics.json")
+    metrics_path = os.path.join(result_dir, "metrics.json")
     json_io.save_json(metrics_path, metrics)
 
     excess_green_record_src_path = os.path.join(image_set_dir, "excess_green", "record.json")
@@ -413,26 +413,26 @@ def collect_results(job):
                                    {"state_name": emit.PREDICTING, "progress": "Calculating Vegetation Coverage"})
         vegetation_record = create_vegetation_record(image_set_dir, excess_green_record, annotations, predictions)
 
-        results_vegetation_record_path = os.path.join(results_dir, "vegetation_record.json")
+        results_vegetation_record_path = os.path.join(result_dir, "vegetation_record.json")
         json_io.save_json(results_vegetation_record_path, vegetation_record)
 
 
-    excess_green_record_dst_path = os.path.join(results_dir, "excess_green_record.json")
+    excess_green_record_dst_path = os.path.join(result_dir, "excess_green_record.json")
     json_io.save_json(excess_green_record_dst_path, excess_green_record)
 
     tags_src_path = os.path.join(image_set_dir, "annotations", "tags.json")
-    tags_dst_path = os.path.join(results_dir, "tags.json")
+    tags_dst_path = os.path.join(result_dir, "tags.json")
     shutil.copy(tags_src_path, tags_dst_path)
     
 
-    annotations_dst_path = os.path.join(results_dir, "annotations.json")
+    annotations_dst_path = os.path.join(result_dir, "annotations.json")
     annotation_utils.save_annotations(annotations_dst_path, annotations)
 
 
     regions_only = "regions_only" in job and job["regions_only"]
 
     
-    inference_metrics.create_spreadsheet(results_dir, regions_only=regions_only)
+    inference_metrics.create_spreadsheet(job, regions_only=regions_only)
 
 
 
@@ -443,9 +443,9 @@ def collect_results(job):
     if inference_metrics.can_calculate_density(metadata, camera_specs):
         emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                    {"state_name": emit.PREDICTING, "progress": "Calculating Voronoi Areas"})
-        inference_metrics.create_areas_spreadsheet(results_dir, regions_only=regions_only)
+        inference_metrics.create_areas_spreadsheet(job, regions_only=regions_only)
 
-    raw_outputs_dir = os.path.join(results_dir, "raw_outputs")
+    raw_outputs_dir = os.path.join(result_dir, "raw_outputs")
     os.makedirs(raw_outputs_dir)
 
     downloadable_annotations = {}
@@ -467,15 +467,8 @@ def collect_results(job):
             if key == "classes":
                 downloadable_annotations[image_name][key] = annotations[image_name][key]
 
-            elif key == "regions_of_interest":
 
-                for poly in annotations[image_name]["regions_of_interest"]:
-                    download_poly = []
-                    for coord in poly:
-                        download_poly.append([int(coord[1]), int(coord[0])])
-                    downloadable_annotations[image_name][key].append(download_poly)
-            
-            else:
+            elif key == "boxes":
                 for box in annotations[image_name][key]:
                     download_box = [
                         int(box[1]),
@@ -484,6 +477,15 @@ def collect_results(job):
                         int(box[2])
                     ]
                     downloadable_annotations[image_name][key].append(download_box)
+
+
+            else:
+                for region in annotations[image_name][key]:
+                    download_region = []
+                    for coord in region:
+                        download_region.append([int(coord[1]), int(coord[0])])
+                    downloadable_annotations[image_name][key].append(download_region)
+
     
     json_io.save_json(os.path.join(raw_outputs_dir, "annotations.json"), downloadable_annotations)
 
@@ -492,7 +494,7 @@ def collect_results(job):
     for image_name in full_predictions.keys():
         downloadable_predictions[image_name] = {}
 
-        downloadable_predictions[image_name]["predictions"] = []
+        downloadable_predictions[image_name]["boxes"] = []
         for box in full_predictions[image_name]["boxes"]:
             download_box = [
                 int(box[1]),
@@ -500,7 +502,7 @@ def collect_results(job):
                 int(box[3]),
                 int(box[2])
             ]
-            downloadable_predictions[image_name]["predictions"].append(download_box)
+            downloadable_predictions[image_name]["boxes"].append(download_box)
 
         downloadable_predictions[image_name]["confidence_scores"] = []
         for score in full_predictions[image_name]["scores"]:
@@ -512,7 +514,7 @@ def collect_results(job):
 
     json_io.save_json(os.path.join(raw_outputs_dir, "predictions.json"), downloadable_predictions)
 
-    shutil.make_archive(os.path.join(results_dir, "raw_outputs"), 'zip', raw_outputs_dir)
+    shutil.make_archive(os.path.join(result_dir, "raw_outputs"), 'zip', raw_outputs_dir)
     shutil.rmtree(raw_outputs_dir)
 
     return
@@ -527,6 +529,8 @@ def process_predict(job):
 
     try:
 
+        results_dir = None
+
         username = job["username"]
         farm_name = job["farm_name"]
         field_name = job["field_name"]
@@ -535,6 +539,7 @@ def process_predict(job):
         image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
 
         model_dir = os.path.join(image_set_dir, "model")
+
 
 
         status_path = os.path.join(model_dir, "status.json")
@@ -546,13 +551,13 @@ def process_predict(job):
 
         logger.info("Starting to predict for {}".format(job["key"]))
         emit.set_image_set_status(username, farm_name, field_name, mission_date, 
-                                   {"state_name": emit.PREDICTING, "progress": "0% complete"})
+                                   {"state_name": emit.PREDICTING, "progress": "0% Complete"})
 
         yolov4_driver.predict(job)
 
         if job["save_result"]:
             
-            results_dir = os.path.join(model_dir, "results", "available", job["uuid"])
+            results_dir = os.path.join(model_dir, "results", "available", job["result_uuid"])
             saved_request_path = os.path.join(results_dir, "request.json")
             json_io.save_json(saved_request_path, job)
 
@@ -598,11 +603,11 @@ def process_predict(job):
                                     {"state_name": emit.PREDICTING, "error_message": str(e)})
 
         if job["save_result"]:
-            if results_dir is not None and os.path.exists(results_dir):
+            if isinstance(results_dir, str) and os.path.exists(results_dir):
                 shutil.rmtree(results_dir)
 
 
-            aborted_dir = os.path.join(model_dir, "results", "aborted", job["uuid"])
+            aborted_dir = os.path.join(model_dir, "results", "aborted", job["result_uuid"])
             os.makedirs(aborted_dir)
             job["aborted_time"] = int(time.time())
             job["error_message"] = str(e)
@@ -645,10 +650,15 @@ def process_fine_tune(job):
         num_fine_tuning_regions = annotation_utils.get_num_fine_tuning_regions(annotations)
         if num_fine_tuning_regions > 0:
 
-            updated_patch_size = ep.update_model_patch_size(image_set_dir, annotations, ["fine_tuning_regions"])
-            ep.update_training_patches(image_set_dir, annotations, updated_patch_size)
+            emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                                      {"state_name": emit.FINE_TUNING, "progress": "Extracting Image Patches"})
 
-            aux.update_training_tf_records(image_set_dir, annotations)
+            updated_patch_size = ep.update_model_patch_size(image_set_dir, annotations, ["fine_tuning_regions"])
+            # ep.update_training_patches(image_set_dir, annotations, updated_patch_size)
+            patch_data = ep.update_training_patches(image_set_dir, annotations, updated_patch_size)
+
+            # aux.update_training_tf_records(image_set_dir, annotations)
+            aux.update_training_tf_records(image_set_dir, patch_data)
             aux.reset_loss_record(image_set_dir)
 
             yolov4_driver.fine_tune(job)
@@ -683,11 +693,14 @@ def process_train(job):
     logger = logging.getLogger(__name__)
     try:
 
-        username = job["username"]
+        baseline_pending_dir = None
+        baseline_aborted_dir = None
+        log = None
+        model_creator = job["model_creator"]
         model_name = job["model_name"]
 
-        usr_dir = os.path.join("usr", "data", username)
-        models_dir = os.path.join(usr_dir, "models")
+        model_creator_dir = os.path.join("usr", "data", model_creator)
+        models_dir = os.path.join(model_creator_dir, "models")
         pending_dir = os.path.join(models_dir, "pending")
         baseline_pending_dir = os.path.join(pending_dir, model_name)
         log_path = os.path.join(baseline_pending_dir, "log.json")
@@ -818,7 +831,7 @@ def process_train(job):
                             patch_overlap_percent=patch_overlap_percent,
                             regions=regions,
                             is_ortho=is_ortho,
-                            include_patch_arrays=False,
+                            # include_patch_arrays=False,
                             out_dir=patches_dir)
 
                         all_records.extend(patch_records)
@@ -900,12 +913,12 @@ def process_train(job):
             del occupied_sets[job["key"]]
 
 
-        emit.emit_model_change(job["username"])
+        emit.emit_model_change(job["model_creator"])
 
 
     except Exception as e:
         trace = traceback.format_exc()
-        logger.error("Exception occurred in process_baseline")
+        logger.error("Exception occurred in process_train")
         logger.error(e)
         logger.error(trace)
 
@@ -913,7 +926,7 @@ def process_train(job):
             if job["key"] in occupied_sets:
                 del occupied_sets[job["key"]]
 
-        if baseline_pending_dir is not None:
+        if isinstance(baseline_pending_dir, str) and isinstance(baseline_aborted_dir, str) and isinstance(log, dict):
 
             log["aborted_time"] = int(time.time())
             log["error_message"] = str(e)
@@ -929,7 +942,7 @@ def process_train(job):
                 saved_available_dir = os.path.join(baseline_aborted_dir, "saved_available")
                 shutil.move(baseline_available_dir, saved_available_dir)
 
-        emit.emit_model_change(job["username"])
+        emit.emit_model_change(job["model_creator"])
 
 def process_job(job_key):
 

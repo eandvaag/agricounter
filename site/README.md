@@ -11,9 +11,7 @@ Install Node.js.
 ```
 curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - &&\
 sudo apt-get install -y nodejs
-
 sudo npm install -g n
-
 sudo n 14.18.1
 ```
 
@@ -25,11 +23,8 @@ npm install package.json
 Install PostGreSQL.
 ```
 sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-
 sudo apt-get update
-
 sudo apt-get -y install postgresql
 ```
 
@@ -84,7 +79,7 @@ sudo apt install imagemagick
 
 Edit /etc/ImageMagick-6/policy.xml to allow larger files to be converted.
 ```
-    <policy domain="resource" name="disk" value="10GiB"/>
+<policy domain="resource" name="disk" value="10GiB"/>
 ```
 
 
@@ -98,5 +93,5 @@ sudo apt install libgdal-dev gdal-bin
 
 To start the Node.js application, execute the following command from the `site/myapp` directory:
 ```
-	DEBUG=myapp:* npm start
+DEBUG=myapp:* npm start
 ```

@@ -252,9 +252,8 @@ function create_viewer() {
             if (cur_region_index != -1) {
 
                 let cur_region = annotations[cur_img_name][navigation_type][cur_region_index];
-                if (navigation_type == "regions_of_interest") {
-                    cur_region = get_bounding_box_for_polygon(cur_region);
-                }
+                cur_region = get_bounding_box_for_polygon(cur_region);
+
                 min_y = Math.max(min_y, cur_region[0]);
                 min_x = Math.max(min_x, cur_region[1]);
                 max_y = Math.min(max_y, cur_region[2]);
@@ -346,14 +345,14 @@ function create_viewer() {
                 overlay.context2d().lineWidth = 2;
 
 
-                if (key === "region_of_interest") {
+                if ((key === "region_of_interest" || key === "fine_tuning_region") || key === "test_region") {
                     
                     overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
                     overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";
 
-                    for (let i = 0; i < boxes_to_add["region_of_interest"]["boxes"].length; i++) {
+                    for (let i = 0; i < boxes_to_add[key]["boxes"].length; i++) {
 
-                        let region = boxes_to_add["region_of_interest"]["boxes"][i];
+                        let region = boxes_to_add[key]["boxes"][i];
                         overlay.context2d().beginPath();
                         for (let j = 0; j < region.length; j++) {
                             let pt = region[j];
@@ -390,11 +389,9 @@ function create_viewer() {
                                 continue;
                             }
                         }
-                        if (key === "annotation" || key === "prediction") {
-                            if ((cur_pred_cls_idx != -1) && 
-                                (boxes_to_add[key]["classes"][i] != cur_pred_cls_idx)) {
-                                continue;
-                            }
+                        if ((cur_pred_cls_idx != -1) && 
+                            (boxes_to_add[key]["classes"][i] != cur_pred_cls_idx)) {
+                            continue;
                         }
 
                         if (((box[1] < max_x) && (box[3] > min_x)) && ((box[0] < max_y) && (box[2] > min_y))) {
@@ -406,15 +403,10 @@ function create_viewer() {
                         for (let ind of visible_inds) {
                             let box = boxes_to_add[key]["boxes"][ind];
 
-                            if (key === "annotation" || key === "prediction") {
-                                let cls = boxes_to_add[key]["classes"][ind];
-                                overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
-                                overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
-                            }
-                            else {
-                                overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
-                                overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";
-                            }
+                            let cls = boxes_to_add[key]["classes"][ind];
+                            overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
+                            overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
+
 
                             let viewer_point = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[1], box[0]));
                             let viewer_point_2 = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[3], box[2]));
@@ -487,25 +479,13 @@ function create_viewer() {
                 let image_px_width = metadata["images"][cur_img_name]["width_px"];
                 let image_px_height = metadata["images"][cur_img_name]["height_px"];
         
-                let inner_poly;
+                let inner_poly = region;
                 let outer_poly = [
                     [0-1e6, 0-1e6], 
                     [0-1e6, image_px_width+1e6], 
                     [image_px_height+1e6, image_px_width+1e6],
                     [image_px_height+1e6, 0-1e6]
                 ];
-        
-                if (navigation_type === "regions_of_interest") {
-                    inner_poly = region;
-                }
-                else { 
-                    inner_poly = [
-                        [region[0], region[1]],
-                        [region[0], region[3]],
-                        [region[2], region[3]],
-                        [region[2], region[1]]
-                    ];
-                }
         
                 overlay.context2d().fillStyle = "#222621";
                 overlay.context2d().beginPath();
@@ -534,10 +514,7 @@ function create_viewer() {
                 if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
                     let region = annotations[cur_img_name][navigation_type][cur_region_index];
-        
-                    if (navigation_type === "regions_of_interest") {
-                        region = get_bounding_box_for_polygon(region);
-                    }
+                    region = get_bounding_box_for_polygon(region);
         
                     viewer.world.getItemAt(0).setClip(
                         new OpenSeadragon.Rect(

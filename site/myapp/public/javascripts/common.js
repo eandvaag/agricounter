@@ -11,7 +11,7 @@ const MAX_CAMERA_HEIGHT = 1000000000;
 let annotations_format_sample_text = 
 '{\n' + 
 '    "image_1": {\n' +
-'        "annotations": [\n' +
+'        "boxes": [\n' +
 '            [2, 4, 10, 9],\n' +
 '            ...\n' +
 '        ],\n' +
@@ -22,17 +22,25 @@ let annotations_format_sample_text =
 '        "regions_of_interest": [\n' +
 '            [\n' +
 '               [6, 11],\n' +
-'               [13, 21],\n' +
+'               [13, 57],\n' +
 '               ...\n' +
 '            ],\n' +
 '            ...\n' +
 '        ],\n' +
 '        "fine_tuning_regions": [\n' +
-'            [0, 1, 7, 9],\n' +
+'            [\n' +
+'               [23, 19],\n' +
+'               [33, 7],\n' +
+'               ...\n' +
+'            ],\n' +
 '            ...\n' +
 '        ],\n' +
 '        "test_regions": [\n' +
-'            [11, 14, 23, 25],\n' +
+'            [\n' +
+'               [87, 69],\n' +
+'               [77, 49],\n' +
+'               ...\n' +
+'            ],\n' +
 '            ...\n' +
 '        ]\n' +
 '    },\n' +
@@ -43,7 +51,7 @@ let annotations_format_sample_text =
 let predictions_format_sample_text = 
 '{\n' + 
 '    "image_1": {\n' +
-'        "predictions": [\n' +
+'        "boxes": [\n' +
 '            [2, 4, 10, 9],\n' +
 '            ...\n' +
 '        ],\n' +
@@ -86,9 +94,9 @@ let default_overlay_appearance = {
     "colors": {
         "annotation": ["#0080ff", "#ff0033", "#59ff00", "#8000ff", "#ff6200", "#00ff77", "#fb00ff", "#ffff00", "#00ffe5"],
         "prediction": ["#7dbeff", "#ff8099", "#acff80", "#bf80ff", "#ffb080", "#80ffbb", "#fd80ff", "#ffff80", "#80fff2"],
-        "region_of_interest": "#a291ba",
-        "fine_tuning_region": "#a4ba91",
-        "test_region": "#91bab9"
+        "region_of_interest": "#ffb494",
+        "fine_tuning_region": "#adff94",
+        "test_region": "#cd94ff"
     }
 }
 
@@ -1291,23 +1299,24 @@ function get_num_regions(region_key) {
 
 
 function image_is_fully_annotated_for_fine_tuning(annotations, image_name, image_w, image_h) {
-    if (annotations[image_name]["fine_tuning_regions"].length == 0) {
-        return false;
-    }
-    let fine_tuning_region = annotations[image_name]["fine_tuning_regions"][0];
-    if (((fine_tuning_region[0] == 0) && (fine_tuning_region[1] == 0)) && ((fine_tuning_region[2] == image_h) && (fine_tuning_region[3] == image_w))) {
-        return true;
+
+    let image_area = image_w * image_h;
+    for (let i = 0; i < annotations[image_name]["fine_tuning_regions"].length; i++) {
+        let reg_area = get_polygon_area(annotations[image_name]["fine_tuning_regions"][i]);
+        if (reg_area == image_area) {
+            return true;
+        }
     }
     return false;
 }
 
 function image_is_fully_annotated_for_testing(annotations, image_name, image_w, image_h) {
-    if (annotations[image_name]["test_regions"].length == 0) {
-        return false;
-    }
-    let test_region = annotations[image_name]["test_regions"][0];
-    if (((test_region[0] == 0) && (test_region[1] == 0)) && ((test_region[2] == image_h) && (test_region[3] == image_w))) {
-        return true;
+    let image_area = image_w * image_h;
+    for (let i = 0; i < annotations[image_name]["test_regions"].length; i++) {
+        let reg_area = get_polygon_area(annotations[image_name]["test_regions"][i]);
+        if (reg_area == image_area) {
+            return true;
+        }
     }
     return false;
 }
@@ -1323,10 +1332,7 @@ function set_cur_bounds() {
     if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
         let bounds = annotations[cur_img_name][navigation_type][cur_region_index];
-
-        if (navigation_type === "regions_of_interest") {
-            bounds = get_bounding_box_for_polygon(bounds);
-        }
+        bounds = get_bounding_box_for_polygon(bounds);
 
         let content_size = viewer.world.getItemAt(0).getContentSize();
         let image_w = content_size.x;

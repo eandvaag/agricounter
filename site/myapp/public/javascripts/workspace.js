@@ -171,54 +171,54 @@ let selected_keydown_handler = async function(e) {
 
 
 
-    else if (e.key === "m") {
+    // else if (e.key === "m") {
 
-        if ((selected_annotation != null) && (cur_edit_layer === "test_region")) {
+    //     if ((selected_annotation != null) && (cur_edit_layer === "test_region")) {
 
-            let held_annotation_index = selected_annotation_index;
-            await anno.updateSelected(selected_annotation, true);
+    //         let held_annotation_index = selected_annotation_index;
+    //         await anno.updateSelected(selected_annotation, true);
 
             
-            let source_box_array;
-            let target_box_array;
-            let selected_region;
-            let illegal_intersection = false;
+    //         let source_box_array;
+    //         let target_box_array;
+    //         let selected_region;
+    //         let illegal_intersection = false;
 
-            source_box_array = annotations[cur_img_name]["test_regions"];
-            target_box_array = annotations[cur_img_name]["fine_tuning_regions"];
-            selected_region = source_box_array[held_annotation_index];
+    //         source_box_array = annotations[cur_img_name]["test_regions"];
+    //         target_box_array = annotations[cur_img_name]["fine_tuning_regions"];
+    //         selected_region = source_box_array[held_annotation_index];
 
 
-            loop1:
-            for (let region_key of ["fine_tuning_regions", "test_regions"]) {
-                for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
-                    if (i == held_annotation_index) {
-                        continue;
-                    }
-                    if (box_intersects_region(selected_region, annotations[cur_img_name][region_key][i])) {
-                        illegal_intersection = true;
-                        break loop1;
-                    }
-                }
-            }
+    //         loop1:
+    //         for (let region_key of ["fine_tuning_regions", "test_regions"]) {
+    //             for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
+    //                 if (i == held_annotation_index) {
+    //                     continue;
+    //                 }
+    //                 if (box_intersects_region(selected_region, annotations[cur_img_name][region_key][i])) {
+    //                     illegal_intersection = true;
+    //                     break loop1;
+    //                 }
+    //             }
+    //         }
 
-            if (!(illegal_intersection)) {
-                source_box_array.splice(held_annotation_index, 1);
-                target_box_array.push(selected_region);
-                selected_annotation = null;
-                selected_annotation_index = -1;
+    //         if (!(illegal_intersection)) {
+    //             source_box_array.splice(held_annotation_index, 1);
+    //             target_box_array.push(selected_region);
+    //             selected_annotation = null;
+    //             selected_annotation_index = -1;
 
-                update_navigation_dropdown();
-                update_region_name();
-                create_navigation_table();
+    //             update_navigation_dropdown();
+    //             update_region_name();
+    //             create_navigation_table();
 
-                $("#save_icon").css("color", "#ed452b");
+    //             $("#save_icon").css("color", "#ed452b");
 
-                viewer.raiseEvent('update-viewport');
+    //             viewer.raiseEvent('update-viewport');
 
-            }
-        }
-    }
+    //         }
+    //     }
+    // }
     else {
         let valid_keys = [];
         for (let i = 0; i < metadata["object_classes"].length; i++) {
@@ -349,7 +349,7 @@ function resize_poly_px_str(px_str) {
         }
 
         let clip_polygon = [[0, 0], [img_max_x, 0], [img_max_x, img_max_y], [0, img_max_y]];
-        revised_coords = clip_polygons(revised_coords, clip_polygon);
+        revised_coords = clip_polygons_xy(revised_coords, clip_polygon);
         let rounded_revised_coords = [];
         let added_str_coords = [];
         for (let j = 0; j < revised_coords.length; j++) {
@@ -565,11 +565,11 @@ function create_anno() {
 
     Annotorious.BetterPolygon(anno);
 
-    if (cur_edit_layer === "region_of_interest") {
-        anno.setDrawingTool("polygon");
+    if (cur_edit_layer === "annotation") {
+        anno.setDrawingTool("rect");
     }
     else {
-        anno.setDrawingTool("rect");
+        anno.setDrawingTool("polygon");
     }
 
     anno.on('cancelSelected', function(selection) {
@@ -584,30 +584,19 @@ function create_anno() {
         
         let px_str = annotation["target"]["selector"]["value"];
 
-        let box;
-        let illegal_box = false;
-        if (cur_edit_layer === "region_of_interest") {
-            let start = px_str.indexOf('"');
-            let end = px_str.lastIndexOf('"');
+        let anno_item;
+        let illegal_anno_item = false;
 
-            let coords_str = px_str.substring(start+1, end);
-            let lst_of_coord_strs = coords_str.split(" ");
-            box = [];
-            for (let coord_str of lst_of_coord_strs) {
-                let coords = coord_str.split(",").map(x => parseFloat(x));
-                box.push([(coords[1]), (coords[0])]);
-            }
-        }
-        else {
+        if (cur_edit_layer === "annotation") {
             px_str = px_str.substring(11);
             let px_lst = px_str.split(",").map(x => parseFloat(x));
 
             if (px_lst[0] == -1) {
-                illegal_box = true;
+                illegal_anno_item = true;
             }
             else {
 
-                box = [
+                anno_item = [
                     (px_lst[1]), 
                     (px_lst[0]), 
                     (px_lst[1] + px_lst[3]),
@@ -615,51 +604,72 @@ function create_anno() {
                 ];
             }
         }
-        let sel_box_array;
+        else {
+            let start = px_str.indexOf('"');
+            let end = px_str.lastIndexOf('"');
+
+            let coords_str = px_str.substring(start+1, end);
+            let lst_of_coord_strs = coords_str.split(" ");
+            anno_item = [];
+            for (let coord_str of lst_of_coord_strs) {
+                let coords = coord_str.split(",").map(x => parseFloat(x));
+                anno_item.push([(coords[1]), (coords[0])]);
+            }
+        }
+
+        let sel_array;
         if (cur_edit_layer === "annotation") {
-            sel_box_array = annotations[cur_img_name]["boxes"];
+            sel_array = annotations[cur_img_name]["boxes"];
         }
         else if (cur_edit_layer == "region_of_interest") {
-            sel_box_array = annotations[cur_img_name]["regions_of_interest"];
+            sel_array = annotations[cur_img_name]["regions_of_interest"];
         }
         else if (cur_edit_layer === "fine_tuning_region") {
-            sel_box_array = annotations[cur_img_name]["fine_tuning_regions"];
+            sel_array = annotations[cur_img_name]["fine_tuning_regions"];
         }
         else {
-            sel_box_array = annotations[cur_img_name]["test_regions"];
+            sel_array = annotations[cur_img_name]["test_regions"];
         }
 
-        if (!(illegal_box)) {
+        if (!(illegal_anno_item)) {
             let illegal_intersection = false;
 
-            if (cur_edit_layer === "region_of_interest") {
-                if (annotations[cur_img_name]["regions_of_interest"].length >= 99) {
+
+            if (cur_edit_layer !== "annotation") {
+                if (sel_array.length >= 99) {
+                    illegal_intersection = true;
+                }
+                
+                if (polygon_is_self_intersecting(anno_item)) {
                     illegal_intersection = true;
                 }
 
-                if (polygon_is_self_intersecting(box)) {
-                    illegal_intersection = true;
+                let avoid = null;
+                if (cur_edit_layer === "fine_tuning_region") {
+                    avoid = "test_regions";
                 }
-            }
-            else if ((cur_edit_layer === "fine_tuning_region") || (cur_edit_layer === "test_region")) {
+                else if (cur_edit_layer === "test_region") {
+                    avoid = "fine_tuning_regions";
+                }
 
-                    loop1:
-                    for (let region_key of ["fine_tuning_regions", "test_regions"]) {
-                        
-                        if (annotations[cur_img_name][region_key].length >= 99) {
+                if (avoid) {
+
+                    for (let i = 0; i < annotations[cur_img_name][avoid].length; i++) {
+
+                        let reg = annotations[cur_img_name][avoid][i];
+                        let clipped_polygon = clip_polygons_yx(anno_item, reg);
+                        let poly_area = get_polygon_area(clipped_polygon);
+                        console.log(poly_area);
+                        if (poly_area > 0) {
                             illegal_intersection = true;
                         }
 
-                        for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
-                            if (box_intersects_region(box, annotations[cur_img_name][region_key][i])) {
-                                illegal_intersection = true;
-                                break loop1;
-                            }
-                        }
                     }
+                }
             }
+
             if (!(illegal_intersection)) {
-                sel_box_array.push(box);
+                sel_array.push(anno_item);
                 if (cur_edit_layer === "annotation") {
                     annotations[cur_img_name]["classes"].push(parseInt($("#class_select").val()));
                 }
@@ -704,11 +714,11 @@ function create_anno() {
 
         let px_str = selection.target.selector.value;
         let updated_px_str;
-        if (cur_edit_layer === "region_of_interest") {
-            updated_px_str = resize_poly_px_str(px_str);
+        if (cur_edit_layer === "annotation") {
+            updated_px_str = resize_px_str(px_str);
         }
         else { 
-            updated_px_str = resize_px_str(px_str);
+            updated_px_str = resize_poly_px_str(px_str);
         }
         if (updated_px_str === "illegal") {
             anno.clearAnnotations();
@@ -728,83 +738,112 @@ function create_anno() {
 
         let px_str = annotation.target.selector.value;
         let updated_px_str;
-        if (cur_edit_layer === "region_of_interest") {
-            updated_px_str = resize_poly_px_str(px_str);
+        if (cur_edit_layer === "annotation") {
+            updated_px_str = resize_px_str(px_str);
         }
         else { 
-            updated_px_str = resize_px_str(px_str);
+            updated_px_str = resize_poly_px_str(px_str);
         }
 
         if (updated_px_str !== "illegal") {
 
             annotation.target.selector.value = updated_px_str;
 
-            let updated_box;
-            if (cur_edit_layer === "region_of_interest") {
-                let start = updated_px_str.indexOf('"');
-                let end = updated_px_str.lastIndexOf('"');
-            
-                let coords_str = updated_px_str.substring(start+1, end);
-                let lst_of_coord_strs = coords_str.split(" ");
-                updated_box = [];
-                for (let coord_str of lst_of_coord_strs) {
-                    let coords = coord_str.split(",").map(x => parseFloat(x));
-                    updated_box.push([coords[1], coords[0]]);
-                }
-
-            }
-            else {
+            let updated_anno_item;
+            if (cur_edit_layer === "annotation") {
                 updated_px_str = updated_px_str.substring(11);
                 let px_lst = updated_px_str.split(",").map(x => parseFloat(x));
 
-                updated_box = [
+                updated_anno_item = [
                     (px_lst[1]), 
                     (px_lst[0]), 
                     (px_lst[1] + px_lst[3]),
                     (px_lst[0] + px_lst[2])
                 ];
             }
+            else {
+                let start = updated_px_str.indexOf('"');
+                let end = updated_px_str.lastIndexOf('"');
+            
+                let coords_str = updated_px_str.substring(start+1, end);
+                let lst_of_coord_strs = coords_str.split(" ");
+                updated_anno_item = [];
+                for (let coord_str of lst_of_coord_strs) {
+                    let coords = coord_str.split(",").map(x => parseFloat(x));
+                    updated_anno_item.push([coords[1], coords[0]]);
+                }
+            }
 
-            let sel_box_array;
+            let sel_array;
             if (cur_edit_layer === "annotation") {
-                sel_box_array = annotations[cur_img_name]["boxes"];
+                sel_array = annotations[cur_img_name]["boxes"];
             }
             else if (cur_edit_layer === "region_of_interest") {
-                sel_box_array = annotations[cur_img_name]["regions_of_interest"];
+                sel_array = annotations[cur_img_name]["regions_of_interest"];
             }
             else if (cur_edit_layer === "fine_tuning_region") {
-                sel_box_array = annotations[cur_img_name]["fine_tuning_regions"];
+                sel_array = annotations[cur_img_name]["fine_tuning_regions"];
             }
             else {
-                sel_box_array = annotations[cur_img_name]["test_regions"];
+                sel_array = annotations[cur_img_name]["test_regions"];
             }
 
             let illegal_intersection = false;
 
-            if (cur_edit_layer === "region_of_interest") {
-                if (polygon_is_self_intersecting(updated_box)) {
+            // if (cur_edit_layer === "region_of_interest") {
+            //     if (polygon_is_self_intersecting(updated_box)) {
+            //         illegal_intersection = true;
+            //     }
+            // }
+            // else if ((cur_edit_layer === "fine_tuning_region") || (cur_edit_layer === "test_region")) {
+            //     loop1:
+            //     for (let region_key of ["fine_tuning_regions", "test_regions"]) {
+            //         for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
+            //             if ((region_key === cur_edit_layer + "s") && (i == selected_annotation_index)) {
+            //                 continue;
+            //             }
+            //             if (box_intersects_region(updated_box, annotations[cur_img_name][region_key][i])) {
+            //                 illegal_intersection = true;
+            //                 break loop1;
+            //             }
+            //         }
+            //     }
+            // }
+            if (cur_edit_layer !== "annotation") {
+                if (sel_array.length >= 99) {
                     illegal_intersection = true;
                 }
-            }
-            else if ((cur_edit_layer === "fine_tuning_region") || (cur_edit_layer === "test_region")) {
-                loop1:
-                for (let region_key of ["fine_tuning_regions", "test_regions"]) {
-                    for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
-                        if ((region_key === cur_edit_layer + "s") && (i == selected_annotation_index)) {
-                            continue;
-                        }
-                        if (box_intersects_region(updated_box, annotations[cur_img_name][region_key][i])) {
+                
+                if (polygon_is_self_intersecting(updated_anno_item)) {
+                    illegal_intersection = true;
+                }
+
+                let avoid = null;
+                if (cur_edit_layer === "fine_tuning_region") {
+                    avoid = "test_regions";
+                }
+                else if (cur_edit_layer === "test_region") {
+                    avoid = "fine_tuning_regions";
+                }
+
+                if (avoid) {
+
+                    for (let i = 0; i < annotations[cur_img_name][avoid].length; i++) {
+
+                        let reg = annotations[cur_img_name][avoid][i];
+                        let clipped_polygon = clip_polygons_yx(updated_anno_item, reg);
+                        if (get_polygon_area(clipped_polygon) > 0) {
                             illegal_intersection = true;
-                            break loop1;
                         }
+
                     }
                 }
             }
             if (!(illegal_intersection)) {
-                let prev_box = sel_box_array[selected_annotation_index];
-                sel_box_array[selected_annotation_index] = updated_box;
+                let prev_anno_item = sel_array[selected_annotation_index];
+                sel_array[selected_annotation_index] = updated_anno_item;
 
-                if (!(arraysEqual(updated_box, prev_box))) {
+                if (!(arraysEqual(updated_anno_item, prev_anno_item))) {
                     $("#save_icon").css("color", "#ed452b");
 
 
@@ -877,9 +916,10 @@ function anno_and_pred_onRedraw() {
     if (cur_region_index != -1) {
 
         let cur_region = annotations[cur_img_name][navigation_type][cur_region_index];
-        if (navigation_type == "regions_of_interest") {
-            cur_region = get_bounding_box_for_polygon(cur_region);
-        }
+        cur_region = get_bounding_box_for_polygon(cur_region);
+        // if (navigation_type == "regions_of_interest") {
+        //     cur_region = get_bounding_box_for_polygon(cur_region);
+        // }
         min_y = Math.max(min_y, cur_region[0]);
         min_x = Math.max(min_x, cur_region[1]);
         max_y = Math.min(max_y, cur_region[2]);
@@ -971,18 +1011,18 @@ function anno_and_pred_onRedraw() {
 
         overlay.context2d().lineWidth = 2;
 
-        if (key === "region_of_interest") {
+        if ((key === "region_of_interest" || key === "fine_tuning_region") || key === "test_region") {
 
             overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
             overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";
 
 
-            for (let i = 0; i < boxes_to_add["region_of_interest"]["boxes"].length; i++) {
+            for (let i = 0; i < boxes_to_add[key]["boxes"].length; i++) {
 
-                if ((cur_edit_layer === "region_of_interest") && (i == selected_annotation_index)) {
+                if ((cur_edit_layer === key) && (i == selected_annotation_index)) {
                     continue;
                 }
-                let region = boxes_to_add["region_of_interest"]["boxes"][i];
+                let region = boxes_to_add[key]["boxes"][i];
 
                 overlay.context2d().beginPath();
                 for (let j = 0; j < region.length; j++) {
@@ -1045,15 +1085,10 @@ function anno_and_pred_onRedraw() {
             if (visible_inds.length <= MAX_BOXES_DISPLAYED) {
                 for (let ind of visible_inds) {
                     let box = boxes_to_add[key]["boxes"][ind];
-                    if (key === "annotation" || key === "prediction") {
-                        let cls = boxes_to_add[key]["classes"][ind];
-                        overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
-                        overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
-                    }
-                    else {
-                        overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
-                        overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";
-                    }
+                    let cls = boxes_to_add[key]["classes"][ind];
+                    overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
+                    overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
+
 
                     let viewer_point = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[1], box[0]));
                     let viewer_point_2 = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[3], box[2]));
@@ -1121,7 +1156,7 @@ function anno_and_pred_onRedraw() {
         let image_px_width = metadata["images"][cur_img_name]["width_px"];
         let image_px_height = metadata["images"][cur_img_name]["height_px"];
 
-        let inner_poly;
+        let inner_poly = region;
         let outer_poly = [
             [0-1e6, 0-1e6], 
             [0-1e6, image_px_width+1e6], 
@@ -1129,17 +1164,17 @@ function anno_and_pred_onRedraw() {
             [image_px_height+1e6, 0-1e6]
         ];
 
-        if (navigation_type === "regions_of_interest") {
-            inner_poly = region;
-        }
-        else { 
-            inner_poly = [
-                [region[0], region[1]],
-                [region[0], region[3]],
-                [region[2], region[3]],
-                [region[2], region[1]]
-            ];
-        }
+        // if (navigation_type === "regions_of_interest") {
+        //     inner_poly = region;
+        // }
+        // else { 
+        //     inner_poly = [
+        //         [region[0], region[1]],
+        //         [region[0], region[3]],
+        //         [region[2], region[3]],
+        //         [region[2], region[1]]
+        //     ];
+        // }
 
 
         overlay.context2d().fillStyle = "#222621";
@@ -1169,10 +1204,11 @@ function anno_and_pred_onRedraw() {
         if ((navigation_type === "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type === "test_regions")) {
 
             let region = annotations[cur_img_name][navigation_type][cur_region_index];
+            region = get_bounding_box_for_polygon(region);
 
-            if (navigation_type === "regions_of_interest") {
-                region = get_bounding_box_for_polygon(region);
-            }
+            // if (navigation_type === "regions_of_interest") {
+            //     region = get_bounding_box_for_polygon(region);
+            // }
 
             viewer.world.getItemAt(0).setClip(
                 new OpenSeadragon.Rect(
@@ -1357,23 +1393,12 @@ function create_viewer(viewer_id) {
                 }
 
 
-                if (cur_edit_layer === "region_of_interest") {
-                    for (let i = 0; i < sel_box_array.length; i++) {
-                        let poly = sel_box_array[i];
-                        if (point_is_inside_polygon([imagePoint.y, imagePoint.x], poly)) {
-                            inside_box = true;
-                            let area = get_polygon_area(poly);
-                            candidate_box_areas.push(area);
-                            candidate_box_indices.push(i);
-                        }
-                    }
+                if (cur_edit_layer === "annotation") {
 
-                }
-                else {
                     let cur_cls_idx = parseInt($("#class_select").val());
                     for (let i = 0; i < sel_box_array.length; i++) {
 
-                        if (cur_edit_layer === "annotation" && annotations[cur_img_name]["classes"][i] !== cur_cls_idx) {
+                        if (annotations[cur_img_name]["classes"][i] !== cur_cls_idx) {
                             continue;
                         }
 
@@ -1391,6 +1416,17 @@ function create_viewer(viewer_id) {
                         }
                     }
                 }
+                else {
+                    for (let i = 0; i < sel_box_array.length; i++) {
+                        let poly = sel_box_array[i];
+                        if (point_is_inside_polygon([imagePoint.y, imagePoint.x], poly)) {
+                            inside_box = true;
+                            let area = get_polygon_area(poly);
+                            candidate_box_areas.push(area);
+                            candidate_box_indices.push(i);
+                        }
+                    }
+                }
                 if (candidate_box_indices.length > 0) {
                     selected_annotation_index = candidate_box_indices[argMin(candidate_box_areas)];
                 }
@@ -1401,20 +1437,18 @@ function create_viewer(viewer_id) {
                     annotation_uuid = uuidv4();
                     let box_str;
                     let selector_type;
-                    if (cur_edit_layer === "region_of_interest") {
+                    if (cur_edit_layer === "annotation") {
+                        box_str = [box[1], box[0], (box[3] - box[1]), (box[2] - box[0])].join(",");
+                        box_str = "xywh=pixel:" + box_str;
+                        selector_type = "FragmentSelector";
+                    }
+                    else {
                         let pt_strs = [];
                         for (let i = 0; i < box.length; i++) {
                             pt_strs.push(box[i][1] + "," + box[i][0]);
                         }
                         box_str = `<svg><polygon points="` + pt_strs.join(" ") + `"></polygon></svg>`;
                         selector_type = "SvgSelector";
-
-                    }
-                    else {
-                        box_str = [box[1], box[0], (box[3] - box[1]), (box[2] - box[0])].join(",");
-                        box_str = "xywh=pixel:" + box_str;
-                        selector_type = "FragmentSelector";
-
                     }
                     selected_annotation = {
                         "type": "Annotation",
@@ -1620,25 +1654,25 @@ function save_annotations(callback=null) {
 
     for (let image_name of Object.keys(annotations)) {
 
-        for (let key of ["boxes", "fine_tuning_regions", "test_regions"]) {
-            for (let i = 0; i < annotations[image_name][key].length; i++) {
-                box = annotations[image_name][key][i];
-                annotations[image_name][key][i] = [
-                    Math.round(box[0]),
-                    Math.round(box[1]),
-                    Math.round(box[2]),
-                    Math.round(box[3])
-                ];
-            }
+        for (let i = 0; i < annotations[image_name]["boxes"].length; i++) {
+            box = annotations[image_name]["boxes"][i];
+            annotations[image_name]["boxes"][i] = [
+                Math.round(box[0]),
+                Math.round(box[1]),
+                Math.round(box[2]),
+                Math.round(box[3])
+            ];
         }
-        for (let i = 0; i < annotations[image_name]["regions_of_interest"].length; i++) {
-            for (let j = 0; j < annotations[image_name]["regions_of_interest"][i].length; j++) {
-                annotations[image_name]["regions_of_interest"][i][j] = [
-                    Math.round(annotations[image_name]["regions_of_interest"][i][j][0]), 
-                    Math.round(annotations[image_name]["regions_of_interest"][i][j][1])
-                ];
-            }
 
+        for (let key of ["fine_tuning_regions", "test_regions", "regions_of_interest"]) {
+            for (let i = 0; i < annotations[image_name][key].length; i++) {
+                for (let j = 0; j < annotations[image_name][key][i].length; j++) {
+                    annotations[image_name][key][i][j] = [
+                        Math.round(annotations[image_name][key][i][j][0]), 
+                        Math.round(annotations[image_name][key][i][j][1])
+                    ];
+                }
+            }
         }
     }
     if ((cur_panel === "annotation" || cur_panel === "prediction")) {
@@ -1702,7 +1736,7 @@ function confirmed_use_predictions() {
         }
         region = null;
     }
-    else if (navigation_type == "regions_of_interest") {
+    else {
         region = annotations[cur_img_name][navigation_type][cur_region_index];
         for (let i = 0; i < annotations[cur_img_name]["boxes"].length; i++) {
             
@@ -1720,18 +1754,6 @@ function confirmed_use_predictions() {
             }
         }
     }
-    else {
-        region = annotations[cur_img_name][navigation_type][cur_region_index];
-        for (let i = 0; i < annotations[cur_img_name]["boxes"].length; i++) {
-            let box = annotations[cur_img_name]["boxes"][i];
-            if (annotations[cur_img_name]["classes"][i] == cur_class_ind) {
-                if (box_intersects_region(box, region)) {
-                    annotations[cur_img_name]["boxes"].splice(i, 1);
-                    annotations[cur_img_name]["classes"].splice(i, 1);
-                }
-            }
-        }
-    }
 
     /* Add new boxes */
     let slider_val = Number.parseFloat($("#confidence_slider").val()); //.toFixed(2);
@@ -1742,21 +1764,12 @@ function confirmed_use_predictions() {
                 annotations[cur_img_name]["boxes"].push(box);
                 annotations[cur_img_name]["classes"].push(cur_class_ind);
             }
-            else if (navigation_type == "regions_of_interest") {
+            else {
                 if (point_is_inside_polygon([box[0], box[1]], region) ||
                     point_is_inside_polygon([box[0], box[3]], region) ||
                     point_is_inside_polygon([box[2], box[3]], region) ||
                     point_is_inside_polygon([box[2], box[1]], region)
                 ) {
-                    annotations[cur_img_name]["boxes"].push(box);
-                    annotations[cur_img_name]["classes"].push(cur_class_ind);
-                }
-            }
-
-
-
-            else {
-                if (box_intersects_region(box, region)) {
                     annotations[cur_img_name]["boxes"].push(box);
                     annotations[cur_img_name]["classes"].push(cur_class_ind);
                 }
@@ -2244,14 +2257,14 @@ function submit_result_request() {
 function submit_fine_tuning_request() {
     disable_model_actions();
 
-    // let num_fine_tuning_regions = 0;
-    // for (let image_name of Object.keys(annotations)) {
-    //     num_fine_tuning_regions += annotations[image_name]["fine_tuning_regions"].length;
-    // }
+    let num_fine_tuning_regions = 0;
+    for (let image_name of Object.keys(annotations)) {
+        num_fine_tuning_regions += annotations[image_name]["fine_tuning_regions"].length;
+    }
 
-    // if (num_fine_tuning_regions == 0) {
-    //     show_modal_message("Error", "The image set must contain at least one fine-tuning region before fine-tuning can be initiated");
-    // }
+    if (num_fine_tuning_regions == 0) {
+        show_modal_message("Error", "The image set must contain at least one fine-tuning region before fine-tuning can be initiated");
+    }
 
     let callback = function() {
 
@@ -2432,14 +2445,14 @@ function show_model_details(model_creator, model_name) {
 
                         current_image_set_overlay.context2d().lineWidth = 2;
 
-                        if (key === "region_of_interest") {
+                        if ((key === "region_of_interest" || key === "fine_tuning_region") || "test_region") {
 
                             current_image_set_overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
                             current_image_set_overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";                            
 
-                            for (let i = 0; i < boxes_to_add["region_of_interest"]["boxes"].length; i++) {
+                            for (let i = 0; i < boxes_to_add[key]["boxes"].length; i++) {
 
-                                let region = boxes_to_add["region_of_interest"]["boxes"][i];
+                                let region = boxes_to_add[key]["boxes"][i];
                                 current_image_set_overlay.context2d().beginPath();
                                 for (let j = 0; j < region.length; j++) {
                                     let pt = region[j];
@@ -2480,15 +2493,9 @@ function show_model_details(model_creator, model_name) {
                                 for (let ind of visible_inds) {
 
                                     let box = boxes_to_add[key]["boxes"][ind];
-                                    if (key === "annotation") {
-                                        let cls = boxes_to_add[key]["classes"][ind];
-                                        current_image_set_overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
-                                        current_image_set_overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
-                                    }
-                                    else {
-                                        current_image_set_overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
-                                        current_image_set_overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";
-                                    }
+                                    let cls = boxes_to_add[key]["classes"][ind];
+                                    current_image_set_overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
+                                    current_image_set_overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
 
 
                                     let viewer_point = current_image_set_viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[1], box[0]));
@@ -2578,11 +2585,15 @@ function init_model_viewer() {
                 let image_w = content_size.x;
                 let image_h = content_size.y;
                 let hw_ratio = image_h / image_w;
+                
+                let bounds = get_bounding_box_for_polygon(region);
+
+
                 let viewport_bounds = [
-                    region[1] / image_w,
-                    (region[0] / image_h) * hw_ratio,
-                    (region[3] - region[1]) / image_w,
-                    ((region[2] - region[0]) / image_h) * hw_ratio
+                    bounds[1] / image_w,
+                    (bounds[0] / image_h) * hw_ratio,
+                    (bounds[3] - bounds[1]) / image_w,
+                    ((bounds[2] - bounds[0]) / image_h) * hw_ratio
                 ];
 
                 model_image_set_cur_bounds = new OpenSeadragon.Rect(
@@ -2673,7 +2684,7 @@ function init_model_viewer() {
                 let image_px_width = model_overlay.imgWidth;
                 let image_px_height = model_overlay.imgHeight;
         
-                let inner_poly;
+                let inner_poly = region;
                 let outer_poly = [
                     [0-1e6, 0-1e6], 
                     [0-1e6, image_px_width+1e6], 
@@ -2681,12 +2692,12 @@ function init_model_viewer() {
                     [image_px_height+1e6, 0-1e6]
                 ];
 
-                inner_poly = [
-                    [region[0], region[1]],
-                    [region[0], region[3]],
-                    [region[2], region[3]],
-                    [region[2], region[1]]
-                ];
+                // inner_poly = [
+                //     [region[0], region[1]],
+                //     [region[0], region[3]],
+                //     [region[2], region[3]],
+                //     [region[2], region[1]]
+                // ];
         
                 model_overlay.context2d().fillStyle = "#222621";
                 model_overlay.context2d().beginPath();
@@ -3276,7 +3287,15 @@ function add_prediction_buttons() {
                     let image_width = metadata["images"][cur_img_name]["width_px"];
                     let image_height = metadata["images"][cur_img_name]["height_px"];
                     image_list = [cur_img_name];
-                    region_list = [[[0, 0, image_height, image_width]]];
+                    // region_list = [[[0, 0, image_height, image_width]]];
+                    region_list = [[
+                        [
+                            [0, 0],
+                            [0, image_width],
+                            [image_height, image_width],
+                            [image_height, 0]
+                        ]
+                    ]];
                 }
                 else {
                     image_list = [cur_img_name];
@@ -3326,7 +3345,14 @@ function get_image_list_and_region_list_for_predicting_on_all(predict_on_images)
             let image_width = metadata["images"][image_name]["width_px"];
             let image_height = metadata["images"][image_name]["height_px"];
             image_list.push(image_name);
-            region_list.push([[0, 0, image_height, image_width]]);
+            region_list.push([
+                [
+                    [0, 0],
+                    [0, image_width],
+                    [image_height, image_width],
+                    [image_height, 0]
+                ]
+            ]);
         }
     }
     else {
@@ -3531,15 +3557,33 @@ $(document).ready(function() {
 
         console.log("got image set update", update);
 
-        $("#model_name").html(update["model_name"]);
-        
+
+
         let state_name = update["state_name"];
         let progress = update["progress"];
         let error_message = update["error_message"];
         let prediction_image_names = update["prediction_image_names"];
 
 
-        $("#image_set_state").html(state_name);
+        model_unassigned = update["model_name"] === "";
+        if (model_unassigned) {
+            $("#model_name").html("No model selected.");
+        }
+        else {
+            let model_name;
+            if (update["model_name"].startsWith("random_weights")) {
+                model_name = "Random Weights";
+            }
+            else {
+                model_name = update["model_name"];
+            }
+            $("#model_name").html(model_name);
+            $("#image_set_state").html(state_name);
+        }
+
+
+
+        
         if (error_message === "") {
             // $("#image_set_state_progress").css("color", "white");
             $("#image_set_state_progress").html(progress);
@@ -3556,7 +3600,7 @@ $(document).ready(function() {
             disable_model_actions();
         }
 
-        model_unassigned = update["model_name"] === "";
+
 
 
 
@@ -3847,28 +3891,21 @@ $(document).ready(function() {
             region_max_y = metadata["images"][cur_img_name]["height_px"];
             region_max_x = metadata["images"][cur_img_name]["width_px"];
         }
-        else if (navigation_type === "regions_of_interest") {
-            let region = annotations[cur_img_name]["regions_of_interest"][cur_region_index];
+        else {
+            let region = annotations[cur_img_name][navigation_type][cur_region_index];
             let region_bbox = get_bounding_box_for_polygon(region);
             region_min_y = region_bbox[0];
             region_min_x = region_bbox[1];
             region_max_y = region_bbox[2];
             region_max_x = region_bbox[3];
         }
-        else {
-            let region = annotations[cur_img_name][navigation_type][cur_region_index];
-            region_min_y = region[0];
-            region_min_x = region[1];
-            region_max_y = region[2];
-            region_max_x = region[3];
-        }
 
         let tile_overlap_percent = parseFloat($("#grid_overlap_percent_input").val());
         let overlap_px = Math.floor(tile_size * tile_overlap_percent);
 
         let subject_polygon = [];
-        if (navigation_type === "regions_of_interest") {
-            let region = annotations[cur_img_name]["regions_of_interest"][cur_region_index];
+        if (navigation_type !== "images") {
+            let region = annotations[cur_img_name][navigation_type][cur_region_index];
             for (let c of region) {
                 subject_polygon.push([c[1], c[0]]);
             }
@@ -3898,7 +3935,7 @@ $(document).ready(function() {
                 let tile = [tile_min_y, tile_min_x, tile_max_y, tile_max_x];
 
                 let add = true;
-                if (navigation_type === "regions_of_interest") {
+                if (navigation_type !== "images") {
 
                     let clip_polygon = [
                         [tile_min_x, tile_min_y],
@@ -3907,7 +3944,7 @@ $(document).ready(function() {
                         [tile_min_x, tile_max_y]
                     ];
 
-                    let clipped_polygon = clip_polygons(subject_polygon, clip_polygon);
+                    let clipped_polygon = clip_polygons_xy(subject_polygon, clip_polygon);
                     if (get_polygon_area(clipped_polygon) == 0) {
                         add = false;
                     }
@@ -3969,7 +4006,7 @@ $(document).ready(function() {
         `<br><br>&#8226; Click on an existing annotation / region to select it and change its boundaries.` +
         `<br><br>&#8226; Use the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>DELETE</span> key to remove whichever annotation / region is currently selected.` + 
         `<br><br>&#8226; When creating a region of interest, double click the left mouse button to complete the region.` +                
-        `<br><br>&#8226; If a test region is selected, pressing the <span style='border: 1px solid white; font-size: 16px; padding: 5px 10px; margin: 0px 5px'>m</span> key will change that region into a fine-tuning region.` + 
+        // `<br><br>&#8226; If a test region is selected, pressing the <span style='border: 1px solid white; font-size: 16px; padding: 5px 10px; margin: 0px 5px'>m</span> key will change that region into a fine-tuning region.` + 
         `<br><br>&#8226; Use the number keys to switch between different object classes.` + 
         `<br><br>&#8226; Don't forget to save your work!</div>`;
         show_modal_message(head, message, modal_width=750);
@@ -4147,11 +4184,11 @@ $(document).ready(function() {
 
 
 
-        if (cur_edit_layer === "region_of_interest") {
-            anno.setDrawingTool("polygon");
+        if (cur_edit_layer === "annotation") {
+            anno.setDrawingTool("rect");
         }
         else {
-            anno.setDrawingTool("rect");
+            anno.setDrawingTool("polygon");
         }
 
         if (cur_panel === "annotation") {
@@ -4276,7 +4313,7 @@ $(document).ready(function() {
                         `</li>` +
                         `<br>` +
                         `<br>` +
-                        `<li>All regions of interest must be encoded as lists of x, y coordinate pairs.` +
+                        `<li>All regions must be encoded as lists of x, y coordinate pairs.` +
                         `</li>` +
                         `<br>` +
                         `<br>` +
@@ -4410,7 +4447,7 @@ $(document).ready(function() {
                         `</li>` +
                         `<br>` +
                         `<br>` +
-                        `<li>All regions of interest are encoded as lists of x, y coordinate pairs.` +
+                        `<li>All regions are encoded as lists of x, y coordinate pairs.` +
                         `</li>` +
                         `<br>` +
                         `<br>` +
@@ -4583,18 +4620,18 @@ function gridview_onRedraw() {
         overlay.context2d().lineWidth = 2;
 
 
-        if (key === "region_of_interest") {
+        if ((key === "region_of_interest" || key === "fine_tuning_region") || key === "test_region") {
 
             overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
             overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";
 
 
-            for (let i = 0; i < boxes_to_add["region_of_interest"]["boxes"].length; i++) {
+            for (let i = 0; i < boxes_to_add[key]["boxes"].length; i++) {
 
-                if ((cur_edit_layer === "region_of_interest") && (i == selected_annotation_index)) {
+                if ((cur_edit_layer === key) && (i == selected_annotation_index)) {
                     continue;
                 }
-                let region = boxes_to_add["region_of_interest"]["boxes"][i];
+                let region = boxes_to_add[key]["boxes"][i];
 
                 overlay.context2d().beginPath();
                 for (let j = 0; j < region.length; j++) {
@@ -4643,15 +4680,10 @@ function gridview_onRedraw() {
             if (visible_inds.length <= MAX_BOXES_DISPLAYED) {
                 for (let ind of visible_inds) {
                     let box = boxes_to_add[key]["boxes"][ind];
-                    if (key === "annotation") {
-                        let cls = boxes_to_add[key]["classes"][ind];
-                        overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
-                        overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
-                    }
-                    else {
-                        overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
-                        overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";
-                    }
+                    let cls = boxes_to_add[key]["classes"][ind];
+                    overlay.context2d().strokeStyle = overlay_appearance["colors"][key][cls];
+                    overlay.context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
+
 
 
                     let viewer_point = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[1], box[0]));
@@ -4695,60 +4727,35 @@ function gridview_onRedraw() {
         navigator_overlay.context2d().lineWidth = 2;
 
 
-        if (key === "region_of_interest") {
+        for (let i = 0; i < boxes_to_add[key]["boxes"].length; i++) {
 
-            for (let i = 0; i < boxes_to_add["region_of_interest"]["boxes"].length; i++) {
-
-                if ((cur_edit_layer === "region_of_interest") && (i == selected_annotation_index)) {
-                    continue;
-                }
-                let region = boxes_to_add["region_of_interest"]["boxes"][i];
-
-                navigator_overlay.context2d().beginPath();
-                for (let j = 0; j < region.length; j++) {
-                    let pt = region[j];
-        
-                    let viewer_point = navigator_viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(pt[1], pt[0]));
-                    
-                    if (j == 0) {
-                        navigator_overlay.context2d().moveTo(viewer_point.x, viewer_point.y);
-                    }
-                    else {
-                        navigator_overlay.context2d().lineTo(viewer_point.x, viewer_point.y);
-                    }
-                }
-        
-                navigator_overlay.context2d().closePath();
-                navigator_overlay.context2d().stroke();
-                if (overlay_appearance["style"][key] == "fillRect") {
-                    navigator_overlay.context2d().fill();
-                }
-        
+            if ((cur_edit_layer === key) && (i == selected_annotation_index)) {
+                continue;
             }
-        
-        }
-        else {
-            for (let box of boxes_to_add[key]["boxes"]) {
-                let viewer_point = navigator_viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[1], box[0]));
-                let viewer_point_2 = navigator_viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[3], box[2]));
+            let region = boxes_to_add[key]["boxes"][i];
 
-                navigator_overlay.context2d().strokeRect(
-                    viewer_point.x,
-                    viewer_point.y,
-                    (viewer_point_2.x - viewer_point.x),
-                    (viewer_point_2.y - viewer_point.y)
-                );
-
-                if (overlay_appearance["style"][key] == "fillRect") {
-                    navigator_overlay.context2d().fillRect(
-                        viewer_point.x,
-                        viewer_point.y,
-                        (viewer_point_2.x - viewer_point.x),
-                        (viewer_point_2.y - viewer_point.y)
-                    );
+            navigator_overlay.context2d().beginPath();
+            for (let j = 0; j < region.length; j++) {
+                let pt = region[j];
+    
+                let viewer_point = navigator_viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(pt[1], pt[0]));
+                
+                if (j == 0) {
+                    navigator_overlay.context2d().moveTo(viewer_point.x, viewer_point.y);
+                }
+                else {
+                    navigator_overlay.context2d().lineTo(viewer_point.x, viewer_point.y);
                 }
             }
+    
+            navigator_overlay.context2d().closePath();
+            navigator_overlay.context2d().stroke();
+            if (overlay_appearance["style"][key] == "fillRect") {
+                navigator_overlay.context2d().fill();
+            }
+    
         }
+        
     }
 
     let inner_poly;
@@ -4764,17 +4771,8 @@ function gridview_onRedraw() {
 
         let region = annotations[cur_img_name][navigation_type][cur_region_index];
 
-        if (navigation_type === "regions_of_interest") {
-            inner_poly = region;
-        }
-        else { 
-            inner_poly = [
-                [region[0], region[1]],
-                [region[0], region[3]],
-                [region[2], region[3]],
-                [region[2], region[1]]
-            ];
-        }
+        inner_poly = region;
+
 
         overlay.context2d().fillStyle = "#222621";
         overlay.context2d().beginPath();

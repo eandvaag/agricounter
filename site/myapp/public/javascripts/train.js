@@ -70,41 +70,41 @@ function show_train_tab(sel_tab_btn_id) {
 
 
 
-function box_intersects_region(box, region) {
-    return ((box[1] < region[3] && box[3] > region[1]) && (box[0] < region[2] && box[2] > region[0]));
-}
+// function box_intersects_region(box, region) {
+//     return ((box[1] < region[3] && box[3] > region[1]) && (box[0] < region[2] && box[2] > region[0]));
+// }
 
-function get_num_useable_boxes(annotations) {
+// function get_num_useable_boxes(annotations) {
 
-    let res = {};
-    for (let image_name of Object.keys(annotations)) {
-        for (let i = 0; i < annotations[image_name]["boxes"].length; i++) {
-            let intersects = false;
-            for (let j = 0; j < annotations[image_name]["fine_tuning_regions"].length; j++) {
-                if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["fine_tuning_regions"][j])) {
-                    intersects = true;
-                    break;
-                }
-            }
-            if (!(intersects)) {
-                for (let j = 0; j < annotations[image_name]["test_regions"].length; j++) {
-                    if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["test_regions"][j])) {
-                        intersects = true;
-                        break;
-                    }
-                }
-            }
-            if (intersects) {
-                let class_idx = annotations[image_name]["classes"][i];
-                if (!(class_idx in res)) {
-                    res[class_idx] = 0;
-                }
-                res[class_idx]++;
-            }
-        }
-    }
-    return res;
-}
+//     let res = {};
+//     for (let image_name of Object.keys(annotations)) {
+//         for (let i = 0; i < annotations[image_name]["boxes"].length; i++) {
+//             let intersects = false;
+//             for (let j = 0; j < annotations[image_name]["fine_tuning_regions"].length; j++) {
+//                 if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["fine_tuning_regions"][j])) {
+//                     intersects = true;
+//                     break;
+//                 }
+//             }
+//             if (!(intersects)) {
+//                 for (let j = 0; j < annotations[image_name]["test_regions"].length; j++) {
+//                     if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["test_regions"][j])) {
+//                         intersects = true;
+//                         break;
+//                     }
+//                 }
+//             }
+//             if (intersects) {
+//                 let class_idx = annotations[image_name]["classes"][i];
+//                 if (!(class_idx in res)) {
+//                     res[class_idx] = 0;
+//                 }
+//                 res[class_idx]++;
+//             }
+//         }
+//     }
+//     return res;
+// }
 
 
 function remove_filter_object_class(cls_ind) {
@@ -317,13 +317,16 @@ function create_viewer(id_prefix, dzi_image_paths) {
                 let image_w = content_size.x;
                 let image_h = content_size.y;
                 let hw_ratio = image_h / image_w;
+                let bounds = get_bounding_box_for_polygon(region);
+
+
                 let viewport_bounds = [
-                    region[1] / image_w,
-                    (region[0] / image_h) * hw_ratio,
-                    (region[3] - region[1]) / image_w,
-                    ((region[2] - region[0]) / image_h) * hw_ratio
+                    bounds[1] / image_w,
+                    (bounds[0] / image_h) * hw_ratio,
+                    (bounds[3] - bounds[1]) / image_w,
+                    ((bounds[2] - bounds[0]) / image_h) * hw_ratio
                 ];
-            
+
                 cur_bounds[id_prefix] = new OpenSeadragon.Rect(
                     viewport_bounds[0],
                     viewport_bounds[1],
@@ -364,12 +367,15 @@ function create_viewer(id_prefix, dzi_image_paths) {
                 let max_x = min_x + viewport_w;
                 let max_y = min_y + viewport_h;
 
+                console.log(region);
 
                 if (region != null) {
-                    min_y = Math.max(min_y, region[0]);
-                    min_x = Math.max(min_x, region[1]);
-                    max_y = Math.min(max_y, region[2]);
-                    max_x = Math.min(max_x, region[3]);
+
+                    let region_bbox = get_bounding_box_for_polygon(region);
+                    min_y = Math.max(min_y, region_bbox[0]);
+                    min_x = Math.max(min_x, region_bbox[1]);
+                    max_y = Math.min(max_y, region_bbox[2]);
+                    max_x = Math.min(max_x, region_bbox[3]);
                 }
                 
 
@@ -384,16 +390,19 @@ function create_viewer(id_prefix, dzi_image_paths) {
 
                     overlays[id_prefix].context2d().lineWidth = 2;
 
-                    if (key === "region_of_interest") {
+                    console.log(key);
+
+                    if ((key === "region_of_interest" || key === "fine_tuning_region") || key === "test_region") {
                         overlays[id_prefix].context2d().strokeStyle = overlay_appearance["colors"][key];
                         overlays[id_prefix].context2d().fillStyle = overlay_appearance["colors"][key] + "55";
 
-                        for (let i = 0; i < boxes_to_add["region_of_interest"]["boxes"].length; i++) {
+                        for (let i = 0; i < boxes_to_add[key]["boxes"].length; i++) {
 
-                            let region = boxes_to_add["region_of_interest"]["boxes"][i];
+                            let reg = boxes_to_add[key]["boxes"][i];
+                            console.log(reg);
                             overlays[id_prefix].context2d().beginPath();
-                            for (let j = 0; j < region.length; j++) {
-                                let pt = region[j];
+                            for (let j = 0; j < reg.length; j++) {
+                                let pt = reg[j];
                     
                                 let viewer_point = viewers[id_prefix].viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(pt[1], pt[0]));
                                 
@@ -424,32 +433,18 @@ function create_viewer(id_prefix, dzi_image_paths) {
                             let cls = boxes_to_add[key]["classes"][i];
 
                             if (((box[1] < max_x) && (box[3] > min_x)) && ((box[0] < max_y) && (box[2] > min_y))) {
-                                if (key === "annotation") {
-                                    if ($("#" + "image_set_class_" + cls.toString()).is(":checked")) {
-                                        visible_inds.push(i);
-                                    }
-                                }
-                                else {
+                                if ($("#" + "image_set_class_" + cls.toString()).is(":checked")) {
                                     visible_inds.push(i);
                                 }
-                                
-                                
                             }
                         }
                         if (visible_inds.length <= MAX_BOXES_DISPLAYED) {
                             for (let ind of visible_inds) {
 
                                 let box = boxes_to_add[key]["boxes"][ind];
-                                if (key === "annotation") {
-                                    let cls = boxes_to_add[key]["classes"][ind];
-                                    overlays[id_prefix].context2d().strokeStyle = overlay_appearance["colors"][key][cls];
-                                    overlays[id_prefix].context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
-                                }
-                                else {
-                                    overlays[id_prefix].context2d().strokeStyle = overlay_appearance["colors"][key];
-                                    overlays[id_prefix].context2d().fillStyle = overlay_appearance["colors"][key] + "55";
-                                }
-
+                                let cls = boxes_to_add[key]["classes"][ind];
+                                overlays[id_prefix].context2d().strokeStyle = overlay_appearance["colors"][key][cls];
+                                overlays[id_prefix].context2d().fillStyle = overlay_appearance["colors"][key][cls] + "55";
 
 
                                 let viewer_point = viewers[id_prefix].viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box[1], box[0]));
@@ -480,19 +475,12 @@ function create_viewer(id_prefix, dzi_image_paths) {
                     let image_px_width = overlays[id_prefix].imgWidth;
                     let image_px_height = overlays[id_prefix].imgHeight;
             
-                    let inner_poly;
+                    let inner_poly = region;
                     let outer_poly = [
                         [0-1e6, 0-1e6], 
                         [0-1e6, image_px_width+1e6], 
                         [image_px_height+1e6, image_px_width+1e6],
                         [image_px_height+1e6, 0-1e6]
-                    ];
-
-                    inner_poly = [
-                        [region[0], region[1]],
-                        [region[0], region[3]],
-                        [region[2], region[3]],
-                        [region[2], region[1]]
                     ];
             
                     overlays[id_prefix].context2d().fillStyle = "#222621";
@@ -522,6 +510,8 @@ function create_viewer(id_prefix, dzi_image_paths) {
 
                     if (region != null) {
             
+                        region = get_bounding_box_for_polygon(region);
+
                         viewers[id_prefix].world.getItemAt(0).setClip(
                             new OpenSeadragon.Rect(
                                 region[1],
@@ -608,8 +598,8 @@ function inspect_image_set(image_set_text_id, for_target) {
             regions[id_prefix] = cur_regions;
             annotations[id_prefix] = response.annotations;
 
-            let class_counts = get_num_useable_boxes(response.annotations);
-            let object_classes = response.object_classes.split(",");
+            // let class_counts = get_num_useable_boxes(response.annotations);
+            let object_classes = response.object_classes.split(",").sort();
 
 
             cur_inspected_set = {
@@ -632,8 +622,11 @@ function inspect_image_set(image_set_text_id, for_target) {
             viewers[id_prefix].goToPage(0);
 
             $("#image_set_class_list").empty();
-            let class_indices = Object.keys(class_counts).sort();
-            for (let class_idx of class_indices) {
+            // let class_indices = Object.keys(class_counts).sort();
+            // for (let class_idx of class_indices) {
+                // let class_name = object_classes[class_idx];
+
+            for (let class_idx = 0; class_idx < object_classes.length; class_idx++) {
                 let class_name = object_classes[class_idx];
                 let image_set_class_id = "image_set_class_" + class_idx.toString();
                 let bg_color = overlay_appearance["colors"]["annotation"][class_idx] + "aa";

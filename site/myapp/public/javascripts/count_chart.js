@@ -55,15 +55,15 @@ function set_count_chart_data() {
                 }
             }
         }
-        else if (navigation_type === "regions_of_interest") {
+        else {
             for (let image_name of Object.keys(annotations)) {
-                for (let i = 0; i < annotations[image_name]["regions_of_interest"].length; i++) {
+                for (let i = 0; i < annotations[image_name][navigation_type].length; i++) {
                     let nav_item = image_name + "/" + i;
                     count_chart_data[nav_item] = {"annotation":  0, "prediction": 0};
                     for (let j = 0; j < annotations[image_name]["boxes"].length; j++) {
                         let box = annotations[image_name]["boxes"][j];
                         let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
-                        if (point_is_inside_polygon(centre, annotations[image_name]["regions_of_interest"][i])) {
+                        if (point_is_inside_polygon(centre, annotations[image_name][navigation_type][i])) {
                             if (cur_cls_idx == -1 || annotations[image_name]["classes"][j] == cur_cls_idx) {
                                 count_chart_data[nav_item]["annotation"]++;
                             }
@@ -75,37 +75,7 @@ function set_count_chart_data() {
                             if (predictions[image_name]["scores"][j] > slider_val) {
                                 let box = predictions[image_name]["boxes"][j];
                                 let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
-                                if (point_is_inside_polygon(centre, annotations[image_name]["regions_of_interest"][i])) {
-                                    if (cur_cls_idx == -1 || predictions[image_name]["classes"][j] == cur_cls_idx) {
-                                        count_chart_data[nav_item]["prediction"]++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else {
-            for (let image_name of Object.keys(annotations)) {
-                for (let i = 0; i < annotations[image_name][navigation_type].length; i++) {
-                    let nav_item = image_name + "/" + i;
-                    count_chart_data[nav_item] = {"annotation":  0, "prediction": 0};
-                    for (let j = 0; j < annotations[image_name]["boxes"].length; j++) {
-                        let box = annotations[image_name]["boxes"][j];
-                        let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
-                        if (point_is_inside_box_region(centre, annotations[image_name][navigation_type][i])) {
-                            if (cur_cls_idx == -1 || annotations[image_name]["classes"][j] == cur_cls_idx) {
-                                count_chart_data[nav_item]["annotation"]++;
-                            }
-                        }
-                    }
-                    if (image_name in predictions) {
-                        for (let j = 0; j < predictions[image_name]["boxes"].length; j++) {
-                            if (predictions[image_name]["scores"][j] > slider_val) {
-                                let box = predictions[image_name]["boxes"][j];
-                                let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
-                                if (point_is_inside_box_region(centre, annotations[image_name][navigation_type][i])) {
+                                if (point_is_inside_polygon(centre, annotations[image_name][navigation_type][i])) {
                                     if (cur_cls_idx == -1 || predictions[image_name]["classes"][j] == cur_cls_idx) {
                                         count_chart_data[nav_item]["prediction"]++;
                                     }
@@ -133,14 +103,9 @@ function set_count_chart_data() {
                         area_m2 = image_width_m * image_height_m;
 
                     }
-                    else if (navigation_type === "regions_of_interest") {
-                        let region = annotations[image_name]["regions_of_interest"][region_index];
-                        let area_px = get_polygon_area(region);
-                        area_m2 = area_px * (gsd ** 2);
-                    }
                     else {
                         let region = annotations[image_name][navigation_type][region_index];
-                        let area_px = (region[2] - region[0]) * (region[3] - region[1]);
+                        let area_px = get_polygon_area(region);
                         area_m2 = area_px * (gsd ** 2);
                     }
 
@@ -204,18 +169,9 @@ function set_count_chart_data() {
                         let box = annotations[image_name]["boxes"][j];
                         let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
 
-                        if (navigation_type === "regions_of_interest") {
-                            if (point_is_inside_polygon(centre, annotations[image_name][navigation_type][i])) {
-                                if (cur_cls_idx == -1 || annotations[image_name]["classes"][j] == cur_cls_idx) {
-                                    annotated_count++;
-                                }
-                            }
-                        }
-                        else {
-                            if (point_is_inside_box_region(centre, annotations[image_name][navigation_type][i])) {
-                                if (cur_cls_idx == -1 || annotations[image_name]["classes"][j] == cur_cls_idx) {
-                                    annotated_count++;
-                                }
+                        if (point_is_inside_polygon(centre, annotations[image_name][navigation_type][i])) {
+                            if (cur_cls_idx == -1 || annotations[image_name]["classes"][j] == cur_cls_idx) {
+                                annotated_count++;
                             }
                         }
                     }
@@ -225,19 +181,9 @@ function set_count_chart_data() {
                             if (predictions[image_name]["scores"][j] > slider_val) {
                                 let box = predictions[image_name]["boxes"][j];
                                 let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
-                                if (navigation_type === "regions_of_interest") {
-                                    if (point_is_inside_polygon(centre, annotations[image_name][navigation_type][i])) {
-                                        if (cur_cls_idx == -1 || predictions[image_name]["classes"][j] == cur_cls_idx) {
-                                            predicted_count++;
-                                        }
-                                    }
-
-                                }
-                                else {
-                                    if (point_is_inside_box_region(centre, annotations[image_name][navigation_type][i])) {
-                                        if (cur_cls_idx == -1 || predictions[image_name]["classes"][j] == cur_cls_idx) {
-                                            predicted_count++;
-                                        }
+                                if (point_is_inside_polygon(centre, annotations[image_name][navigation_type][i])) {
+                                    if (cur_cls_idx == -1 || predictions[image_name]["classes"][j] == cur_cls_idx) {
+                                        predicted_count++;
                                     }
                                 }
                             }
@@ -402,8 +348,8 @@ function draw_count_chart() {
     }
 
     let tip_mousemove = function(d) {
-        tooltip.style("left", (d3.event.pageX+10) + "px")
-               .style("top", (d3.event.pageY-10) + "px");
+        tooltip.style("left", (d3.event.pageX) + "px")
+               .style("top", (d3.event.pageY-25) + "px");
         d3.select(this).style("cursor", "default"); 
 
     }

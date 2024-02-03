@@ -9,27 +9,30 @@ html
 
 
         link(href=process.env.AC_PATH + "/annotorious/annotorious.min.css" rel="stylesheet")
-        link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css")
+        link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" rel="stylesheet")
+        //- link(href=process.env.AC_PATH + "/external_stylesheets/font-awesome-6.1.2.css" rel="stylesheet")
         link(href=process.env.AC_PATH + '/stylesheets/main.css' rel='stylesheet' id="main-stylesheet")
         link(href=process.env.AC_PATH + '/stylesheets/d3.css' rel='stylesheet')
 
 
-        script(src="https://code.jquery.com/jquery-3.6.0.js")
         script(src=process.env.AC_PATH + "/osd/openseadragon.min.js")
         script(src=process.env.AC_PATH + "/annotorious/openseadragon-annotorious.min.js")
-        script(src="https://d3js.org/d3.v4.js")
+
+        script(src=process.env.AC_PATH + "/external_javascripts/jquery-3.6.0.js")
+        script(src=process.env.AC_PATH + "/external_javascripts/d3.v4.js")
+
+        script(src=process.env.AC_PATH + '/javascripts/viewer.js')
+        script(src=process.env.AC_PATH + '/javascripts/count_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/score_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/ridgeline_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/map_chart.js')
+        script(src=process.env.AC_PATH + '/javascripts/common.js')
+        script(src=process.env.AC_PATH + '/javascripts/modal.js')
+        script(src=process.env.AC_PATH + '/javascripts/canvas_overlay.js')
+        script(src=process.env.AC_PATH + '/javascripts/poly.js')
 
 
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/viewer.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/count_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/score_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/ridgeline_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/map_chart.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/common.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/modal.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/canvas_overlay.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/voronoi.js')
-        script(type='text/javascript' src=process.env.AC_PATH + '/javascripts/poly.js')
+        script(type='text/javascript' src=process.env.AC_PATH + '/external_javascripts/voronoi.js')
 
     body
         div(id="container")

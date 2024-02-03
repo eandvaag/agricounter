@@ -35,25 +35,13 @@ function set_score_chart_data() {
                 }
             }
         }
-        else if (navigation_type === "regions_of_interest") {
+        else {
             
             let region = annotations[cur_img_name][navigation_type][cur_region_index];
             for (let i = 0; i < predictions[cur_img_name]["boxes"].length; i++) {
                 let box = predictions[cur_img_name]["boxes"][i];
                 let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
                 if (point_is_inside_polygon(centre, region)) {
-                    if (cur_pred_cls_idx == -1 || predictions[cur_img_name]["classes"][i] == cur_pred_cls_idx) {
-                        score_chart_data[cur_img_name]["scores"].push(predictions[cur_img_name]["scores"][i]);
-                    }
-                }
-            }
-        }
-        else {
-            let region = annotations[cur_img_name][navigation_type][cur_region_index];
-            for (let i = 0; i < predictions[cur_img_name]["boxes"].length; i++) {
-                let box = predictions[cur_img_name]["boxes"][i];
-                let centre = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
-                if (point_is_inside_box_region(centre, region)) {
                     if (cur_pred_cls_idx == -1 || predictions[cur_img_name]["classes"][i] == cur_pred_cls_idx) {
                         score_chart_data[cur_img_name]["scores"].push(predictions[cur_img_name]["scores"][i]);
                     }

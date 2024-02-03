@@ -62,7 +62,6 @@ function query_num_workers() {
 
         req.on("error", error => {
             console.log(error);
-            response.error = true;
             resolve(0);
         });
 
