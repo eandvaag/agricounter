@@ -8,17 +8,20 @@ html
         link(rel="icon" href=process.env.AC_PATH + "/images/favicon.ico")
 
         link(href=process.env.AC_PATH + "/annotorious/annotorious.min.css" rel="stylesheet")
-        link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" rel="stylesheet")
         //- link(href=process.env.AC_PATH + "/external_stylesheets/font-awesome-6.1.2.css" rel="stylesheet")
-        link(href=process.env.AC_PATH + "/external_stylesheets/dropzone-6.0.0.css" rel="stylesheet")
+        link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" rel="stylesheet")
+        //- link(href=process.env.AC_PATH + "/external_stylesheets/dropzone-6.0.0.css" rel="stylesheet")
+        link(href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css")
         link(href=process.env.AC_PATH + '/stylesheets/main.css' rel='stylesheet')
 
         script(src=process.env.AC_PATH + "/osd/openseadragon.min.js")
         script(src=process.env.AC_PATH + "/annotorious/openseadragon-annotorious.min.js")
 
         script(src=process.env.AC_PATH + "/external_javascripts/jquery-3.6.0.js")
-        script(src=process.env.AC_PATH + "/external_javascripts/dropzone-6.0.0-min.js")
-        script(src=process.env.AC_PATH + "/external_javascripts/socket.io-4.5.0-min.js")
+        //- script(src=process.env.AC_PATH + "/external_javascripts/dropzone-6.0.0-min.js")
+        script(src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js")
+        //- script(src=process.env.AC_PATH + "/external_javascripts/socket.io-4.5.0-min.js")
+        script(src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous")
 
         script(src=process.env.AC_PATH + '/javascripts/home.js')
         script(src=process.env.AC_PATH + '/javascripts/common.js')

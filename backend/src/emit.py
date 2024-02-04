@@ -1,42 +1,26 @@
 import os
-import glob
-import shutil
 import requests
 import logging
-import time
-import traceback
-
 
 from io_utils import json_io
-from models.common import annotation_utils
-#import image_set_model as ism
 
 base_url = "https://" + os.environ.get("AC_IP") + ":" + os.environ.get("AC_PORT") + os.environ.get("AC_PATH")
 image_set_notification_url = base_url + "/image_set_notification"
 results_notification_url = base_url + "/results_notification"
 model_notification_url = base_url + "/model_notification"
 workers_notification_url = base_url + "/workers_notification"
+upload_notification_url = base_url + "/upload_notification"
 
 IDLE = "Idle"
-FINE_TUNING = "Fine-Tuning"
-# FINISHED_FINE_TUNING = "Finished Fine-Tuning"
-
-PREDICTING = "Predicting"
-# FINISHED_PREDICTING = "Finished Predicting"
-
-# COLLECTING_METRICS = "Collecting Metrics"
-# CALCULATING_VEGETATION_COVERAGE = "Calculating Vegetation Coverage"
-# CALCULATING_VORONOI_AREAS = "Calculating Voronoi Areas"
-
 SWITCHING_MODELS = "Switching Models"
-# FINISHED_SWITCHING_MODELS = "Finished Switching Models"
+FINE_TUNING = "Fine-Tuning"
+PREDICTING = "Predicting"
 
-# TRAINING = "Training"
+
 
 IMAGE_SET_STATE_KEYS = [
     "state_name",
     "progress",
-    # "error_setting",
     "error_message",
     "prediction_image_names"
 ]
@@ -107,6 +91,11 @@ def emit_worker_change(num_workers):
         "num_workers": num_workers
     }
     emit(workers_notification_url, data)
+
+
+
+def emit_upload_change(data):
+    emit(upload_notification_url, data)
 
 
 def emit(url, data):

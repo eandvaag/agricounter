@@ -8,9 +8,5 @@
     "postgres_db_port": "8120",
     "api_key": "protectedpyproc39",
     "admin_username": "admin",
-    "admin_password": "undi$closed37",
-    "initial_objects": [
-        "Canola Seedling",
-        "Wheat Head"
-    ]
+    "admin_password": "undi$closed37"
 }

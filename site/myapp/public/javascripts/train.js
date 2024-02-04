@@ -838,7 +838,7 @@ function confirmed_model_destroy_request(model_state, model_name) {
 function create_model_entry(model_log, model_status) {
 
     let model_name = model_log["model_name"];
-    let is_public = capitalizeFirstLetter(model_log["public"]);
+    let is_public = model_log["is_public"] ? "Yes" : "No";
 
     let start_date;
     start_date = timestamp_to_date(model_log["submission_time"]);
@@ -1224,7 +1224,7 @@ function initialize_train() {
         }
 
 
-        let is_public = ($("#model_public").is(':checked')) ? "yes" : "no";
+        let is_public = ($("#model_public").is(':checked'));
 
         $.post($(location).attr('href'),
         {

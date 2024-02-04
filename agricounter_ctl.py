@@ -1,13 +1,12 @@
-import logging
-import subprocess
-from natsort import natsorted
+#!/usr/bin/python3
 
+import logging
+import sys
+import argparse
 import os
 import json
 import yaml
-
-
-
+import subprocess
 
 def create():
 
@@ -82,23 +81,7 @@ def create():
         "                is_admin: true,\n"
         "                createdAt: new Date(),\n" +
         "                updatedAt: new Date()\n" +
-        "            }"
-    )
-
-    # for user in args["initial_users"]:
-    #     f.write(
-    #         ",\n" +
-    #         "            {\n" +
-    #         "                username: '" + user["username"] + "',\n" +
-    #         "                password: bcrypt.hashSync('" + user["password"] + "', salt),\n" +
-    #         "                is_admin: false,\n"
-    #         "                createdAt: new Date(),\n" +
-    #         "                updatedAt: new Date()\n" +
-    #         "            }"
-    #     )
-
-    f.write(
-        "\n" +
+        "            }\n" +
         "        ], {\n" +
         "        });\n" +
         "    },\n" +
@@ -135,14 +118,6 @@ def create():
 
 
 
-    logger.info("Writing objects.json")
-
-    objects_path = os.path.join("backend", "src", "usr", "shared", "objects.json")
-    initial_objects = natsorted(args["initial_objects"])
-    objects = {"object_names": initial_objects}
-    with open(objects_path, 'w') as fp:
-        json.dump(objects, fp)
-
 
 
     logger.info("Starting Docker container")
@@ -163,3 +138,45 @@ def down():
 def destroy():
     subprocess.run(["docker-compose", "down", "-v", "--rmi", "local"])
 
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(
+        prog="argricounter_ctl",
+        description="Control program for running AgriCounter in a Docker container"
+    )
+
+    parser.add_argument("-c", "--create", action="store_true",
+                        help="create the docker container")
+
+    parser.add_argument("-d", "--down", action="store_true",
+                        help="stop the docker container")
+
+    parser.add_argument("-u", "--up", action="store_true",
+                        help="start the docker container")
+
+    parser.add_argument("-D", "--destroy", action="store_true",
+                        help="remove the docker container")
+    
+    
+    args = parser.parse_args()
+
+    if len(sys.argv) == 1:
+        print("Specify at least one operation.")
+        exit(1)
+
+    if len(sys.argv) > 2:
+        print("Only one operation is allowed.")
+        exit(1)
+
+    if args.create:
+        create()
+    elif args.down:
+        down()
+    elif args.up:
+        up()
+    elif args.destroy():
+        destroy()
+
+    exit(0)

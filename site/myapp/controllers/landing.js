@@ -2,7 +2,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const nat_orderBy = require('natural-orderby');
-const { spawn, exec, execSync, fork } = require('child_process');
+const { spawn, exec } = require('child_process');
 const http = require('http');
 
 const { Op } = require("sequelize");
@@ -1487,7 +1487,7 @@ exports.post_annotations_upload = function(req, res, next) {
     // let num_useable_boxes = get_num_useable_boxes(new_annotations);
 
     let image_sets_path;
-    if (metadata["is_public"] === "yes") {
+    if (metadata["is_public"]) {
         image_sets_path = path.join(USR_SHARED_ROOT, "public_image_sets.json");
     }
     else {
@@ -1663,7 +1663,7 @@ exports.post_workspace = async function(req, res, next) {
             }
 
             let image_sets_path;
-            if (req.body.is_public === "yes") {
+            if (JSON.parse(req.body.is_public)) {
                 image_sets_path = path.join(USR_SHARED_ROOT, "public_image_sets.json");
             }
             else {
@@ -2033,26 +2033,10 @@ exports.post_workspace = async function(req, res, next) {
     }
     else if (action === "fine_tune") {
 
-        console.log("got to fine_tune");
+        console.log("Fine-tuning requested");
 
-
-        // let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", 
-        //                                 farm_name, field_name, mission_date);
-
-        
-        // let ret = set_enqueued_state(image_set_dir, "Fine-Tuning");
-        // if (ret != 0) {
-        //     console.log(error);
-        //     response.message = "Failed to set state for fine-tuning request.";
-        //     response.error = true;
-        //     return res.json(response);
-        // }
-
-
-        // let request_uuid = uuidv4().toString();
         let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
         let request = {
-            // "uuid": request_uuid,
             "key": job_key,
             "task": "fine_tune",
             "request_time": Math.floor(Date.now() / 1000),
@@ -2063,53 +2047,22 @@ exports.post_workspace = async function(req, res, next) {
         };
 
 
-        // let request_path = path.join(JOBS_DIR, request_uuid + ".json");
-
-        // try {
-        //     fs.writeFileSync(request_path, JSON.stringify(request));
-        // }
-        // catch (error) {
-        //     console.log(error);
-        //     response.message = "Failed to create fine-tuning request.";
-        //     response.error = true;
-        //     return res.json(response);
-        // }
-
-
-        // let scheduler_request = {
-        //     "uuid": request_uuid
-        // };
-        response = await notify_scheduler(request); //scheduler_request);
-
+        response = await notify_scheduler(request); 
         return res.json(response);
 
     }
     else if (action === "predict") {
 
-        console.log("got to predict");
-
-        // let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username,
-        //     "image_sets", farm_name, field_name, mission_date);
-
-
-        // let ret = set_enqueued_state(image_set_dir, "Predicting");
-        // if (ret != 0) {
-        //     console.log(error);
-        //     response.message = "Failed to set state for prediction request.";
-        //     response.error = true;
-        //     return res.json(response);
-        // }
-
+        console.log("Prediction requested");
 
         let image_names = JSON.parse(req.body.image_names);
-        let regions = JSON.parse(req.body.regions)
-        let save_result = req.body.save_result === "True";
-        let regions_only = req.body.regions_only === "True";
-        let calculate_vegetation_coverage = req.body.calculate_vegetation_coverage === "True";
-        // let request_uuid = uuidv4().toString();
+        let regions = JSON.parse(req.body.regions);
+        let save_result = JSON.parse(req.body.save_result);
+        let regions_only = JSON.parse(req.body.regions_only);
+        let calculate_vegetation_coverage = JSON.parse(req.body.calculate_vegetation_coverage);
         let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+
         let request = {
-            // "uuid": request_uuid,
             "key": job_key,
             "task": "predict",
             "request_time": Math.floor(Date.now() / 1000),
@@ -2142,34 +2095,9 @@ exports.post_workspace = async function(req, res, next) {
             request["result_uuid"] = uuidv4().toString();
             request["results_name"] = results_name;
             request["results_comment"] = results_comment;
-      
         }
 
-
-        // let request_path = path.join(JOBS_DIR, request_uuid + ".json");
-
-        // try {
-        //     fs.writeFileSync(request_path, JSON.stringify(request));
-        // }
-        // catch (error) {
-        //     console.log(error);
-        //     response.message = "Failed to create prediction request.";
-        //     response.error = true;
-        //     return res.json(response);
-        // }
-
-        // // if (save_result) {
-        // //     socket_api.results_notification(req.session.user.username, farm_name, field_name, mission_date);
-        // // }
-
-
-        // let scheduler_request = {
-        //     "uuid": request_uuid
-        // };
-
         response = await notify_scheduler(request);
-
-        // response.error = false;
         return res.json(response);
     }
     else if (action === "retrieve_predictions") {
@@ -2228,76 +2156,26 @@ exports.post_workspace = async function(req, res, next) {
     else if (action === "switch_model") {
 
 
-        // let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username,
-        //                               "image_sets", farm_name, field_name, mission_date);
+        let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+        let request = {
+            "key": job_key,
+            "task": "switch",
+            "request_time": Math.floor(Date.now() / 1000),
+            "username": req.session.user.username,
+            "farm_name": farm_name,
+            "field_name": field_name,
+            "mission_date": mission_date,
+            "model_name": req.body.model_name,
+            "model_creator": req.body.model_creator,
+        };
 
 
-        // let ret = set_enqueued_state(image_set_dir, "Switching");
-        // if (ret != 0) {
-        //     console.log(error);
-        //     response.message = "Failed to set state for switch request.";
-        //     response.error = true;
-        //     return res.json(response);
-        // }
-
-
-        let switch_command = "python ../../backend/src/switch.py " + 
-                             req.session.user.username + " " +
-                             farm_name + " " + 
-                             field_name + " " + 
-                             mission_date + " " + 
-                             req.body.model_name + " "
-                             req.body.model_creator;
-                             
-
-        let result = exec(switch_command, {shell: "/bin/bash"}, function (error, stdout, stderr) {
-            if (error) {
-                console.log(error.stack);
-                console.log('Error code: '+error.code);
-                console.log('Signal received: '+error.signal);
-                response.error = true;
-            }
-            else {
-                response.error = false;
-            }
-            return res.json(response);
-        });
+        response = await notify_scheduler(request);
+        return res.json(response);
 
     }
 }
 
-
-// function set_enqueued_state(image_set_dir, state_name) {
-
-//     let status_path = path.join(image_set_dir, "model", "status.json");
-//     let status;
-//     try {
-//         status = JSON.parse(fs.readFileSync(status_path, 'utf8'));
-//     }
-//     catch (error) {
-//         response.error = true;
-//         return -1;
-//     }
-
-//     if (status["state_name"] !== "Idle" || status["error_message"] !== "") {
-//         return -1; 
-//     }
-
-//     status["state_name"] = state_name;
-//     status["progress"] = "Enqueued";
-//     status["error_message"] = "";
-//     status["prediction_image_names"] = "";
-
-
-//     try {d
-//         fs.writeFileSync(status_path, JSON.stringify(status));
-//     }
-//     catch (error) {
-//         return -1;
-//     }
-
-//     return 0;
-// }
 
 function isNumeric(str) {
     if (typeof str != "string") return false // we only process strings!  
@@ -2362,7 +2240,7 @@ exports.post_orthomosaic_upload = function(req, res, next) {
     let mission_date = req.body.mission_date;
     // let object_name = req.body.object_name;
     let object_classes = req.body.object_classes.split(",");
-    let is_public = req.body.is_public;
+    let is_public = JSON.parse(req.body.is_public);
     let camera_height = req.body.camera_height;
     let queued_filenames = req.body.queued_filenames.split(",");
 
@@ -2567,17 +2445,45 @@ exports.post_orthomosaic_upload = function(req, res, next) {
         if (last) {
             active_uploads[upload_uuid]["stream"].end();
 
-            fork("process_upload.js", 
-                [req.session.user.username, 
-                    farm_name, 
-                    field_name, 
-                    mission_date, 
-                    object_classes.join("."), 
-                    camera_height,
-                    is_public,
-                    "yes"]);
-            delete active_uploads[upload_uuid];
+            let config = {
+                "username": req.session.user.username,
+                "farm_name": farm_name,
+                "field_name": field_name,
+                "mission_date": mission_date,
+                "object_classes": object_classes,
+                "is_public": is_public,
+                "is_ortho": true
+                
+            }
+            if (camera_height.length > 0) {
+                config["camera_height"] = parseFloat(camera_height);
+            }
+            else {
+                config["camera_height"] = "";
+            }
 
+            let config_path = path.join(mission_dir, "config.json");
+            try {
+                fs.writeFileSync(config_path, JSON.stringify(config));
+            }
+            catch (error) {
+                delete active_uploads[upload_uuid];
+                return res.status(422).json({
+                    error: "Error occurred when writing configuration file."
+                });
+            }
+
+
+            let process_upload_command = "python ../../backend/src/process_upload.py " + mission_dir;
+            exec(process_upload_command, {shell: "/bin/bash"}, function (error, stdout, stderr) {
+                if (error) {
+                    console.log(error.stack);
+                    console.log('Error code: '+error.code);
+                    console.log('Signal received: '+error.signal);
+                }
+            });
+
+            delete active_uploads[upload_uuid];
 
         }
 
@@ -2609,7 +2515,7 @@ exports.post_image_set_upload = async function(req, res, next) {
         mission_date = req.body.mission_date[0];
         // object_name = req.body.object_name[0];
         object_classes = req.body.object_classes[0].split(",");
-        is_public = req.body.is_public[0];
+        is_public = JSON.parse(req.body.is_public[0]);
         first = false;
         last = false;
         queued_filenames = req.body.queued_filenames[0].split(",");
@@ -2635,7 +2541,7 @@ exports.post_image_set_upload = async function(req, res, next) {
         mission_date = req.body.mission_date;
         object_classes = req.body.object_classes.split(",");
         // object_name = req.body.object_name;
-        is_public = req.body.is_public;
+        is_public = JSON.parse(req.body.is_public);
         queued_filenames = req.body.queued_filenames.split(",");
         first = parseInt(req.body.num_sent) == 1;
         last = parseInt(req.body.num_sent) == queued_filenames.length;
@@ -2880,19 +2786,46 @@ exports.post_image_set_upload = async function(req, res, next) {
 
     if (last) {
 
-        //process_upload(req.session.user.username, farm_name, field_name, mission_date, camera_height);
+        let config = {
+            "username": req.session.user.username,
+            "farm_name": farm_name,
+            "field_name": field_name,
+            "mission_date": mission_date,
+            "object_classes": object_classes,
+            "is_public": is_public,
+            "is_ortho": false
+            
+        }
+        if (camera_height.length > 0) {
+            config["camera_height"] = parseFloat(camera_height);
+        }
+        else {
+            config["camera_height"] = "";
+        }
 
-        // TODO if multiple uploads are processed simultaneously, resources may become exhausted
-        fork("process_upload.js", 
-            [req.session.user.username, 
-             farm_name, 
-             field_name, 
-             mission_date, 
-             object_classes.join("."), 
-             camera_height,
-             is_public,
-             "no"]);
+        let config_path = path.join(mission_dir, "config.json");
+        try {
+            fs.writeFileSync(config_path, JSON.stringify(config));
+        }
+        catch (error) {
+            delete active_uploads[upload_uuid];
+            return res.status(422).json({
+                error: "Error occurred when writing configuration file."
+            });
+        }
+
+
+        let process_upload_command = "python ../../backend/src/process_upload.py " + mission_dir;
+        exec(process_upload_command, {shell: "/bin/bash"}, function (error, stdout, stderr) {
+            if (error) {
+                console.log(error.stack);
+                console.log('Error code: '+error.code);
+                console.log('Signal received: '+error.signal);
+            }
+        });
+
         delete active_uploads[upload_uuid];
+
     }
 
     return res.sendStatus(200);
@@ -3692,13 +3625,6 @@ exports.post_home = async function(req, res, next) {
             return res.json(response);
         }
 
-        let is_public = req.body.is_public;
-        if (is_public !== "yes" && is_public !== "no") {
-            response.message = "Invalid value for model's 'public' attribute.";
-            response.error = true;
-            return res.json(response);
-        }
-
 
         let image_sets = JSON.parse(req.body.image_sets);
         console.log(image_sets);
@@ -3801,7 +3727,7 @@ exports.post_home = async function(req, res, next) {
         let log = {
             "model_name": req.body.model_name,
             "model_creator": req.session.user.username,
-            "public": req.body.is_public,
+            "is_public": JSON.parse(req.body.is_public),
             "object_classes": model_classes,
             "image_sets": submission_image_sets,
             "submission_time": Math.floor(Date.now() / 1000)
@@ -3836,7 +3762,7 @@ exports.post_home = async function(req, res, next) {
             "request_time": Math.floor(Date.now() / 1000),
             "model_creator": req.session.user.username,
             "model_name": req.body.model_name,
-            "public": req.body.is_public,
+            "is_public": JSON.parse(req.body.is_public),
         }
 
 

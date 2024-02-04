@@ -495,7 +495,7 @@ function add_dropzone_listeners() {
             formData.append('field_name', $("#field_input").val());
             formData.append('mission_date', $("#mission_input").val());
             formData.append("object_classes", object_classes.join(","));
-            formData.append("is_public", ($("#upload_set_public").is(':checked')) ? "yes" : "no");
+            formData.append("is_public", ($("#upload_set_public").is(':checked')));
             formData.append("queued_filenames",  queued_filenames.join(","));
             formData.append('camera_height', $("#camera_height_input").val());
             if (num_sent == 0) {

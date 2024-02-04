@@ -1546,7 +1546,7 @@ function build_map() {
 
     let sel_interpolation = $("input[type='radio'][name='interpolation']:checked").val();
 
-    if (metadata["is_ortho"] === "yes") {
+    if (metadata["is_ortho"]) {
         map_chart_tile_size = $("#tile_size_slider").val();
     }
     else {
@@ -1691,7 +1691,7 @@ function save_annotations(callback=null) {
         annotations: JSON.stringify(annotations),
         excess_green_record: JSON.stringify(excess_green_record),
         tags: JSON.stringify(tags),
-        is_public: metadata["is_public"],
+        is_public: JSON.stringify(metadata["is_public"]),
         object_classes: metadata["object_classes"].join(",")
     },
     
@@ -1927,7 +1927,7 @@ async function show_segmentation() {
     $("#prediction_panel").hide();
     $("#segmentation_panel").show();
 
-    let cur_exg_val = excess_green_record[cur_img_name]["sel_val"];
+    let cur_exg_val = excess_green_record[cur_img_name];
     $("#threshold_slider_val").html(cur_exg_val.toFixed(2));
     $("#threshold_slider").val(cur_exg_val);
 
@@ -2014,7 +2014,7 @@ function segment_viewport() {
 function draw_segmentation() {
 
     
-    let threshold = excess_green_record[cur_img_name]["sel_val"];
+    let threshold = excess_green_record[cur_img_name];
     let num_foreground = 0;
     let non_zero = [];
     for (let i = 0; i < d_rgb.data.length; i += 4) {
@@ -2113,7 +2113,7 @@ function submit_result_request() {
         }
     }
     let full_image_label;
-    if (metadata["is_ortho"] === "yes") {
+    if (metadata["is_ortho"]) {
         full_image_label = "Full Orthomosaic";
     }
     else {
@@ -2263,25 +2263,27 @@ function submit_fine_tuning_request() {
     }
 
     if (num_fine_tuning_regions == 0) {
-        show_modal_message("Error", "The image set must contain at least one fine-tuning region before fine-tuning can be initiated");
+        show_modal_message("Error", "The image set must contain at least one fine-tuning region before fine-tuning can be initiated.");
+        enable_model_actions();
     }
+    else {
 
-    let callback = function() {
+        let callback = function() {
 
-        $.post($(location).attr("href"),
-        {
-            action: "fine_tune"
-        },
-        function(response, status) {
-            // close_modal();
-            if (response.error) {
-                show_modal_message("Error", response.message);
-            }
-        });
+            $.post($(location).attr("href"),
+            {
+                action: "fine_tune"
+            },
+            function(response, status) {
+                if (response.error) {
+                    show_modal_message("Error", response.message);
+                }
+            });
 
+        }
+
+        save_annotations(callback);
     }
-
-    save_annotations(callback);
 
 
 }
@@ -2297,9 +2299,9 @@ function submit_prediction_request_confirmed(image_list, region_list, save_resul
         action: "predict",
         image_names: JSON.stringify(image_list),
         regions: JSON.stringify(region_list),
-        save_result: save_result ? "True" : "False",
-        regions_only: result_regions_only ? "True" : "False",
-        calculate_vegetation_coverage: calculate_vegetation_coverage ? "True" : "False",
+        save_result: save_result,
+        regions_only: result_regions_only,
+        calculate_vegetation_coverage: calculate_vegetation_coverage,
         results_name: $("#results_name_input").val(),
         results_comment: $("#results_comment_input").val()
     },
@@ -2908,13 +2910,15 @@ function select_model(model_creator, model_name) {
 function set_model_weights_to_random() {
 
     disable_model_actions();
+    close_modal();
+
     let num_classes = metadata["object_classes"].length;
 
-    show_modal_message("Please Wait", 
-    `<div style="height: 50px">` +
-        `<div>Switching models...</div>` +
-        `<div class="loader"></div>` +
-    `</div>`);
+    // show_modal_message("Please Wait", 
+    // `<div style="height: 50px">` +
+    //     `<div>Switching models...</div>` +
+    //     `<div class="loader"></div>` +
+    // `</div>`);
 
 
     $.post($(location).attr("href"),
@@ -2926,12 +2930,11 @@ function set_model_weights_to_random() {
     function(response, status) {
 
         if (response.error) {
-            show_modal_message(`Error`, `An error occurred while switching models. ` +
-                                        `Please report this issue to the site administrator.`);
+            show_modal_message("Error", response.message);
         }
-        else {
-            close_modal();
-        }
+        // else {
+        //     close_modal();
+        // }
     });
 }
 
@@ -3186,7 +3189,7 @@ function show_models() {
                 
                 let new_model_name = switch_model_data["selected_model"]["model_name"];
                 let new_model_creator = switch_model_data["selected_model"]["model_creator"];
-                possibly_switch_model(new_model_creator, new_model_name);
+                switch_model(new_model_creator, new_model_name);
 
             });
 
@@ -3379,12 +3382,13 @@ function get_image_list_and_region_list_for_predicting_on_all(predict_on_images)
 function switch_model(model_creator, model_name) {
 
     disable_model_actions();
+    close_modal();
 
-    show_modal_message("Please Wait", 
-        `<div style="height: 50px">` +
-            `<div>Switching models...</div>` +
-            `<div class="loader"></div>` +
-        `</div>`);
+    // show_modal_message("Please Wait", 
+    //     `<div style="height: 50px">` +
+    //         `<div>Switching models...</div>` +
+    //         `<div class="loader"></div>` +
+    //     `</div>`);
 
     $.post($(location).attr("href"),
     {
@@ -3395,12 +3399,11 @@ function switch_model(model_creator, model_name) {
     function(response, status) {
 
         if (response.error) {
-            show_modal_message(`Error`, `An error occurred while switching models. ` +
-                                        `Please report this issue to the site administrator.`);
+            show_modal_message("Error", response.message);
         }
-        else {
-            close_modal();
-        }
+        // else {
+        //     close_modal();
+        // }
     });
 }
 
@@ -3511,7 +3514,7 @@ $(document).ready(function() {
     cur_panel = "annotation";
 
 
-    if (metadata["is_ortho"] === "yes") {
+    if (metadata["is_ortho"]) {
         $("#apply_threshold_to_all_button").hide();
     }
 
@@ -3697,7 +3700,7 @@ $(document).ready(function() {
 
 
     if (can_calculate_density(metadata, camera_specs)) {
-        if (metadata["is_ortho"] === "yes" || Object.keys(annotations).length >= 3) {
+        if (metadata["is_ortho"] || Object.keys(annotations).length >= 3) {
 
 
             $("#view_button_container").show();
@@ -3713,7 +3716,7 @@ $(document).ready(function() {
             });
         }
 
-        if (metadata["is_ortho"] === "yes") {
+        if (metadata["is_ortho"]) {
             let tile_size_range = calculate_tile_size_slider_range();
             $("#tile_size_slider").prop("min", tile_size_range[0]);
             $("#tile_size_slider").prop("max", tile_size_range[1]);
@@ -4124,8 +4127,8 @@ $(document).ready(function() {
         let cur_val = parseFloat(parseFloat($("#threshold_slider").val()).toFixed(2));
 
         for (let image_name of Object.keys(excess_green_record)) {
-            let prev_val = excess_green_record[image_name]["sel_val"]; 
-            excess_green_record[image_name]["sel_val"] = cur_val;
+            let prev_val = excess_green_record[image_name]; 
+            excess_green_record[image_name] = cur_val;
 
             if (prev_val != cur_val) {
                 $("#save_icon").css("color", "#ed452b");
@@ -4258,7 +4261,7 @@ $(document).ready(function() {
     $("#threshold_slider").change(function() {
         $("#save_icon").css("color", "#ed452b");
         let cur_val = parseFloat($("#threshold_slider").val());
-        excess_green_record[cur_img_name]["sel_val"] = cur_val;
+        excess_green_record[cur_img_name] = cur_val;
         $("#threshold_slider_val").html(cur_val.toFixed(2));
         update_apply_current_threshold_to_all_images_button();
     });
@@ -4542,7 +4545,7 @@ function update_apply_current_threshold_to_all_images_button() {
 function excess_green_values_are_all_the_same() {
     let image_names = Object.keys(excess_green_record);
     for (let i = 1; i < image_names.length; i++) {
-        if (excess_green_record[image_names[i]]["sel_val"] != excess_green_record[image_names[i-1]]["sel_val"]) {
+        if (excess_green_record[image_names[i]] != excess_green_record[image_names[i-1]]) {
             return false;
         }
     }

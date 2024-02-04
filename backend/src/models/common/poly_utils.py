@@ -32,7 +32,6 @@ def get_intersection_polys(a, b):
     p_b = Polygon(b)
     r = p_a.intersection(p_b, grid_size=1)
 
-    # print(r.geom_type)
     single_types = ["Point", "LineString", "Polygon"]
     multi_types = ["MultiPoint", "MultiLineString", "MultiPolygon", "GeometryCollection"]
 
@@ -44,7 +43,6 @@ def get_intersection_polys(a, b):
         logger.error("Unknown geometry type returned by shapely intersection: {}".format(r.geom_type))
         geoms = []
 
-    # print("geoms", geoms)
     intersect_regions = []
     for geom in geoms:
         if geom.geom_type == "Polygon":
@@ -55,30 +53,8 @@ def get_intersection_polys(a, b):
         elif geom.geom_type == "LineString":
             intersect_regions.append(list(geom.coords))
 
-    # if r.geom_type == "Polygon":
-    #     intersect_regions.append(list(r.exterior.coords)[:-1])
-    # elif r.geom_type == "Point":
-    #     intersect_regions.append(list(r.coords))
-    # elif r.geom_type == "LineString":
-    #     intersect_regions.append(list(r.coords))
-    # elif r.geom_type == "GeometryCollection":
-    #     for geom in list(r.geoms):
-
-    #         intersect_regions.append(list(geom.coords))
-
-    # intersects = len(coords) > 0
     intersects = len(intersect_regions) > 0
     return intersects, intersect_regions
-    
-
-    # intersects = r.geom_type == "Polygon"
-    # print("r.geom_type", r.geom_type)
-    # if intersects:
-    #     coords = list(r.exterior.coords)[:-1]
-    # else:
-    #     coords = []
-    # return intersects, coords
-
 
 def get_poly_area(p):
     return Polygon(p).area
@@ -99,7 +75,7 @@ def get_bbox_visibility_mask(boxes, patch_clipped_boxes, region, vis_thresh):
     visibilities = []
 
     box_areas = box_utils.box_areas_np(boxes)
-    # clipped_boxes = clip_boxes_np(boxes, patch_coords)
+
     for i in range(boxes.shape[0]):
 
         pcb = patch_clipped_boxes[i]

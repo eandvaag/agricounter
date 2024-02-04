@@ -471,7 +471,7 @@ function can_calculate_density(metadata, camera_specs) {
     let make = metadata["camera_info"]["make"];
     let model = metadata["camera_info"]["model"];
 
-    if (metadata["is_ortho"] === "yes") {
+    if (metadata["is_ortho"]) {
         if (metadata["camera_height"] === "") {
             return false;
         }

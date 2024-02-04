@@ -12,24 +12,15 @@ from flask import Flask, request
 
 from io_utils import json_io, tf_record_io
 
-import auxiliary as aux
 import extract_patches as ep
 from models.common import annotation_utils, inference_metrics
 import excess_green
 import models.yolov4.driver as yolov4_driver
-from job_manager import JobManager
 import emit
-from image_set import Image
+from image_wrapper import ImageWrapper
 
 
-# JOBS_DIR = os.path.join("usr", "shared", "jobs")
-
-# OCCUPIED_SETS = {}
-# JOB_QUEUE = []
-
-# job_lock = threading.Lock()
 cv = threading.Condition()
-# jm = JobManager()
 queue = []
 occupied_sets = {}
 
@@ -40,14 +31,13 @@ app = Flask(__name__)
 
 
 REQUIRED_JOB_KEYS = [
-    # "uuid",
     "key", 
     "task", 
     "request_time"
 ]
 
 VALID_TASKS = [
-    # "switch",
+    "switch",
     "predict",
     "fine_tune",
     "train"
@@ -67,127 +57,6 @@ def check_job(req):
     
 
 
-# def process_switch(job):
-
-#     logger = logging.getLogger(__name__)
-
-
-#     try:
-#         username = job["username"]
-#         farm_name = job["farm_name"]
-#         field_name = job["field_name"]
-#         mission_date = job["mission_date"]
-
-#         image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
-#         model_dir = os.path.join(image_set_dir, "model")
-
-#         status_path = os.path.join(model_dir, "status.json")
-#         status = json_io.load_json(status_path)
-
-#         if "error_message" in status:
-#             return
-
-
-#         model_name = job["model_name"]
-#         model_creator = job["model_creator"]
-
-#         logger.info("Switching to model {}".format(model_name))
-#         emit.set_image_set_status(username, farm_name, field_name, mission_date, 
-#                                   {"state_name": emit.SWITCHING_MODELS, "progress": "In Progress"})
-
-
-#         if model_name.startswith("random_weights") and model_creator == "":
-#             model_path = os.path.join("usr", "shared", "weights", model_name)
-#             average_patch_size = 416
-#         else:
-
-#             model_path = os.path.join("usr", "data", model_creator, "models")
-#             public_model_path = os.path.join(model_path, "available", "public", model_name)
-#             private_model_path = os.path.join(model_path, "available", "private", model_name)
-
-#             if os.path.exists(public_model_path):
-#                 model_path = public_model_path
-#             elif os.path.exists(private_model_path):
-#                 model_path = private_model_path
-#             else:
-#                 raise RuntimeError("Model weights could not be located.")
-            
-#             log_path = os.path.join(model_path, "log.json")
-#             try:
-#                 log = json_io.load_json(log_path)
-#                 average_patch_size = log["average_patch_size"]
-#             except Exception as e:
-#                 raise RuntimeError("Model log could not be loaded.")
-
-#         weights_path = os.path.join(model_path, "weights.h5")
-
-#         weights_dir = os.path.join(model_dir, "weights")
-#         tmp_weights_path = os.path.join(weights_dir, "tmp_weights.h5")
-#         best_weights_path = os.path.join(weights_dir, "best_weights.h5")
-#         cur_weights_path = os.path.join(weights_dir, "cur_weights.h5")
-
-
-#         try:
-#             shutil.copy(weights_path, tmp_weights_path)
-#         except Exception as e:
-#             raise RuntimeError("Model weights could not be located.")
-
-#         shutil.move(tmp_weights_path, best_weights_path)
-#         shutil.copy(best_weights_path, cur_weights_path)
-
-
-        
-#         loss_record_path = os.path.join(model_dir, "training", "loss_record.json")
-
-#         loss_record = {
-#             "training_loss": { "values": [],
-#                             "best": 100000000,
-#                             "epochs_since_improvement": 100000000}, 
-#             "validation_loss": {"values": [],
-#                                 "best": 100000000,
-#                                 "epochs_since_improvement": 100000000},
-#         }
-#         json_io.save_json(loss_record_path, loss_record)
-
-
-#         training_dir = os.path.join(model_dir, "training")
-#         training_records_dir = os.path.join(training_dir, "training_tf_records")
-#         if os.path.exists(training_records_dir):
-#             shutil.rmtree(training_records_dir)
-#             os.makedirs(training_records_dir)
-
-
-#         patches_dir = os.path.join(image_set_dir, "model", "patches")
-
-#         shutil.rmtree(patches_dir)
-#         os.makedirs(patches_dir)
-
-
-#         status_path = os.path.join(model_dir, "status.json")
-#         status = json_io.load_json(status_path)
-#         # status["num_regions_fully_trained_on"] = 0
-#         status["model_creator"] = model_creator
-#         status["model_name"] = model_name
-#         status["patch_size"] = round(average_patch_size)
-#         json_io.save_json(status_path, status)
-
-#         # emit.set_image_set_status(username, farm_name, field_name, mission_date, emit.FINISHED_SWITCHING_MODELS)
-
-#         emit.set_image_set_status(username, farm_name, field_name, mission_date,  {"state_name": emit.IDLE})
-
-#     except Exception as e:
-
-#         trace = traceback.format_exc()
-#         logger.error("Exception occurred in process_switch")
-#         logger.error(e)
-#         logger.error(trace)
-
-#         emit.set_image_set_status(username, farm_name, field_name, mission_date, 
-#                                   {"state_name": emit.IDLE, 
-#                                    "error_setting": "switching models", 
-#                                    "error_message": str(e)})
-
-
 def set_enqueued_state(job):
     
     username = job["username"]
@@ -195,9 +64,9 @@ def set_enqueued_state(job):
     field_name = job["field_name"]
     mission_date = job["mission_date"]
 
-    # if job["task"] == "switch":
-    #     state = emit.SWITCHING_MODELS
-    if job["task"] == "predict":
+    if job["task"] == "switch":
+        state = emit.SWITCHING_MODELS
+    elif job["task"] == "predict":
         state = emit.PREDICTING
     else:
         state = emit.FINE_TUNING
@@ -227,20 +96,12 @@ def add_request():
         job = request.json
         logger.info("Got request: {}".format(job))
 
-        # if "uuid" not in req:
-        #     return {"message": "bad_request"}
-        
-        # request_uuid = req["uuid"]
-        # job_path = os.path.join(JOBS_DIR, request_uuid + ".json")
-        # job = json_io.load_json(job_path)
-        
-
         try:
             check_job(job)
         except RuntimeError:
             return {"message": "Job is malformed."}
         
-        # if jm.is_occupied(job["key"]):
+
         occupied = False
         with cv:
             if job["key"] in occupied_sets:
@@ -255,14 +116,15 @@ def add_request():
                 return {"message": "Failed to set enqueued job state."}
 
 
-        # if job["task"] == "switch":
-        #     process_switch(job)
-        # else:
-        with cv:
-            # jm.add_job(job)
-            occupied_sets[job["key"]] = job
-            queue.append(job["key"])
-            cv.notify()
+        if job["task"] == "switch":
+            switch_thread = threading.Thread(target=process_switch, args=(job,))
+            switch_thread.start()
+
+        else:
+            with cv:
+                occupied_sets[job["key"]] = job
+                queue.append(job["key"])
+                cv.notify()
 
 
 
@@ -273,72 +135,10 @@ def add_request():
         return {"message": 'Content-Type not supported!'}
         
 
-# @app.route(os.environ.get("AC_PATH") + '/check_if_occupied', methods=['POST'])
-# def check_if_occupied():
-
-        
-#     logger = logging.getLogger(__name__)
-#     logger.info("POST to add_request")
-#     content_type = request.headers.get('Content-Type')
-
-#     if (content_type == 'application/json'):
-#         job_req = request.json
-#         logger.info("Got request: {}".format(job_req))
-
-
-#         if "key" not in job_req:
-#             return {"message": "bad_request"}
-        
-#         if jm.is_occupied(job_req["key"]):
-#             occupied = "yes"
-
-#         else:
-#             occupied = "no"
-
-#         return {"is_occupied": occupied}
-
-
-#     else:
-#         return {"message": 'Content-Type not supported!'}
-
-
-
-
-# def collect_jobs():
-
-
-#     cur_jobs = []
-
-
-#     job_paths = glob.glob(os.path.join(JOBS_DIR, "*"))
-
-#     for job_path in job_paths:
-
-#         job = json_io.load_json(job_path)
-#         try:
-#             check_job(job)
-#             cur_jobs.append(job)
-#         except RuntimeError:
-#             os.remove(job_path)
-
-
-#     cur_jobs.sort(key=lambda x: x["request_time"])
-
-#     for job in cur_jobs:
-
-#         jm.add_job(job)
-
-
-
-
-
 
 
 def job_available():
     return len(queue) > 0
-
-    # return jm.size() > 0
-
 
 
 
@@ -352,7 +152,7 @@ def create_vegetation_record(image_set_dir, excess_green_record, annotations, pr
     metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
     metadata = json_io.load_json(metadata_path)
 
-    if metadata["is_ortho"] == "yes":
+    if metadata["is_ortho"]:
         vegetation_record = excess_green.create_vegetation_record_for_orthomosaic(image_set_dir, excess_green_record, metadata, annotations, predictions)
     else:
         vegetation_record = excess_green.create_vegetation_record_for_image_set(image_set_dir, excess_green_record, metadata, annotations, predictions)
@@ -521,6 +321,107 @@ def collect_results(job):
 
 
 
+def process_switch(job):
+
+    logger = logging.getLogger(__name__)
+
+    try:
+
+        username = job["username"]
+        farm_name = job["farm_name"]
+        field_name = job["field_name"]
+        mission_date = job["mission_date"]
+        model_name = job["model_name"]
+        model_creator = job["model_creator"]
+
+        image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
+        model_dir = os.path.join(image_set_dir, "model")
+
+        status_path = os.path.join(model_dir, "status.json")
+        status = json_io.load_json(status_path)
+
+
+        if status["state_name"] != emit.SWITCHING_MODELS or status["progress"] != "Enqueued" or status["error_message"] != "":
+            raise RuntimeError("Cannot switch models due to illegal initial image set state.")
+
+        emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                                {"state_name": emit.SWITCHING_MODELS, "progress": "In Progress"})
+
+
+        logger.info("Switching to model {}".format(model_name))
+
+
+        if model_name.startswith("random_weights") and model_creator == "":
+            model_path = os.path.join("usr", "shared", "weights", model_name)
+            average_patch_size = 416
+        else:
+
+            model_path = os.path.join("usr", "data", model_creator, "models")
+            public_model_path = os.path.join(model_path, "available", "public", model_name)
+            private_model_path = os.path.join(model_path, "available", "private", model_name)
+
+            if os.path.exists(public_model_path):
+                model_path = public_model_path
+            elif os.path.exists(private_model_path):
+                model_path = private_model_path
+            else:
+                raise RuntimeError("Model weights could not be located.")
+            
+            log_path = os.path.join(model_path, "log.json")
+            log = json_io.load_json(log_path)
+            average_patch_size = log["average_patch_size"]
+
+        weights_path = os.path.join(model_path, "weights.h5")
+
+        weights_dir = os.path.join(model_dir, "weights")
+        tmp_weights_path = os.path.join(weights_dir, "tmp_weights.h5")
+        best_weights_path = os.path.join(weights_dir, "best_weights.h5")
+        cur_weights_path = os.path.join(weights_dir, "cur_weights.h5")
+
+
+
+        shutil.copy(weights_path, tmp_weights_path)
+
+
+        shutil.move(tmp_weights_path, best_weights_path)
+        shutil.copy(best_weights_path, cur_weights_path)
+
+
+        training_dir = os.path.join(model_dir, "training")
+        training_records_dir = os.path.join(training_dir, "training_tf_records")
+        if os.path.exists(training_records_dir):
+            shutil.rmtree(training_records_dir)
+            os.makedirs(training_records_dir)
+
+
+        patches_dir = os.path.join(image_set_dir, "model", "patches")
+
+        shutil.rmtree(patches_dir)
+        os.makedirs(patches_dir)
+
+
+        status_path = os.path.join(model_dir, "status.json")
+        status = json_io.load_json(status_path)
+        status["model_creator"] = model_creator
+        status["model_name"] = model_name
+        status["patch_size"] = round(average_patch_size)
+        json_io.save_json(status_path, status)
+
+
+        emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                                {"state_name": emit.IDLE})
+        
+    except Exception as e:
+
+        trace = traceback.format_exc()
+        logger.error("Exception occurred in process_switch")
+        logger.error(e)
+        logger.error(trace)
+
+        emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                            {"state_name": emit.SWITCHING_MODELS, "error_message": str(e)})
+
+
 
 
 def process_predict(job):
@@ -545,8 +446,9 @@ def process_predict(job):
         status_path = os.path.join(model_dir, "status.json")
         status = json_io.load_json(status_path)
 
-        if status["error_message"] != "":
-            raise RuntimeError("Cannot run prediction during errored state.")
+        if status["state_name"] != emit.PREDICTING or status["progress"] != "Enqueued" or status["error_message"] != "":
+            raise RuntimeError("Cannot run prediction due to illegal initial image set state.")
+
 
 
         logger.info("Starting to predict for {}".format(job["key"]))
@@ -573,11 +475,6 @@ def process_predict(job):
 
 
         logger.info("Finished predicting for {}".format(job["key"]))
-
-        # emit.set_image_set_status(username, farm_name, field_name, mission_date, 
-        #                            {"state_name": emit.PREDICTING, 
-        #                             "progress": "Complete",
-        #                             })
 
         with cv:
             del occupied_sets[job["key"]]
@@ -622,6 +519,35 @@ def process_predict(job):
 
 
 
+def update_training_tf_records(image_set_dir, patch_data):
+    logger = logging.getLogger(__name__)
+
+    training_dir = os.path.join(image_set_dir, "model", "training")
+    training_records_dir = os.path.join(training_dir, "training_tf_records")
+
+    patches_dir = os.path.join(image_set_dir, "model", "patches")
+
+    if os.path.exists(training_records_dir):
+        shutil.rmtree(training_records_dir)
+
+    os.makedirs(training_records_dir)
+
+    for image_name in patch_data.keys():
+        training_tf_record_path = os.path.join(training_records_dir, image_name + ".tfrec")
+        logger.info("Writing training records for image {} (from: {})".format(image_name, image_set_dir))
+
+        patch_records = np.array(patch_data[image_name])
+
+        training_patch_records = patch_records
+
+        training_tf_records = tf_record_io.create_patch_tf_records(training_patch_records, patches_dir, is_annotated=True)
+        tf_record_io.output_patch_tf_records(training_tf_record_path, training_tf_records)
+
+
+
+
+
+
 def process_fine_tune(job):
 
     logger = logging.getLogger(__name__)
@@ -640,8 +566,8 @@ def process_fine_tune(job):
         status = json_io.load_json(status_path)
 
         
-        if status["error_message"] != "":
-            raise RuntimeError("Cannot run fine-tuning during errored state.")
+        if status["state_name"] != emit.FINE_TUNING or status["progress"] != "Enqueued" or status["error_message"] != "":
+            raise RuntimeError("Cannot run fine-tuning due to illegal initial image set state.")
         
 
         annotations_path = os.path.join(image_set_dir, "annotations", "annotations.json")
@@ -654,12 +580,16 @@ def process_fine_tune(job):
                                       {"state_name": emit.FINE_TUNING, "progress": "Extracting Image Patches"})
 
             updated_patch_size = ep.update_model_patch_size(image_set_dir, annotations, ["fine_tuning_regions"])
-            # ep.update_training_patches(image_set_dir, annotations, updated_patch_size)
             patch_data = ep.update_training_patches(image_set_dir, annotations, updated_patch_size)
 
-            # aux.update_training_tf_records(image_set_dir, annotations)
-            aux.update_training_tf_records(image_set_dir, patch_data)
-            aux.reset_loss_record(image_set_dir)
+            update_training_tf_records(image_set_dir, patch_data)
+
+            loss_record_path = os.path.join(model_dir, "training", "loss_record.json")
+            loss_record = {
+                "training_loss_values": [1e8]
+            }
+            json_io.save_json(loss_record_path, loss_record)
+
 
             yolov4_driver.fine_tune(job)
 
@@ -706,7 +636,7 @@ def process_train(job):
         log_path = os.path.join(baseline_pending_dir, "log.json")
 
         available_dir = os.path.join(models_dir, "available")
-        if job["public"] == "yes":
+        if job["is_public"]:
             baseline_available_dir = os.path.join(available_dir, "public", model_name)
         else:
             baseline_available_dir = os.path.join(available_dir, "private", model_name)
@@ -763,7 +693,7 @@ def process_train(job):
 
                 metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
                 metadata = json_io.load_json(metadata_path)
-                is_ortho = metadata["is_ortho"] == "yes"
+                is_ortho = metadata["is_ortho"]
 
                 annotations_path = os.path.join(image_set_dir, "annotations", "annotations.json")
                 annotations = annotation_utils.load_annotations(annotations_path)
@@ -823,7 +753,7 @@ def process_train(job):
                     if len(regions) > 0:
 
                         image_path = glob.glob(os.path.join(images_dir, image_name + ".*"))[0]
-                        image = Image(image_path)
+                        image = ImageWrapper(image_path)
                         patch_records = ep.extract_patch_records_from_image_tiled(
                             image,
                             patch_size,
@@ -831,7 +761,6 @@ def process_train(job):
                             patch_overlap_percent=patch_overlap_percent,
                             regions=regions,
                             is_ortho=is_ortho,
-                            # include_patch_arrays=False,
                             out_dir=patches_dir)
 
                         all_records.extend(patch_records)
@@ -880,13 +809,11 @@ def process_train(job):
             training_patches_record_path = os.path.join(training_dir, "training-patches-record.tfrec")
             tf_record_io.output_patch_tf_records(training_patches_record_path, training_tf_records)
 
-            loss_record = {
-                "training_loss": { "values": [] }
-            }
             loss_record_path = os.path.join(baseline_pending_dir, "model", "training", "loss_record.json")
+            loss_record = {
+                "training_loss_values": [1e8]
+            }
             json_io.save_json(loss_record_path, loss_record)
-
-            aux.reset_loss_record(baseline_pending_dir)
 
             log["training_start_time"] = int(time.time())
             json_io.save_json(log_path, log)
@@ -949,11 +876,7 @@ def process_job(job_key):
     logger = logging.getLogger(__name__)
     try:
         job = occupied_sets[job_key]
-        # job = jm.get_job(job_key)
-
         task = job["task"]
-        # job_uuid = job["uuid"]
-        # job_path = os.path.join(JOBS_DIR, job_uuid + ".json")
 
         if task == "predict":
             process_predict(job)
@@ -969,9 +892,6 @@ def process_job(job_key):
 
 
 
-        # os.remove(job_path)
-        # jm.deoccupy(job_key)
-
     except Exception as e:
         trace = traceback.format_exc()
         logger.error("Exception occurred in process_job")
@@ -981,10 +901,6 @@ def process_job(job_key):
         with cv:
             if job_key in occupied_sets:
                 del occupied_sets[job_key]
-        # if job_path is not None and os.path.exists(job_path):
-        #     os.remove(job_path)
-        
-        # jm.deoccupy(job_key)
 
 
 
@@ -998,7 +914,6 @@ def work():
             waiting_workers += 1
             emit.emit_worker_change(waiting_workers)
             cv.wait_for(job_available)
-            # job_key = jm.dequeue()
             job_key = queue.pop(0)
             waiting_workers -= 1
             emit.emit_worker_change(waiting_workers)
@@ -1039,16 +954,8 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    # collect_jobs()
-
-    # producer = threading.Thread(name="producer", target=produce)
-    # producer.start()
-
-
-
     worker = threading.Thread(name="worker1", target=work)
     worker.start()
-
 
     # worker = threading.Thread(name="worker2", target=work)
     # worker.start()

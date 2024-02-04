@@ -19,16 +19,11 @@ from io_utils import json_io
 
 from models.common import driver_utils, \
                           model_keys, \
-                          annotation_utils, \
                           box_utils, \
                           poly_utils
 
-from image_set import Image
-
+from image_wrapper import ImageWrapper
 import emit
-import image_set_aux
-
-import extract_patches as ep
 
 
 from models.yolov4.loss import YOLOv4Loss
@@ -192,9 +187,9 @@ def create_default_config():
     return config
 
 
-def update_loss_record(loss_record, key, cur_loss):
+def update_loss_record(loss_record, cur_loss):
 
-    loss_vals = loss_record[key]["values"][-1]
+    loss_vals = loss_record["training_loss_values"]
     loss_vals.append(cur_loss)
 
     return np.argmin(loss_vals) == (len(loss_vals) - 1)
@@ -247,7 +242,7 @@ def predict(job):
 
     metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
     metadata = json_io.load_json(metadata_path)
-    is_ortho = metadata["is_ortho"] == "yes"
+    is_ortho = metadata["is_ortho"]
 
 
     status_path = os.path.join(model_dir, "status.json")
@@ -292,7 +287,7 @@ def predict(job):
     for image_index, image_name in enumerate(job["image_names"]):
 
         image_path = glob.glob(os.path.join(image_set_dir, "images", image_name + ".*"))[0]
-        image = Image(image_path)
+        image = ImageWrapper(image_path)
 
         if is_ortho:
             ds = gdal.Open(image.image_path)
@@ -642,7 +637,7 @@ def train(job):
 
 
         if TRAIN_FOR_FIXED_NUMBER_OF_EPOCHS:
-            num_epochs_trained = len(loss_record["training_loss"]["values"][-1]) - 1
+            num_epochs_trained = len(loss_record["training_loss_values"]) - 1
             logger.info("{} / {} epochs completed.".format(num_epochs_trained, NUM_EPOCHS_TO_TRAIN))
             if num_epochs_trained >= NUM_EPOCHS_TO_TRAIN:
                 logger.info("Finished training!")
@@ -673,7 +668,7 @@ def train(job):
         cur_training_loss = float(train_loss_metric.result())
 
 
-        cur_training_loss_is_best = update_loss_record(loss_record, "training_loss", cur_training_loss)
+        cur_training_loss_is_best = update_loss_record(loss_record, cur_training_loss)
         yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
         if cur_training_loss_is_best:
             yolov4.save_weights(filepath=best_weights_path, save_format="h5")
@@ -687,7 +682,7 @@ def train(job):
 
 def get_epochs_since_substantial_improvement(loss_record):
 
-    vals = loss_record["training_loss"]["values"][-1]
+    vals = loss_record["training_loss_values"]
     if len(vals) <= 1:
         return 0
     
@@ -801,7 +796,7 @@ def fine_tune(job):
         loss_record = json_io.load_json(loss_record_path)
 
         if TRAIN_FOR_FIXED_NUMBER_OF_EPOCHS:
-            num_epochs_trained = len(loss_record["training_loss"]["values"][-1]) - 1
+            num_epochs_trained = len(loss_record["training_loss_values"]) - 1
             logger.info("{} / {} epochs completed.".format(num_epochs_trained, NUM_EPOCHS_TO_TRAIN))
             if num_epochs_trained >= NUM_EPOCHS_TO_TRAIN:
                 logger.info("Finished training!")
@@ -813,13 +808,9 @@ def fine_tune(job):
 
             logger.info("Epochs since substantial training loss improvement: {}".format(epochs_since_substantial_improvement))
 
-            if epochs_since_substantial_improvement == 1:
-                progress = str(epochs_since_substantial_improvement) + " Epoch Since Improvement"
-            else:
-                progress = str(epochs_since_substantial_improvement) + " Epochs Since Improvement"
             emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                         {"state_name": emit.FINE_TUNING, 
-                                         "progress": progress})
+                                         "progress": "Epochs Since Improvement: " + str(epochs_since_substantial_improvement)})
 
             if epochs_since_substantial_improvement >= EPOCHS_WITHOUT_IMPROVEMENT_TOLERANCE:
                 shutil.copyfile(best_weights_path, cur_weights_path)
@@ -845,7 +836,7 @@ def fine_tune(job):
 
         logger.info("Epoch finished. Elapsed time (s): {}.".format(elapsed_epoch_time))
 
-        cur_training_loss_is_best = update_loss_record(loss_record, "training_loss", cur_training_loss)
+        cur_training_loss_is_best = update_loss_record(loss_record, cur_training_loss)
         yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
         if cur_training_loss_is_best:
             yolov4.save_weights(filepath=best_weights_path, save_format="h5")
@@ -855,29 +846,6 @@ def fine_tune(job):
         json_io.save_json(loss_record_path, loss_record)
         
 
-
-        # cur_time = int(time.time())
-        # elapsed_train_time = cur_time - start_time
-        # if elapsed_train_time > TRAINING_TIME_SESSION_CEILING:
-        #     return (False, True)
-
-
-
-
-
-def output_patch(patch, gt_boxes, pred_boxes, pred_classes, pred_scores, out_path):
-    from models.common import model_vis
-
-    out_array = model_vis.draw_boxes_on_image(patch,
-                      pred_boxes,
-                      pred_classes,
-                      pred_scores,
-                      class_map={"plant": 0},
-                      gt_boxes=gt_boxes,
-                      patch_coords=None,
-                      display_class=False,
-                      display_score=False)
-    cv2.imwrite(out_path, cv2.cvtColor(out_array, cv2.COLOR_RGB2BGR))
 
 
 def model_info(model_type):

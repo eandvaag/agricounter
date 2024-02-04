@@ -99,7 +99,7 @@ function build_map() {
 
     let interpolated_value = "obj_density";
 
-    if (metadata["is_ortho"] === "yes") {
+    if (metadata["is_ortho"]) {
         map_chart_tile_size = $("#tile_size_slider").val();
     }
     else {
@@ -941,7 +941,7 @@ $(document).ready(function() {
         result_type = "Predicted On All Regions";
     }
     else {
-        if (metadata["is_ortho"] === "yes") {
+        if (metadata["is_ortho"]) {
             result_type = "Predicted On Entire Orthomosaic";
         }
         else {
@@ -1154,7 +1154,7 @@ $(document).ready(function() {
     });
 
     if (can_calculate_density(metadata, camera_specs)) {
-        if (metadata["is_ortho"] === "yes" || Object.keys(annotations).length >= 3) {
+        if (metadata["is_ortho"] || Object.keys(annotations).length >= 3) {
 
             $("#view_button_container").show();
 
@@ -1169,7 +1169,7 @@ $(document).ready(function() {
             });
         }
 
-        if (metadata["is_ortho"] === "yes") {
+        if (metadata["is_ortho"]) {
             let tile_size_range = calculate_tile_size_slider_range();
             $("#tile_size_slider").prop("min", tile_size_range[0]);
             $("#tile_size_slider").prop("max", tile_size_range[1]);
