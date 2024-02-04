@@ -25,7 +25,7 @@ queue = []
 occupied_sets = {}
 
 waiting_workers = 0
-total_workers = 1
+TOTAL_WORKERS = 2
 
 app = Flask(__name__)
 
@@ -918,7 +918,6 @@ def work():
             job_key = queue.pop(0)
             waiting_workers -= 1
             emit.emit_worker_change(waiting_workers)
-        print("worker {} processing job {}".format(threading.current_thread().name, job_key))
 
         process_job(job_key)
 
@@ -955,10 +954,9 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    worker = threading.Thread(name="worker1", target=work)
-    worker.start()
+    for _ in range(TOTAL_WORKERS):
+        worker = threading.Thread(target=work)
+        worker.start()
 
-    # worker = threading.Thread(name="worker2", target=work)
-    # worker.start()
 
     app.run(host=os.environ.get("AC_IP"), port=os.environ.get("AC_PY_PORT"))
