@@ -163,11 +163,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
-        print("Specify at least one operation.")
+        parser.print_help()
         exit(1)
 
     if len(sys.argv) > 2:
-        print("Only one operation is allowed.")
+        parser.print_help()
         exit(1)
 
     if args.create:
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         down()
     elif args.up:
         up()
-    elif args.destroy():
+    elif args.destroy:
         destroy()
 
     exit(0)
