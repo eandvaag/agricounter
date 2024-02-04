@@ -351,9 +351,19 @@ def process_switch(job):
         logger.info("Switching to model {}".format(model_name))
 
 
-        if model_name.startswith("random_weights") and model_creator == "":
+
+        weights_dir = os.path.join(model_dir, "weights")
+        best_weights_path = os.path.join(weights_dir, "best_weights.h5")
+        cur_weights_path = os.path.join(weights_dir, "cur_weights.h5")
+
+
+        if model_name == "Random Weights":
             model_path = os.path.join("usr", "shared", "weights", model_name)
             average_patch_size = 416
+
+            yolov4_driver.save_random_weights(job["num_classes"], best_weights_path)
+
+
         else:
 
             model_path = os.path.join("usr", "data", model_creator, "models")
@@ -371,19 +381,10 @@ def process_switch(job):
             log = json_io.load_json(log_path)
             average_patch_size = log["average_patch_size"]
 
-        weights_path = os.path.join(model_path, "weights.h5")
-
-        weights_dir = os.path.join(model_dir, "weights")
-        tmp_weights_path = os.path.join(weights_dir, "tmp_weights.h5")
-        best_weights_path = os.path.join(weights_dir, "best_weights.h5")
-        cur_weights_path = os.path.join(weights_dir, "cur_weights.h5")
+            weights_path = os.path.join(model_path, "weights.h5")
+            shutil.copy(weights_path, best_weights_path)
 
 
-
-        shutil.copy(weights_path, tmp_weights_path)
-
-
-        shutil.move(tmp_weights_path, best_weights_path)
         shutil.copy(best_weights_path, cur_weights_path)
 
 

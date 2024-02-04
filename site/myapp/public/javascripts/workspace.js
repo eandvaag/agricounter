@@ -2906,8 +2906,9 @@ function set_model_weights_to_random() {
     $.post($(location).attr("href"),
     {
         action: "switch_model", 
-        model_name: "random_weights_" + String(num_classes),
-        model_creator: ""
+        model_name: "Random Weights",
+        model_creator: "",
+        num_classes: String(num_classes)
     },
     function(response, status) {
 
@@ -3542,18 +3543,10 @@ $(document).ready(function() {
             $("#model_name").html("No model selected.");
         }
         else {
-            let model_name;
-            if (update["model_name"].startsWith("random_weights")) {
-                model_name = "Random Weights";
-            }
-            else {
-                model_name = update["model_name"];
-            }
+            let model_name = update["model_name"];
             $("#model_name").html(model_name);
             $("#image_set_state").html(state_name);
         }
-
-
 
         
         if (error_message === "") {
