@@ -31,9 +31,7 @@ let min_max_rec = null;
 let model_unassigned = true;
 let num_images_fully_trained_on;
 
-// let waiting_for_model_switch = false;
 let switch_model_data = {};
-
 
 
 let selected_annotation_index = -1;
@@ -1205,10 +1203,6 @@ function anno_and_pred_onRedraw() {
 
             let region = annotations[cur_img_name][navigation_type][cur_region_index];
             region = get_bounding_box_for_polygon(region);
-
-            // if (navigation_type === "regions_of_interest") {
-            //     region = get_bounding_box_for_polygon(region);
-            // }
 
             viewer.world.getItemAt(0).setClip(
                 new OpenSeadragon.Rect(
@@ -2447,7 +2441,7 @@ function show_model_details(model_creator, model_name) {
 
                         current_image_set_overlay.context2d().lineWidth = 2;
 
-                        if ((key === "region_of_interest" || key === "fine_tuning_region") || "test_region") {
+                        if ((key === "region_of_interest" || key === "fine_tuning_region") || key === "test_region") {
 
                             current_image_set_overlay.context2d().strokeStyle = overlay_appearance["colors"][key];
                             current_image_set_overlay.context2d().fillStyle = overlay_appearance["colors"][key] + "55";                            
@@ -2631,10 +2625,12 @@ function init_model_viewer() {
             let max_x = min_x + viewport_w;
             let max_y = min_y + viewport_h;
 
-            min_y = Math.max(min_y, region[0]);
-            min_x = Math.max(min_x, region[1]);
-            max_y = Math.min(max_y, region[2]);
-            max_x = Math.min(max_x, region[3]);
+            let bounds = get_bounding_box_for_polygon(region);
+
+            min_y = Math.max(min_y, bounds[0]);
+            min_x = Math.max(min_x, bounds[1]);
+            max_y = Math.min(max_y, bounds[2]);
+            max_x = Math.min(max_x, bounds[3]);
 
             let draw_order = ["annotation"];
 
@@ -2693,13 +2689,6 @@ function init_model_viewer() {
                     [image_px_height+1e6, image_px_width+1e6],
                     [image_px_height+1e6, 0-1e6]
                 ];
-
-                // inner_poly = [
-                //     [region[0], region[1]],
-                //     [region[0], region[3]],
-                //     [region[2], region[3]],
-                //     [region[2], region[1]]
-                // ];
         
                 model_overlay.context2d().fillStyle = "#222621";
                 model_overlay.context2d().beginPath();
@@ -2731,10 +2720,10 @@ function init_model_viewer() {
         
                     model_viewer.world.getItemAt(0).setClip(
                         new OpenSeadragon.Rect(
-                            region[1],
-                            region[0],
-                            (region[3] - region[1]),
-                            (region[2] - region[0])
+                            bounds[1],
+                            bounds[0],
+                            (bounds[3] - bounds[1]),
+                            (bounds[2] - bounds[0])
                         )
                     );
                 }
@@ -2914,13 +2903,6 @@ function set_model_weights_to_random() {
 
     let num_classes = metadata["object_classes"].length;
 
-    // show_modal_message("Please Wait", 
-    // `<div style="height: 50px">` +
-    //     `<div>Switching models...</div>` +
-    //     `<div class="loader"></div>` +
-    // `</div>`);
-
-
     $.post($(location).attr("href"),
     {
         action: "switch_model", 
@@ -2932,9 +2914,6 @@ function set_model_weights_to_random() {
         if (response.error) {
             show_modal_message("Error", response.message);
         }
-        // else {
-        //     close_modal();
-        // }
     });
 }
 
@@ -3290,7 +3269,6 @@ function add_prediction_buttons() {
                     let image_width = metadata["images"][cur_img_name]["width_px"];
                     let image_height = metadata["images"][cur_img_name]["height_px"];
                     image_list = [cur_img_name];
-                    // region_list = [[[0, 0, image_height, image_width]]];
                     region_list = [[
                         [
                             [0, 0],
@@ -3384,12 +3362,6 @@ function switch_model(model_creator, model_name) {
     disable_model_actions();
     close_modal();
 
-    // show_modal_message("Please Wait", 
-    //     `<div style="height: 50px">` +
-    //         `<div>Switching models...</div>` +
-    //         `<div class="loader"></div>` +
-    //     `</div>`);
-
     $.post($(location).attr("href"),
     {
         action: "switch_model",
@@ -3401,9 +3373,6 @@ function switch_model(model_creator, model_name) {
         if (response.error) {
             show_modal_message("Error", response.message);
         }
-        // else {
-        //     close_modal();
-        // }
     });
 }
 
@@ -3588,11 +3557,9 @@ $(document).ready(function() {
 
         
         if (error_message === "") {
-            // $("#image_set_state_progress").css("color", "white");
             $("#image_set_state_progress").html(progress);
         }
         else {
-            // $("#image_set_state_progress").css("color", "rgb(237, 10, 10)");
             $("#image_set_state_progress").html("-- ERROR --");
         }
 
