@@ -27,7 +27,7 @@ function draw_map_chart() {
     let max_longitude = -10000;
     let min_longitude = 10000;
 
-    if (metadata["is_ortho"] !== "yes") {
+    if (!(metadata["is_ortho"])) {
 
         for (let dzi_image_path of dzi_image_paths) {
             let image_name = basename(dzi_image_path)
@@ -73,7 +73,7 @@ function draw_map_chart() {
     }
 
     let ratio;
-    if (metadata["is_ortho"] === "yes") {
+    if (metadata["is_ortho"]) {
         ratio = (metadata["images"][Object.keys(annotations)[0]]["width_px"] / metadata["images"][Object.keys(annotations)[0]]["height_px"]);
     }
     else {
@@ -133,7 +133,7 @@ function draw_map_chart() {
     let chart = d3.select("#map_container").select("svg").append("g");
         
 
-    if (metadata["is_ortho"] !== "yes") {
+    if (!(metadata["is_ortho"])) {
             
         chart_x_axis = svg.append("g")
             .attr("class", "x axis")
@@ -308,7 +308,7 @@ function draw_map_chart() {
         }
 
 
-        if (metadata["is_ortho"] === "yes") {
+        if (metadata["is_ortho"]) {
             $("#svg_map").css("cursor", "pointer");
             $("#svg_map").click(function(event) {
     
@@ -380,7 +380,7 @@ function draw_map_chart() {
     }
 
 
-    if (metadata["is_ortho"] !== "yes") {
+    if (!(metadata["is_ortho"])) {
 
         let tooltip = d3.select("#map_chart_tooltip");
 

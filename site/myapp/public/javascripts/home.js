@@ -626,7 +626,7 @@ function show_overview() {
         else {
             let annotation_info = response.annotation_info;
             metadata = response.metadata;
-            let is_public = metadata["is_public"] === "yes" ? "Yes": "No";
+            let is_public = metadata["is_public"] ? "Yes": "No";
 
             let label_width = "200px";
             let value_width = "200px";

@@ -1,7 +1,7 @@
 import math as m
 import numpy as np
 
-from models.common import box_utils, poly_utils
+from models.common import poly_utils
 
 from io_utils import json_io
 
@@ -122,7 +122,7 @@ def get_average_box_dim(dim, annotations, region_keys, measure):
         if region_keys is not None:
             for region_key in region_keys:
                 regions.extend(annotations[image_name][region_key])
-            # inds = box_utils.get_contained_inds(boxes, regions)
+                
             centres = (boxes[..., :2] + boxes[..., 2:]) / 2.0
             inds = poly_utils.get_contained_inds_for_points(centres, regions)
             region_boxes = boxes[inds]

@@ -16,18 +16,17 @@ The `backend` directory contains the code for the Python process. The Python pro
 
 ### Docker Install
 
-`agricounter_ctl.py` contains four functions for creating and managing the AgriCounter tool inside a Docker container. After cloning the AgriCounter repository, a new Docker instance of AgriCounter can be built with the following Python commands:
+`agricounter_ctl.py` can be used to create and manage the AgriCounter tool inside a Docker container. After cloning the AgriCounter repository, a new Docker instance of AgriCounter can be built with the following command:
 
 ```
-    import agricounter_ctl
-    agricounter_ctl.create()
+./agricounter_ctl.py --create
 ```
 
 
-`agricounter_ctl.create()` uses the arguments found in `args.json` to set up the application. Edit the `args.json` file in order to configure the setup as desired.
+`agricounter_ctl.py` uses the arguments found in `args.json` to set up the application. Edit the `args.json` file in order to configure the setup as desired.
 
 
-To stop the container without removing the PostGreSQL volume, use `agricounter_ctl.down()`. The container can then be re-built with `agricounter_ctl.up()`. To stop the container and remove the PostGreSQL volume, use `agricounter_ctl.destroy()`.
+To stop the container without removing the PostGreSQL volume, use `./agricounter_ctl.py --down`. The container can then be re-built with `./agricounter_ctl.py --up`. To stop the container and remove the PostGreSQL volume, use `./agricounter_ctl.py --destroy`.
 
 
 

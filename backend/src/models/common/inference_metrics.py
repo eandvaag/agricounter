@@ -32,15 +32,10 @@ def get_mAP_val(annotations, full_predictions, iou_thresh, assessment_images):
     
     metric_fn = MetricBuilder.build_evaluation_metric("map_2d", async_mode=True, num_classes=1)
 
-    mAP_vals = []
     for image_name in tqdm.tqdm(assessment_images):
         annotated_boxes = np.array(annotations[image_name]["boxes"])
         predicted_scores = np.array(full_predictions[image_name]["scores"])
         predicted_boxes = np.array(full_predictions[image_name]["boxes"])
-
-        # predicted_boxes = predicted_boxes[predicted_scores > 0.01]
-        # predicted_scores = predicted_scores[predicted_scores > 0.01]
-
 
         annotated_classes = np.zeros(shape=(annotated_boxes.shape[0]))
         predicted_classes = np.zeros(shape=(predicted_boxes.shape[0]))
@@ -66,52 +61,8 @@ def get_mAP_val(annotations, full_predictions, iou_thresh, assessment_images):
     else:
         raise RuntimeError("Invalid IoU threshold: {}".format(iou_thresh))
 
-        # mAP_vals.append(mAP)
-    return mAP #np.mean(mAP_vals) #mAP
+    return mAP
 
-
-
-
-
-def get_global_accuracy(annotations, full_predictions, assessment_images, iou_thresh=0.5):
-
-    total_true_positives = 0
-    total_false_positives = 0
-    total_false_negatives = 0
-
-    for image_name in assessment_images:
-        annotated_boxes = annotations[image_name]["boxes"]
-        pred_boxes = np.array(full_predictions[image_name]["boxes"])
-        pred_scores = np.array(full_predictions[image_name]["scores"])
-
-        sel_pred_boxes = pred_boxes[pred_scores > 0.50]
-
-        num_predicted = sel_pred_boxes.shape[0]
-        num_annotated = annotated_boxes.shape[0]
-
-        if num_predicted > 0:
-            if num_annotated > 0:
-                true_positive, false_positive, false_negative = get_positives_and_negatives(annotated_boxes, sel_pred_boxes, iou_thresh=iou_thresh)
-            else:
-                true_positive = 0
-                false_positive = num_predicted
-                false_negative = 0
-        else:
-            if num_annotated > 0:
-                true_positive = 0
-                false_positive = 0
-                false_negative = num_annotated
-            else:
-                true_positive = 0
-                false_positive = 0
-                false_negative = 0
-
-        total_true_positives += true_positive
-        total_false_positives += false_positive
-        total_false_negatives += false_negative
-
-    global_accuracy = total_true_positives / (total_true_positives + total_false_positives + total_false_negatives)
-    return global_accuracy
 
 
 
@@ -226,7 +177,6 @@ def collect_image_set_metrics(predictions, annotations, metadata):
                     
                     num_predicted = sel_region_pred_boxes.shape[0]
                     num_annotated = region_anno_boxes.shape[0]
-                    # print("num_predicted: {}, num_annotated: {}".format(num_predicted, num_annotated))
 
                     if num_predicted > 0:
                         if num_annotated > 0:
@@ -333,11 +283,6 @@ def can_calculate_density(metadata, camera_specs):
     make = metadata["camera_info"]["make"]
     model = metadata["camera_info"]["model"]
 
-    # if metadata["is_ortho"] == "yes":
-    #     return False
-
-    # if (metadata["missing"]["latitude"] or metadata["missing"]["longitude"]) or metadata["camera_height"] == "":
-    #     return False
     if metadata["camera_height"] == "":
         return False
 
@@ -351,10 +296,7 @@ def can_calculate_density(metadata, camera_specs):
 
 def calculate_area_m2(gsd, area_px):
 
-
-    # area_m2 = (metadata["images"][image_name]["height_px"] * gsd) * (metadata["images"][image_name]["width_px"] * gsd)
-    area_m2 = area_px * (gsd ** 2) #(area_height_px * gsd) * (area_width_px * gsd)
-
+    area_m2 = area_px * (gsd ** 2)
     return area_m2
 
 def get_gsd(camera_specs, metadata):
@@ -364,16 +306,16 @@ def get_gsd(camera_specs, metadata):
     camera_entry = camera_specs[make][model]
 
     gsd_h = (metadata["camera_height"] * camera_entry["sensor_height"]) / \
-            (camera_entry["focal_length"] * camera_entry["image_height_px"]) #metadata["images"][image_name]["height_px"])
+            (camera_entry["focal_length"] * camera_entry["image_height_px"])
 
     gsd_w = (metadata["camera_height"] * camera_entry["sensor_width"]) / \
-            (camera_entry["focal_length"] * camera_entry["image_width_px"]) # metadata["images"][image_name]["width_px"])
+            (camera_entry["focal_length"] * camera_entry["image_width_px"])
 
     gsd = min(gsd_h, gsd_w)
 
     return gsd
 
-def create_spreadsheet(job, regions_only=False): #username, farm_name, field_name, mission_date, result_uuid, download_uuid): #, annotation_version):
+def create_spreadsheet(job, regions_only=False):
 
     username = job["username"]
     farm_name = job["farm_name"]
@@ -387,12 +329,6 @@ def create_spreadsheet(job, regions_only=False): #username, farm_name, field_nam
     result_dir = os.path.join(image_set_dir, "model", "results", "available", result_uuid)
 
 
-
-    # image_set_dir = os.path.join("usr", "data", username, "image_sets",
-    #                              farm_name, field_name, mission_date)
-
-    # results_dir = os.path.join(image_set_dir, "model", "results", result_uuid)
-
     metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
     metadata = json_io.load_json(metadata_path)
 
@@ -401,42 +337,27 @@ def create_spreadsheet(job, regions_only=False): #username, farm_name, field_nam
     
 
 
-
-
-
-
     predictions_path = os.path.join(result_dir, "predictions.json")
-    predictions = annotation_utils.load_predictions(predictions_path) #w3c_io.load_predictions(predictions_path, {"plant": 0})
+    predictions = annotation_utils.load_predictions(predictions_path)
 
     full_predictions_path = os.path.join(result_dir, "full_predictions.json")
     full_predictions = annotation_utils.load_predictions(full_predictions_path)
 
 
-    # if annotation_version == "preserved":
     annotations_path = os.path.join(result_dir, "annotations.json")
-    # excess_green_record_path = os.path.join(results_dir, "excess_green_record.json")
     vegetation_record_path = os.path.join(result_dir, "vegetation_record.json")
     metrics_path = os.path.join(result_dir, "metrics.json")
     metrics = json_io.load_json(metrics_path)
     
     
     tags_path = os.path.join(result_dir, "tags.json")
-    # else:
-    #     annotations_path = os.path.join(image_set_dir, "annotations", "annotations.json")
-    #     # excess_green_record_path = os.path.join(image_set_dir, "excess_green", "record.json")
-    #     vegetation_record_path = os.path.join(image_set_dir, "excess_green", "vegetation_record.json")
 
+    annotations = annotation_utils.load_annotations(annotations_path)
 
-    annotations = annotation_utils.load_annotations(annotations_path) #w3c_io.load_annotations(annotations_path, {"plant": 0})
-    # excess_green_record = json_io.load_json(excess_green_record_path)
     if os.path.exists(vegetation_record_path):
         vegetation_record = json_io.load_json(vegetation_record_path)
     else:
         vegetation_record = None
-    # if os.path.exists(excess_green_record_path):
-    #     excess_green_record = json_io.load_json(excess_green_record_path)
-    # else:
-    #     excess_green_record = None
 
     tags = json_io.load_json(tags_path)
 
@@ -452,14 +373,11 @@ def create_spreadsheet(job, regions_only=False): #username, farm_name, field_nam
         "annotations": annotations,
         "metadata": metadata,
         "camera_specs": camera_specs,
-        # "excess_green_record": excess_green_record,
         "vegetation_record": vegetation_record,
         "tags": tags
     }
-    # if annotation_version == "preserved":
+
     updated_metrics = metrics
-    # else:
-    #     updated_metrics = collect_image_set_metrics(full_predictions, annotations)
 
     if not regions_only:
         images_df = create_images_sheet(args, updated_metrics)
@@ -468,12 +386,7 @@ def create_spreadsheet(job, regions_only=False): #username, farm_name, field_nam
 
     pandas.io.formats.excel.ExcelFormatter.header_style = None
 
-    # out_dir = os.path.join(results_dir, "retrieval", download_uuid)
-    # os.makedirs(out_dir)
-
-    out_path = os.path.join(result_dir, "metrics.xlsx") #os.path.join(out_dir, "results.xlsx")
-    # with pd.ExcelWriter(out_path) as writer:
-    #     images_df.to_excel(writer, sheet_name="Images")
+    out_path = os.path.join(result_dir, "metrics.xlsx")
 
     sheet_name_to_df = {}
 
@@ -522,11 +435,9 @@ def create_images_sheet(args, updated_metrics):
     field_name = args["field_name"]
     mission_date = args["mission_date"]
     predictions = args["predictions"]
-    # full_predictions = args["full_predictions"]
     annotations = args["annotations"]
     metadata = args["metadata"]
     camera_specs = args["camera_specs"]
-    # excess_green_record = args["excess_green_record"]
     vegetation_record = args["vegetation_record"]
 
 
@@ -534,8 +445,6 @@ def create_images_sheet(args, updated_metrics):
 
     num_classes = len(metadata["object_classes"])
 
-
-    # defines the order of the columns
     columns = [
         "Username",
         "Farm Name",
@@ -547,8 +456,6 @@ def create_images_sheet(args, updated_metrics):
         "Test Regions",
         "Image Is Fully Annotated",
         "Source Of Annotations",
-        # "Annotated Count",
-        # "Predicted Count"
     ]
     if num_classes > 1:
         columns.extend([
@@ -568,7 +475,6 @@ def create_images_sheet(args, updated_metrics):
                 "Predicted Count Per Square Metre (All Classes)"
             ])
 
-        # columns.extend(["Annotated Count Per Square Metre", "Predicted Count Per Square Metre"])
         for object_class in metadata["object_classes"]:
             columns.append("Annotated Count Per Square Metre (" + object_class + ")")
             columns.append("Predicted Count Per Square Metre (" + object_class + ")")
@@ -603,8 +509,8 @@ def create_images_sheet(args, updated_metrics):
             columns.append("Mean of Predicted Object Areas (Square Metres) (" + object_class + ")")
             columns.append("Std. Dev. of Annotated Object Areas (Square Metres) (" + object_class + ")")
             columns.append("Std. Dev. of Predicted Object Areas (Square Metres) (" + object_class + ")")
-    # if excess_green_record is not None:
-            
+
+
     if num_classes > 1:
         columns.append("Percent Count Error (All Classes)")
 
@@ -615,8 +521,6 @@ def create_images_sheet(args, updated_metrics):
         columns.extend([
             "Excess Green Threshold",
             "Vegetation Percentage"
-            # "Percentage of Vegetation Belonging to Objects",
-            # "Percentage of Vegetation Belonging to Non-Objects"
         ])
         if num_classes > 1:
             columns.extend([
@@ -628,7 +532,6 @@ def create_images_sheet(args, updated_metrics):
                 "Percentage of Vegetation Inside " + object_class + " Boundaries",
                 "Percentage of Vegetation Outside " + object_class + " Boundaries"    
             ])
-    # columns.append("MS_COCO_mAP")
         
 
     metrics_lst = [
@@ -656,21 +559,13 @@ def create_images_sheet(args, updated_metrics):
         d[c] = []
 
 
-    # new_metrics = {}
-
     for image_name in predictions.keys():
 
-        # image_abs_boxes = annotations[image_name]["boxes"]
         regions_of_interest = annotations[image_name]["regions_of_interest"]
         fine_tuning_regions = annotations[image_name]["fine_tuning_regions"]
         test_regions = annotations[image_name]["test_regions"]
 
-        # if annotations[image_name]["predictions_used_as_annotations"]:
-        #     predictions_used_as_annotations = "yes"
-        # else:
-        #     predictions_used_as_annotations = "no"
         annotations_source = annotations[image_name]["source"]
-
 
         image_height_px = metadata["images"][image_name]["height_px"]
         image_width_px = metadata["images"][image_name]["width_px"]
@@ -683,22 +578,6 @@ def create_images_sheet(args, updated_metrics):
             
         else:
             fully_annotated = "no"
-        # image_status = annotations[image_name]["status"]
-
-        # pred_image_abs_boxes = predictions[image_name]["boxes"]
-        # pred_image_scores = predictions[image_name]["scores"]
-        # sel_pred_image_abs_boxes = pred_image_abs_boxes[pred_image_scores > 0.50]
-        # # print(pred_image_scores)
-
-        # annotated_count = image_abs_boxes.shape[0]
-        # predicted_count = sel_pred_image_abs_boxes.shape[0] #np.sum(pred_image_scores > 0.50)
-
-        # if fully_annotated == "no":
-        #     percent_count_error = "NA"
-        # elif annotated_count > 0:
-        #     percent_count_error = round(abs((predicted_count - annotated_count) / (annotated_count)) * 100, 2)
-        # else:
-        #     percent_count_error = "NA" #undefined"
 
 
         height_px = metadata["images"][image_name]["height_px"]
@@ -715,10 +594,6 @@ def create_images_sheet(args, updated_metrics):
         d["Test Regions"].append(len(test_regions))
         d["Image Is Fully Annotated"].append(fully_annotated)
         d["Source Of Annotations"].append(annotations_source)
-        # if image_status == "unannotated":
-        #     d["annotated_plant_count"].append("NA")
-        # else:
-        #     d["annotated_plant_count"].append(annotated_count)
         d["Area (Pixels)"].append(area_px)
         if include_density:
             gsd = get_gsd(camera_specs, metadata)
@@ -782,9 +657,6 @@ def create_images_sheet(args, updated_metrics):
             if include_density:
                 gsd = get_gsd(camera_specs, metadata)
                 area_m2 = calculate_area_m2(gsd, area_px)
-                # if image_status == "unannotated":
-                #     d["annotated_plant_count_per_square_metre"].append("NA")
-                # else:
                 if area_m2 > 0:
                     annotated_count_per_square_metre = round(annotated_count / area_m2, 8)
                     predicted_count_per_square_metre = round(predicted_count / area_m2, 8)
@@ -793,7 +665,6 @@ def create_images_sheet(args, updated_metrics):
                     predicted_count_per_square_metre = "NA"
                 d["Annotated Count Per Square Metre (" + object_class + ")"].append(annotated_count_per_square_metre)
                 d["Predicted Count Per Square Metre (" + object_class + ")"].append(predicted_count_per_square_metre)
-                # d["Area (Square Metres)"].append(round(area_m2, 8))
 
                 if annotated_count > 0:
                     annotated_box_areas_m2 = calculate_area_m2(gsd, annotated_box_areas_px)
@@ -821,7 +692,7 @@ def create_images_sheet(args, updated_metrics):
             elif annotated_count > 0:
                 percent_count_error = round(abs((predicted_count - annotated_count) / (annotated_count)) * 100, 2)
             else:
-                percent_count_error = "NA" #undefined"
+                percent_count_error = "NA"
 
             d["Percent Count Error (" + object_class + ")"].append(percent_count_error)
 
@@ -853,13 +724,6 @@ def create_images_sheet(args, updated_metrics):
         if vegetation_record is not None:
             d["Excess Green Threshold"].append(vegetation_record[image_name]["sel_val"])
             vegetation_percentage = vegetation_record[image_name]["vegetation_percentage"]["image"]
-            # obj_vegetation_percentage = vegetation_record[image_name]["obj_vegetation_percentage"]["image"]
-            # if vegetation_percentage == 0:
-            #     obj_percentage = "NA"
-            #     non_obj_percentage = "NA"
-            # else:
-            #     obj_percentage = round((obj_vegetation_percentage / vegetation_percentage) * 100, 2)
-            #     non_obj_percentage = round(100 - obj_percentage, 2)
             d["Vegetation Percentage"].append(vegetation_percentage)
 
             if num_classes > 1:
@@ -909,9 +773,6 @@ def create_areas_spreadsheet(job, regions_only=False):
     result_dir = os.path.join(image_set_dir, "model", "results", "available", result_uuid)
 
 
-
-
-
     metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
     metadata = json_io.load_json(metadata_path)
 
@@ -920,19 +781,10 @@ def create_areas_spreadsheet(job, regions_only=False):
     
 
     predictions_path = os.path.join(result_dir, "predictions.json")
-    predictions = annotation_utils.load_predictions(predictions_path) #w3c_io.load_predictions(predictions_path, {"plant": 0})
+    predictions = annotation_utils.load_predictions(predictions_path)
 
     annotations_path = os.path.join(result_dir, "annotations.json")
     annotations = annotation_utils.load_annotations(annotations_path) 
-
-    # full_predictions_path = os.path.join(results_dir, "full_predictions.json")
-    # full_predictions = annotation_utils.load_predictions(full_predictions_path)
-
-
-
-
-    # metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
-    # metadata = json_io.load_json(metadata_path)
 
     if not can_calculate_density(metadata, camera_specs):
         logger.info("Cannot calculate voronoi areas (cannot calculate density).")
@@ -957,10 +809,6 @@ def create_areas_spreadsheet(job, regions_only=False):
             (camera_entry["focal_length"] * image_w)
 
     gsd = min(gsd_h, gsd_w)
-
-    # area_m2 = (metadata["images"][image_name]["height_px"] * gsd) * (metadata["images"][image_name]["width_px"] * gsd)
-    
-    
 
     
     object_entries = []
@@ -995,7 +843,6 @@ def create_areas_spreadsheet(job, regions_only=False):
                 xy_predicted_centres = np.stack([predicted_centres[:, 1], predicted_centres[:, 0]], axis=-1)
 
                 vor = Voronoi(xy_predicted_centres)
-                # fig = voronoi_plot_2d(vor)
 
                 lines = [
                     shapely.geometry.LineString(vor.vertices[line])
@@ -1010,20 +857,10 @@ def create_areas_spreadsheet(job, regions_only=False):
                         filtered_lines.append(line)
 
                 areas_m2 = []
-                # polygons = []
                 for poly in shapely.ops.polygonize(filtered_lines):
-                    # plt.scatter([x[0] for x in poly.exterior.coords], [x[1] for x in poly.exterior.coords], color="green")
-                    # polygons.append(Polygon(poly.exterior.coords, fill=True, facecolor="green"))
                     area_px = poly.area
                     area_m2 = round(area_px * (gsd ** 2), 8)
                     areas_m2.append(area_m2)
-                # p = PatchCollection(polygons, alpha=0.4)
-                # fig.axes[0].add_collection(p)
-                # plt.ylim((0, image_h))
-                # plt.xlim((0, image_w))
-                # plt.savefig(os.path.join(results_dir, "voronoi_plots", image_name + ":" + region_label + "_region_" + str(i) + ".svg"))
-
-                # plt.close()
 
                 d_voronoi = {
                     image_name: sorted(areas_m2)
@@ -1051,8 +888,6 @@ def create_areas_spreadsheet(job, regions_only=False):
     voronoi_images_df = voronoi_images_df.fillna('')
 
 
-
-
     object_entries = []
     voronoi_entries = []
     for image_name in predictions.keys():
@@ -1078,8 +913,6 @@ def create_areas_spreadsheet(job, regions_only=False):
                 entry_name = image_name + ":" + region_label + "_" + str(i+1)
 
                 predicted_centres = (sel_predicted_boxes[..., :2] + sel_predicted_boxes[..., 2:]) / 2.0
-                # xy_predicted_centres = np.stack([predicted_centres[:, 1], predicted_centres[:, 0]], axis=-1)
-
 
                 predicted_inds = poly_utils.get_contained_inds_for_points(predicted_centres, [region])
 
@@ -1123,20 +956,10 @@ def create_areas_spreadsheet(job, regions_only=False):
                                 filtered_lines.append(line)
 
                         areas_m2 = []
-                        # polygons = []
                         for poly in shapely.ops.polygonize(filtered_lines):
-                            # plt.scatter([x[0] for x in poly.exterior.coords], [x[1] for x in poly.exterior.coords], color="green")
-                            # polygons.append(Polygon(poly.exterior.coords, fill=True, facecolor="green"))
                             area_px = poly.area
                             area_m2 = round(area_px * (gsd ** 2), 8)
                             areas_m2.append(area_m2)
-                        # p = PatchCollection(polygons, alpha=0.4)
-                        # fig.axes[0].add_collection(p)
-                        # plt.ylim((0, image_h))
-                        # plt.xlim((0, image_w))
-                        # plt.savefig(os.path.join(results_dir, "voronoi_plots", image_name + ":" + region_label + "_region_" + str(i) + ".svg"))
-
-                        # plt.close()
 
                         d_voronoi = {
                             entry_name: sorted(areas_m2)
@@ -1182,7 +1005,6 @@ def create_areas_spreadsheet(job, regions_only=False):
             "Region Object Areas": object_regions_df,
             "Image Voronoi Areas": voronoi_images_df,
             "Region Voronoi Areas": voronoi_regions_df
-            # "Stats": stats_df
         }
     writer = pd.ExcelWriter(out_path, engine="xlsxwriter")
     fmt = writer.book.add_format({"font_name": "Courier New"})
@@ -1237,7 +1059,6 @@ def create_regions_sheet(args, updated_metrics):
     include_density = can_calculate_density(metadata, camera_specs)
 
 
-    # defines the order of the columns
     columns = [
         "Username",
         "Farm Name",
@@ -1270,7 +1091,6 @@ def create_regions_sheet(args, updated_metrics):
                 "Predicted Count Per Square Metre (All Classes)"
             ])
 
-        # columns.extend(["Annotated Count Per Square Metre", "Predicted Count Per Square Metre"])
         for object_class in metadata["object_classes"]:
             columns.append("Annotated Count Per Square Metre (" + object_class + ")")
             columns.append("Predicted Count Per Square Metre (" + object_class + ")")
@@ -1304,7 +1124,6 @@ def create_regions_sheet(args, updated_metrics):
             columns.append("Mean of Predicted Object Areas (Square Metres) (" + object_class + ")")
             columns.append("Std. Dev. of Annotated Object Areas (Square Metres) (" + object_class + ")")
             columns.append("Std. Dev. of Predicted Object Areas (Square Metres) (" + object_class + ")")
-    # if excess_green_record is not None:
             
     if num_classes > 1:
         columns.append("Percent Count Error (All Classes)")
@@ -1316,8 +1135,6 @@ def create_regions_sheet(args, updated_metrics):
         columns.extend([
             "Excess Green Threshold",
             "Vegetation Percentage"
-            # "Percentage of Vegetation Belonging to Objects",
-            # "Percentage of Vegetation Belonging to Non-Objects"
         ])
         if num_classes > 1:
             columns.extend([
@@ -1361,26 +1178,9 @@ def create_regions_sheet(args, updated_metrics):
 
     for image_name in predictions.keys():
 
-        # annotated_boxes = annotations[image_name]["boxes"]
-        # predicted_boxes = predictions[image_name]["boxes"]
-        # predicted_scores = predictions[image_name]["scores"]
-        # sel_predicted_boxes = predictions[image_name]["boxes"][predicted_scores > 0.50]
-
         annotations_source = annotations[image_name]["source"]
-        # above_thresh_predicted_boxes = predicted_boxes[predicted_scores >= 0.50]
-
-        # metrics["MS COCO mAP"][image_name] = {}
-        # metrics["F1 Score (IoU=0.5)"][image_name] = {}
-        # metrics["F1 Score (IoU=0.7)"][image_name] = {}
-        # metrics["F1 Score (IoU=0.9)"][image_name] = {}
 
         for region_type in ["regions_of_interest", "fine_tuning_regions", "test_regions"]:
-
-
-            # metrics["MS COCO mAP"][image_name][region_type + "_regions"] = []
-            # metrics["F1 Score (IoU=0.5)"][image_name][region_type + "_regions"] = []
-            # metrics["F1 Score (IoU=0.7)"][image_name][region_type + "_regions"] = []
-            # metrics["F1 Score (IoU=0.9)"][image_name][region_type + "_regions"] = []
 
             regions = annotations[image_name][region_type]
 
@@ -1420,8 +1220,6 @@ def create_regions_sheet(args, updated_metrics):
                     gsd = get_gsd(camera_specs, metadata)
                     area_m2 = calculate_area_m2(gsd, area_px)
                     d["Area (Square Metres)"].append(round(area_m2, 8))
-
-
 
 
                 if num_classes > 1:
@@ -1467,7 +1265,6 @@ def create_regions_sheet(args, updated_metrics):
                     d["Predicted Count (" + object_class + ")"].append(predicted_count)
 
 
-
                     if annotated_count > 0:
                         annotated_box_areas_px = box_utils.box_areas_np(annotated_boxes)
                         mean_annotated_object_area_px = round(np.mean(annotated_box_areas_px), 8)
@@ -1493,9 +1290,6 @@ def create_regions_sheet(args, updated_metrics):
                     if include_density:
                         gsd = get_gsd(camera_specs, metadata)
                         area_m2 = calculate_area_m2(gsd, area_px)
-                        # if image_status == "unannotated":
-                        #     d["annotated_plant_count_per_square_metre"].append("NA")
-                        # else:
                         if area_m2 > 0:
                             annotated_count_per_square_metre = round(annotated_count / area_m2, 8)
                             predicted_count_per_square_metre = round(predicted_count / area_m2, 8)
@@ -1504,7 +1298,6 @@ def create_regions_sheet(args, updated_metrics):
                             predicted_count_per_square_metre = "NA"
                         d["Annotated Count Per Square Metre (" + object_class + ")"].append(annotated_count_per_square_metre)
                         d["Predicted Count Per Square Metre (" + object_class + ")"].append(predicted_count_per_square_metre)
-                        # d["Area (Square Metres)"].append(round(area_m2, 8))
 
                         if annotated_count > 0:
                             annotated_box_areas_m2 = calculate_area_m2(gsd, annotated_box_areas_px)
@@ -1532,10 +1325,9 @@ def create_regions_sheet(args, updated_metrics):
                     if annotated_count > 0:
                         percent_count_error = round(abs((predicted_count - annotated_count) / (annotated_count)) * 100, 2)
                     else:
-                        percent_count_error = "NA" #undefined"
+                        percent_count_error = "NA"
 
                     d["Percent Count Error (" + object_class + ")"].append(percent_count_error)
-
 
                     for metric in metrics_lst:
                         metric_val = updated_metrics[object_class][metric][image_name][region_type][region_idx]
@@ -1578,14 +1370,9 @@ def create_regions_sheet(args, updated_metrics):
                         d["Percentage of Vegetation Outside " + object_class + " Boundaries"].append(non_obj_percentage) 
 
 
-    # json_io.print_json(d)
-    # print()
-    # for col in columns:
-    #     print(col, len(d[col]))
-
     df = pd.DataFrame(data=d, columns=columns)
     df.sort_values(by="Image Name", inplace=True, key=lambda x: np.argsort(index_natsorted(df["Image Name"])))
-    return df #, metrics
+    return df
 
 
 
@@ -1594,20 +1381,13 @@ def create_stats_sheet(args, regions_df):
     farm_name = args["farm_name"]
     field_name = args["field_name"]
     mission_date = args["mission_date"]
-    # predictions = args["predictions"]
-    # annotations = args["annotations"]
     metadata = args["metadata"]
-    # camera_specs = args["camera_specs"]
-    # vegetation_record = args["vegetation_record"]
     columns = [
         "Username",
         "Farm Name", 
         "Field Name", 
         "Mission Date", 
         "Region Type", 
-        # "Pearson's r: Annotated Count v. Predicted Count",
-        # "Pearson's r: Annotated Count v. Vegetation Percentage"
-
     ]
  
     averaged_metrics = [
@@ -1615,9 +1395,6 @@ def create_stats_sheet(args, regions_df):
         "Recall (IoU=.50, conf>.50)",
         "Accuracy (IoU=.50, conf>.50)",
         "F1 Score (IoU=.50, conf>.50)",
-        # "AP (IoU=.50:.05:.95)",
-        # "AP (IoU=.50)",
-        # "AP (IoU=.75)"
     ]
 
     num_classes = len(metadata["object_classes"])
@@ -1641,15 +1418,13 @@ def create_stats_sheet(args, regions_df):
         for metric in averaged_metrics:
             columns.append(metric + " (" + object_class + ")")
 
-    # columns.extend(averaged_metrics)
-
     d = {}
     for c in columns:
         d[c] = []
 
     if len(regions_df.index) > 0:
 
-        for region_type in ["regions_of_interest", "fine_tuning_regions", "test_regions"]: #["interest", "fine_tuning", "test"]:
+        for region_type in ["regions_of_interest", "fine_tuning_regions", "test_regions"]:
             if region_type == "regions_of_interest":
                 disp_region_type = "interest"
             elif region_type == "fine_tuning_regions":
@@ -1658,8 +1433,6 @@ def create_stats_sheet(args, regions_df):
                 disp_region_type = "test"
 
             sub_df = regions_df[regions_df["Region Name"].str.contains(disp_region_type)]
-
-            # print(sub_df)
 
             if len(sub_df) > 0:
 
@@ -1678,42 +1451,20 @@ def create_stats_sheet(args, regions_df):
                     d["Mean Squared Difference In Count (" + object_class + ")"].append(
                         round(float(np.mean((sub_df["Annotated Count (" + object_class + ")"] - sub_df["Predicted Count (" + object_class + ")"]) ** 2)), 2)
                     )
-
-
-                    
-                    # # mean_abs_diff_in_count = round(np.mean(abs(sub_df["Annotated Count"] - sub_df["Predicted Count"])), 2)
-                    # d["Mean Absolute Difference In Count"].append(
-                    #     round(float(np.mean(abs(sub_df["Annotated Count"] - sub_df["Predicted Count"]))), 2)
-                    # )
-                    # # mean_squared_diff_in_count = round(np.mean((sub_df["Annotated Count"] - sub_df["Predicted Count"]) ** 2), 2)
-                    # d["Mean Squared Difference In Count"].append(
-                    #     round(float(np.mean((sub_df["Annotated Count"] - sub_df["Predicted Count"]) ** 2)), 2)
-                    # )
-
-                    # d["Pearson's r: Annotated Count v. Predicted Count"] = round(float(np.corrcoef(sub_df["Annotated Count"], sub_df["Predicted Count"])[0][1]), 2)
-                    # d["Pearson's r: Annotated Count v. Vegetation Percentage"] = round(float(np.corrcoef(sub_df["Annotated Count"], sub_df["Vegetation Percentage"])[0][1]), 2)
-
                     
                     for metric in averaged_metrics:
 
-                        # if region_type == "regions_of_interest":
-                        #     metric_val = "NA"
-                        # else:
-                        # metric_val = updated_metrics[metric][image_name][region_type + "_regions"][i]
                         try:
-                            # if isinstance(metric_val, float):
                             metric_val = round(float(np.mean(sub_df[metric + " (" + object_class + ")"])), 2)
                         except Exception:
                             metric_val = "unable_to_calculate"
                         
                         d[metric + " (" + object_class + ")"].append(metric_val)
-                        # d[metric].append(round(float(np.mean(sub_df[metric])), 2))
 
     print(d)
 
     df = pd.DataFrame(data=d, columns=columns)
-        # df.sort_values(by="Image Name", inplace=True, key=lambda x: np.argsort(index_natsorted(df["Image Name"])))
-    return df #, metrics
+    return df
 
 
 
@@ -1726,7 +1477,7 @@ def get_pred_and_true_for_mAP(pred_abs_boxes, pred_classes, pred_scores,
     if pred_abs_boxes.size > 0:
         pred_abs_boxes = box_utils.swap_xy_np(pred_abs_boxes)
     else:
-        pred_abs_boxes = np.reshape(pred_abs_boxes, (0, 4)) #np.expand_dims(pred_abs_boxes, axis=-1)
+        pred_abs_boxes = np.reshape(pred_abs_boxes, (0, 4))
         
     pred_classes = np.expand_dims(pred_classes, axis=-1)
     pred_scores = np.expand_dims(pred_scores, axis=-1)
@@ -1735,17 +1486,11 @@ def get_pred_and_true_for_mAP(pred_abs_boxes, pred_classes, pred_scores,
     if true_abs_boxes.size > 0:
         true_abs_boxes = box_utils.swap_xy_np(true_abs_boxes)
     else:
-        #true_abs_boxes = np.expand_dims(true_abs_boxes, axis=-1)
         true_abs_boxes = np.reshape(true_abs_boxes, (0, 4)) 
-    #true_abs_boxes = box_utils.swap_xy_np(true_abs_boxes)
+
     true_classes = np.expand_dims(true_classes, axis=-1)
     difficult = np.expand_dims(np.zeros(true_classes.size), axis=-1)
     crowd = np.expand_dims(np.zeros(true_classes.size), axis=-1)
     true = np.hstack([true_abs_boxes, true_classes, difficult, crowd])  
 
     return pred, true
-
-
-
-
-

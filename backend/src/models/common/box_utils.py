@@ -117,6 +117,8 @@ def get_edge_boxes_mask(boxes, patch_shape):
 
 
 
+# Note this doesn't give 'correct' behaviour if the boxes are not at least 
+# partially contained within the patch_coords
 def clip_boxes_np(boxes, patch_coords):
     """
         boxes: min_y, min_x, max_y, max_x format
