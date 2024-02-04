@@ -16,7 +16,6 @@ var socket_api = require('../socket_api');
 
 const USR_DATA_ROOT = path.join("usr", "data");
 const USR_SHARED_ROOT = path.join("usr", "shared");
-// const JOBS_DIR = path.join(USR_SHARED_ROOT, "jobs");
 
 let active_uploads = {};
 var Mutex = require('async-mutex').Mutex;
@@ -152,9 +151,6 @@ exports.get_sign_in = function(req, res, next) {
     res.render('sign_in');
 }
 
-// exports.get_test_anno = function(req, res, next) {
-//     res.render('test_anno');
-// }
 
 exports.post_sign_in = function(req, res, next) {
     let response = {};
@@ -177,19 +173,12 @@ exports.post_sign_in = function(req, res, next) {
                 return res.json(response);
             }
             else {
-                // if (fpath_exists(path.join(USR_SHARED_ROOT, "admin.txt")) && (req.body.username !== "erik")) {
-                //     response.maintenance = true;
-                //     return res.json(response);
-                // }
-
                 if (user.is_admin) {
-                    console.log("user is admin");
                     req.session.user = user.dataValues;
                     response.redirect = process.env.AC_PATH + "/admin";
                     return res.json(response);
                 }
                 else {
-                    console.log("user is not admin");
                     req.session.user = user.dataValues;
                     response.redirect = process.env.AC_PATH + "/home/" + req.body.username;
                     return res.json(response);
@@ -197,6 +186,7 @@ exports.post_sign_in = function(req, res, next) {
             }
         }
     }).catch(error => {
+        console.log(error);
         response.error = true;
         return res.json(response);
     });
@@ -728,10 +718,6 @@ function is_hex_color(hex_color) {
     }
 
     return true;
-
-    // var s = new Option().style;
-    // s.color = strColor;
-    // return s.color == strColor;
 }
 
 exports.post_overlay_appearance_change = function(req, res, next) {
@@ -1443,17 +1429,6 @@ exports.post_annotations_upload = function(req, res, next) {
                 //     }
                 // }
 
-                // let internal_annotation_key;
-                // if (annotation_key === "annotations") {
-                //     internal_annotation_key = "boxes";
-                // }
-                // else if (annotation_key === "regions_of_interest") {
-                //     internal_annotation_key = "regions_of_interest";
-                // }
-                // else {
-                //     internal_annotation_key = "test_regions"
-                // }
-
                 new_annotations[image_name]["boxes"].push([
                     y_min, x_min, y_max, x_max
                 ]);
@@ -1483,8 +1458,6 @@ exports.post_annotations_upload = function(req, res, next) {
             break;
         }
     }
-
-    // let num_useable_boxes = get_num_useable_boxes(new_annotations);
 
     let image_sets_path;
     if (metadata["is_public"]) {
@@ -1541,8 +1514,7 @@ exports.post_annotations_upload = function(req, res, next) {
                 image_sets[req.session.user.username][farm_name][field_name] = {};
             }
             image_sets[req.session.user.username][farm_name][field_name][mission_date] = {
-                "object_classes": metadata["object_classes"],
-                // "num_useable_boxes": num_useable_boxes
+                "object_classes": metadata["object_classes"]
             }
         }
 
@@ -1720,8 +1692,7 @@ exports.post_workspace = async function(req, res, next) {
                         image_sets[req.session.user.username][farm_name][field_name] = {};
                     }
                     image_sets[req.session.user.username][farm_name][field_name][mission_date] = {
-                        "object_classes": req.body.object_classes.split(","),
-                        // "num_useable_boxes": num_useable_boxes
+                        "object_classes": req.body.object_classes.split(",")
                     }
                 }
 
@@ -2178,9 +2149,9 @@ exports.post_workspace = async function(req, res, next) {
 
 
 function isNumeric(str) {
-    if (typeof str != "string") return false // we only process strings!  
-    return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
-           !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+    if (typeof str != "string") return false;
+    return !isNaN(str) &&
+           !isNaN(parseFloat(str));
 }
 
 function remove_image_set(username, farm_name, field_name, mission_date) {
@@ -2493,38 +2464,32 @@ exports.post_orthomosaic_upload = function(req, res, next) {
 
 
 exports.post_image_set_upload = async function(req, res, next) {
-    //if (req.session.user && req.cookies.user_sid) {
 
     let upload_uuid;
     let farm_name;
     let field_name;
     let mission_date;
     let object_classes;
-    //let object_name;
     let is_public;
     let first;
     let last;
     let queued_filenames;
     let camera_height;
-    // let sent_response = false;
     
     if (req.files.length > 1) {
         upload_uuid = req.body.upload_uuid[0];
         farm_name = req.body.farm_name[0];
         field_name = req.body.field_name[0];
         mission_date = req.body.mission_date[0];
-        // object_name = req.body.object_name[0];
         object_classes = req.body.object_classes[0].split(",");
         is_public = JSON.parse(req.body.is_public[0]);
         first = false;
         last = false;
         queued_filenames = req.body.queued_filenames[0].split(",");
-        //console.log("queued_filenames", queued_filenames);
         camera_height = req.body.camera_height[0];
         let num_sent;
         for (let i = 0; i < req.body.num_sent.length; i++) {
-            num_sent = parseInt(req.body.num_sent[i])
-            //console.log("num_sent", num_sent);
+            num_sent = parseInt(req.body.num_sent[i]);
             if (num_sent == 1) {
                 first = true;
             }
@@ -2540,7 +2505,6 @@ exports.post_image_set_upload = async function(req, res, next) {
         field_name = req.body.field_name;
         mission_date = req.body.mission_date;
         object_classes = req.body.object_classes.split(",");
-        // object_name = req.body.object_name;
         is_public = JSON.parse(req.body.is_public);
         queued_filenames = req.body.queued_filenames.split(",");
         first = parseInt(req.body.num_sent) == 1;
@@ -3751,45 +3715,22 @@ exports.post_home = async function(req, res, next) {
         }
 
 
-
-        // let request_uuid = uuidv4().toString();
         let job_key = req.session.user.username;
 
         let request = {
-            // "uuid": request_uuid,
             "key": job_key,
             "task": "train",
             "request_time": Math.floor(Date.now() / 1000),
             "model_creator": req.session.user.username,
             "model_name": req.body.model_name,
-            "is_public": JSON.parse(req.body.is_public),
+            "is_public": JSON.parse(req.body.is_public)
         }
 
-
-        // let request_path = path.join(JOBS_DIR, request_uuid + ".json");
-
-        // try {
-        //     fs.writeFileSync(request_path, JSON.stringify(request));
-        // }
-        // catch (error) {
-        //     console.log(error);
-        //     response.message = "Failed to create training request.";
-        //     response.error = true;
-        //     return res.json(response);
-        // }
-
-
-        // let scheduler_request = {d
-        //     "uuid": request_uuid
-        // };
         response = await notify_scheduler(request);
-
-        // response.error = false;
         return res.json(response);
 
     }
     else {
-        console.log("invalid action", action);
         response.message = "Invalid action specified.";
         response.error = true;
         return res.json(response);
