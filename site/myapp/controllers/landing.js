@@ -2126,7 +2126,6 @@ exports.post_workspace = async function(req, res, next) {
     }
     else if (action === "switch_model") {
 
-
         let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
         let request = {
             "key": job_key,
@@ -2139,6 +2138,10 @@ exports.post_workspace = async function(req, res, next) {
             "model_name": req.body.model_name,
             "model_creator": req.body.model_creator,
         };
+
+        if (req.body.model_name === "Random Weights") {
+            request["num_classes"] = parseInt(req.body.num_classes);
+        }
 
 
         response = await notify_scheduler(request);
@@ -3583,7 +3586,7 @@ exports.post_home = async function(req, res, next) {
             return res.json(response);
         }
 
-        if (model_name.startsWith("random_weights")) {
+        if (model_name === "Random Weights") {
             response.message = "Illegal model name.";
             response.error = true;
             return res.json(response);

@@ -221,6 +221,22 @@ def get_number_of_prediction_batches(request, patch_size, overlap_px, config):
         
 
 
+def save_random_weights(num_classes, out_path):
+    config = create_default_config()
+    config["arch"]["class_map"] = {"class " + str(i): i for i in range(num_classes)}
+    model_keys.add_general_keys(config)
+    model_keys.add_specialized_keys(config)
+    
+    if config["arch"]["model_type"] == "yolov4":
+        yolov4 = YOLOv4(config)
+    elif config["arch"]["model_type"] == "yolov4_tiny":
+        yolov4 = YOLOv4Tiny(config)
+
+    input_shape = (config["inference"]["batch_size"], *(config["arch"]["input_image_shape"]))
+    yolov4.build(input_shape=input_shape)
+
+    yolov4.save_weights(filepath=out_path, save_format="h5")
+
 
 
 def predict(job):

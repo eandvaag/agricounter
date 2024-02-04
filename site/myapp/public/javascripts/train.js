@@ -1212,7 +1212,7 @@ function initialize_train() {
             return;
         }
 
-        if (model_name.startsWith("random_weights")) {
+        if (model_name === "Random Weights") {
             show_modal_message(`Error`,`The provided model name is not allowed.`);
             return;
         }
