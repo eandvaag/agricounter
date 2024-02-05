@@ -237,9 +237,6 @@ function set_count_chart_data() {
                         region_key = "test_regions";
                     }
 
-                    console.log(cur_cls, metric, image_name, region_key);
-                    console.log(metrics);
-
                     count_chart_data[nav_item]["prediction"] = metrics[cur_cls][metric][image_name][region_key][0];
                 }
             }

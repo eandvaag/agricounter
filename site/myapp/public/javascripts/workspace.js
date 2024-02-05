@@ -657,7 +657,6 @@ function create_anno() {
                         let reg = annotations[cur_img_name][avoid][i];
                         let clipped_polygon = clip_polygons_yx(anno_item, reg);
                         let poly_area = get_polygon_area(clipped_polygon);
-                        console.log(poly_area);
                         if (poly_area > 0) {
                             illegal_intersection = true;
                         }
@@ -3527,10 +3526,6 @@ $(document).ready(function() {
     });
 
     socket.on("image_set_update", function(update) {
-
-        console.log("got image set update", update);
-
-
 
         let state_name = update["state_name"];
         let progress = update["progress"];

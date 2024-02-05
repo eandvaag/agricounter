@@ -79,28 +79,6 @@ function has_duplicates(array) {
 }
 
 
-
-
-let default_overlay_appearance = {
-
-    "draw_order": ["region_of_interest", "fine_tuning_region", "test_region", "annotation", "prediction"],
-    "style": {
-        "annotation": "strokeRect",
-        "prediction": "strokeRect",
-        "region_of_interest": "strokeRect",
-        "fine_tuning_region": "strokeRect",
-        "test_region": "strokeRect"
-    },
-    "colors": {
-        "annotation": ["#0080ff", "#ff0033", "#59ff00", "#8000ff", "#ff6200", "#00ff77", "#fb00ff", "#ffff00", "#00ffe5"],
-        "prediction": ["#7dbeff", "#ff8099", "#acff80", "#bf80ff", "#ffb080", "#80ffbb", "#fd80ff", "#ffff80", "#80fff2"],
-        "region_of_interest": "#ffb494",
-        "fine_tuning_region": "#adff94",
-        "test_region": "#cd94ff"
-    }
-}
-
-
 let new_overlay_appearance;
 
 
@@ -1854,8 +1832,13 @@ function apply_overlay_appearance_change() {
 }
 
 function reset_overlay_appearance_to_default() {
-    new_overlay_appearance = default_overlay_appearance;
-    draw_customize_overlays_table(false);
+
+    let default_overlay_appearance_url = get_AC_PATH() + "/usr/shared/default_overlay_appearance.json";
+    $.getJSON(default_overlay_appearance_url, function(data) {
+        new_overlay_appearance = data;
+        draw_customize_overlays_table(false);
+    });
+
 }
 
 function shuffle_class_colors() {

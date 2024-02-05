@@ -39,71 +39,6 @@ const MIN_CAMERA_HEIGHT = 0.01;
 const MAX_CAMERA_HEIGHT = 1000000000;
 
 
-const init_cameras = {
-    "GoPro": {
-        "HERO9 Black": {
-            "sensor_width": 6.17,
-            "sensor_height": 4.55,
-            "focal_length": 3,
-            "image_width_px": 4000,
-            "image_height_px": 3000
-        },
-        "HERO6 Black": {
-            "sensor_width": 6.17,
-            "sensor_height": 4.55,
-            "focal_length": 3,
-            "image_width_px": 4000,
-            "image_height_px": 3000
-        }
-    },
-    "Hasselblad": {
-        "L1D-20c": {
-            "sensor_width": 13.2,
-            "sensor_height": 8.8,
-            "focal_length": 10.3,
-            "image_width_px": 5472,
-            "image_height_px": 3648
-        }
-    },
-    "Phase One": {
-        "iXU1000": {
-            "sensor_width": 53.4,
-            "sensor_height": 40.0,
-            "focal_length": 55.0,
-            "image_width_px": 11608,
-            "image_height_px": 8708
-        }
-    }
-};
-
-
-
-const default_overlay_appearance = {
-    "draw_order": ["region_of_interest", "fine_tuning_region", "test_region", "annotation", "prediction"],
-    "style": {
-        "annotation": "strokeRect",
-        "prediction": "strokeRect",
-        "region_of_interest": "strokeRect",
-        "fine_tuning_region": "strokeRect",
-        "test_region": "strokeRect"
-    },
-    "colors": {
-        "annotation": ["#0080ff", "#ff0033", "#59ff00", "#8000ff", "#ff6200", "#00ff77", "#fb00ff", "#ffff00", "#00ffe5"],
-        "prediction": ["#7dbeff", "#ff8099", "#acff80", "#bf80ff", "#ffb080", "#80ffbb", "#fd80ff", "#ffff80", "#80fff2"],
-        "region_of_interest": "#ffb494",
-        "fine_tuning_region": "#adff94",
-        "test_region": "#cd94ff"
-    }
-};
-
-
-
-
-
-
-
-
-
 
 Date.prototype.isValid = function () {
     // An invalid date object returns NaN for getTime() and NaN is the only
@@ -295,10 +230,10 @@ function init_usr(username) {
         }
     }
 
-
+    let init_cameras_path = path.join(USR_SHARED_ROOT, "init_cameras.json");
     let cameras_path = path.join(USR_DATA_ROOT, username, "cameras", "cameras.json");
     try {
-        fs.writeFileSync(cameras_path, JSON.stringify(init_cameras));
+        fs.copyFileSync(init_cameras_path, cameras_path, fs.constants.COPYFILE_EXCL);
     }
     catch (error) {
         return false;
@@ -312,10 +247,10 @@ function init_usr(username) {
         return false;
     }
 
-
+    let default_overlay_apperance_path = path.join(USR_SHARED_ROOT, "default_overlay_appearance.json");
     let overlay_appearance_path = path.join(USR_DATA_ROOT, username, "overlay_appearance.json");
     try {
-        fs.writeFileSync(overlay_appearance_path, JSON.stringify(default_overlay_appearance));
+        fs.copyFileSync(default_overlay_apperance_path, overlay_appearance_path, fs.constants.COPYFILE_EXCL);
     }
     catch (error) {
         return false;
@@ -482,6 +417,7 @@ exports.post_admin = function(req, res, next) {
                         return res.json(response);
                     }).catch(error => {
                         console.log(error);
+                        // destroy directories
                         response.message = "An error occurred while creating the user account.";
                         response.error = true;
                         return res.json(response);
