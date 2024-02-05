@@ -367,7 +367,6 @@ function create_viewer(id_prefix, dzi_image_paths) {
                 let max_x = min_x + viewport_w;
                 let max_y = min_y + viewport_h;
 
-                console.log(region);
 
                 if (region != null) {
 
@@ -390,8 +389,6 @@ function create_viewer(id_prefix, dzi_image_paths) {
 
                     overlays[id_prefix].context2d().lineWidth = 2;
 
-                    console.log(key);
-
                     if ((key === "region_of_interest" || key === "fine_tuning_region") || key === "test_region") {
                         overlays[id_prefix].context2d().strokeStyle = overlay_appearance["colors"][key];
                         overlays[id_prefix].context2d().fillStyle = overlay_appearance["colors"][key] + "55";
@@ -399,7 +396,6 @@ function create_viewer(id_prefix, dzi_image_paths) {
                         for (let i = 0; i < boxes_to_add[key]["boxes"].length; i++) {
 
                             let reg = boxes_to_add[key]["boxes"][i];
-                            console.log(reg);
                             overlays[id_prefix].context2d().beginPath();
                             for (let j = 0; j < reg.length; j++) {
                                 let pt = reg[j];

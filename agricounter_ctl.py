@@ -44,6 +44,12 @@ def create():
     site_env["AC_API_KEY"] = args["api_key"]
 
 
+
+    timezone_command = "timedatectl | grep 'Time zone' | awk '{ print $3 }'"
+    timezone = (subprocess.check_output(timezone_command, shell=True)).decode("utf-8").strip()
+    site_env["AC_TIMEZONE"] = timezone
+
+
     conf["services"]["myapp"]["ports"] = [str(args["site_port"]) + ":" + str(args["site_port"])]
 
 
@@ -118,13 +124,10 @@ def create():
 
 
 
-
-
     logger.info("Starting Docker container")
 
     subprocess.run(["docker-compose", "up", "-d"])
 
-    # TODO: Dockerfile includes timezone -- this should be an argument in args.json
 
 
 
