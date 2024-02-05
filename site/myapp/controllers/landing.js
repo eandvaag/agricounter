@@ -417,7 +417,13 @@ exports.post_admin = function(req, res, next) {
                         return res.json(response);
                     }).catch(error => {
                         console.log(error);
-                        // destroy directories
+                        let usr_dir = path.join(USR_DATA_ROOT, username);
+                        try {
+                            fs.rmSync(usr_dir, { recursive: true, force: false });
+                        }
+                        catch(error) {
+                            console.log(error);
+                        }
                         response.message = "An error occurred while creating the user account.";
                         response.error = true;
                         return res.json(response);
