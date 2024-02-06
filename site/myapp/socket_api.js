@@ -42,14 +42,12 @@ function query_num_workers() {
             let chunks = [];
 
             res.on("data", function(chunk) {
-                // process.stdout.write(d);
                 chunks.push(chunk);
             });
 
             res.on("end", function() {
                 let body = Buffer.concat(chunks);
                 let result = JSON.parse(body);
-                console.log("Got result", result);
                 if (!("num_workers" in result)) {
                     resolve(0);
                 }

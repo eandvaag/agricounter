@@ -451,10 +451,10 @@ exports.get_home = function(req, res, next) {
 
     if ((req.session.user && req.cookies.user_sid) && (req.params.username === req.session.user.username)) {
 
-        console.log("Gathering image_sets");
+        let username = req.session.user.username;
 
         let image_sets_data = {};
-        let image_sets_root = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets");
+        let image_sets_root = path.join(USR_DATA_ROOT, username, "image_sets");
         let farm_names;
         try {
            farm_names = get_subdirnames(image_sets_root);
@@ -464,7 +464,7 @@ exports.get_home = function(req, res, next) {
         }
 
         let overlay_appearance;
-        let overlay_appearance_path = path.join(USR_DATA_ROOT, req.session.user.username, "overlay_appearance.json");
+        let overlay_appearance_path = path.join(USR_DATA_ROOT, username, "overlay_appearance.json");
         try {
             overlay_appearance = JSON.parse(fs.readFileSync(overlay_appearance_path, 'utf8'));
         }
@@ -552,7 +552,7 @@ exports.get_home = function(req, res, next) {
                 return res.redirect(process.env.AC_PATH);
             }
 
-            let private_image_sets_path = path.join(USR_DATA_ROOT, req.session.user.username, "private_image_sets.json");
+            let private_image_sets_path = path.join(USR_DATA_ROOT, username, "private_image_sets.json");
             let private_image_sets;
             try {
                 private_image_sets = JSON.parse(fs.readFileSync(private_image_sets_path, 'utf8'));
@@ -565,23 +565,8 @@ exports.get_home = function(req, res, next) {
 
             release();
 
-            for (let username of Object.keys(private_image_sets)) {
-                if (!(username in available_image_sets)) {
-                    available_image_sets[username] = {};
-                }
-                for (let farm_name of Object.keys(private_image_sets[username])) {
-                    if (!(farm_name in available_image_sets[username])) {
-                        available_image_sets[username][farm_name] = {};
-                    }
-                    for (let field_name of Object.keys(private_image_sets[username][farm_name])) {
-                        if (!(field_name in available_image_sets[username][farm_name])) {
-                            available_image_sets[username][farm_name][field_name] = {};
-                        }
-                        for (let mission_date of Object.keys(private_image_sets[username][farm_name][field_name])) {
-                            available_image_sets[username][farm_name][field_name][mission_date] = private_image_sets[username][farm_name][field_name][mission_date];
-                        }
-                    }
-                }
+            for (let image_set_key of Object.keys(private_image_sets)) {
+                available_image_sets[image_set_key] = private_image_sets[image_set_key];
             }
 
                 
@@ -601,7 +586,7 @@ exports.get_home = function(req, res, next) {
             .then(function(release) {
 
                 let camera_specs;
-                let camera_specs_path = path.join(USR_DATA_ROOT, req.session.user.username, "cameras", "cameras.json");
+                let camera_specs_path = path.join(USR_DATA_ROOT, username, "cameras", "cameras.json");
                 try {
                     camera_specs = JSON.parse(fs.readFileSync(camera_specs_path, 'utf8'));
                 }
@@ -615,7 +600,7 @@ exports.get_home = function(req, res, next) {
                 release();
 
                 let data = {};
-                data["username"] = req.session.user.username;
+                data["username"] = username;
                 data["image_sets_data"] = image_sets_data;
                 data["camera_specs"] = camera_specs;
                 data["objects"] = objects;
@@ -624,7 +609,7 @@ exports.get_home = function(req, res, next) {
                 data["maintenance_time"] = maintenance_time;
             
                 res.render("home", {
-                    username: req.session.user.username, 
+                    username: username, 
                     data: data
                 });
 
@@ -754,22 +739,22 @@ exports.get_workspace = function(req, res, next) {
 
     if ((req.session.user && req.cookies.user_sid) && (req.params.username === req.session.user.username)) {
         
+        let username = req.session.user.username;
         let farm_name = req.params.farm_name;
         let field_name = req.params.field_name;
         let mission_date = req.params.mission_date;
-        let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name, field_name, mission_date);
+        let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name, field_name, mission_date);
 
         if (!(fpath_exists(image_set_dir))) {
             return res.redirect(process.env.AC_PATH);
         }
 
-        let key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
-
+        let image_set_key = ([username, farm_name, field_name, mission_date]).join("/");
 
         for (let socket_id of Object.keys(socket_api.workspace_id_to_key)) {
-            if (socket_api.workspace_id_to_key[socket_id] === key) {
-                console.log("The workspace is in use", key);
-                return res.redirect(process.env.AC_PATH + "/home/" + req.session.user.username); 
+            if (socket_api.workspace_id_to_key[socket_id] === image_set_key) {
+                console.log("The workspace is in use", image_set_key);
+                return res.redirect(process.env.AC_PATH + "/home/" + username); 
             }
         }
 
@@ -796,7 +781,7 @@ exports.get_workspace = function(req, res, next) {
             let image_ext = image_paths[0].substring(image_paths[0].length - 4);
 
             let overlay_appearance;
-            let overlay_appearance_path = path.join(USR_DATA_ROOT, req.session.user.username, "overlay_appearance.json");
+            let overlay_appearance_path = path.join(USR_DATA_ROOT, username, "overlay_appearance.json");
             try {
                 overlay_appearance = JSON.parse(fs.readFileSync(overlay_appearance_path, 'utf8'));
             }
@@ -829,7 +814,7 @@ exports.get_workspace = function(req, res, next) {
             }
 
             console.log("getting camera specs");
-            let camera_specs_path = path.join(USR_DATA_ROOT, req.session.user.username, "cameras", "cameras.json");
+            let camera_specs_path = path.join(USR_DATA_ROOT, username, "cameras", "cameras.json");
             let camera_specs;
             try {
                 camera_specs = JSON.parse(fs.readFileSync(camera_specs_path, 'utf8'));
@@ -919,7 +904,7 @@ exports.get_workspace = function(req, res, next) {
                 data["overlay_appearance"] = overlay_appearance;
                 data["maintenance_time"] = maintenance_time;
 
-                res.render("workspace", {username: req.session.user.username, data: data});
+                res.render("workspace", {username: username, data: data});
 
             });
         });
@@ -955,7 +940,6 @@ function notify_scheduler(request) {
             let chunks = [];
 
             res.on("data", function(chunk) {
-                // process.stdout.write(d);
                 chunks.push(chunk);
             });
 
@@ -1025,8 +1009,6 @@ function get_models(model_paths, username, farm_name, field_name, mission_date, 
         let log_path = path.join(model_path, "log.json");
         let log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
 
-
-
         let image_set_used_to_train_model = false;
         for (let image_set of log["image_sets"]) {
             if ((image_set["username"] === username && image_set["farm_name"] === farm_name) &&
@@ -1063,20 +1045,14 @@ function get_models(model_paths, username, farm_name, field_name, mission_date, 
 exports.post_annotations_upload = function(req, res, next) {
     let response = {};
 
-    console.log("got request", req)
-
+    let username = req.session.user.username;
     let farm_name = req.params.farm_name;
     let field_name = req.params.field_name;
     let mission_date = req.params.mission_date;
 
-    console.log("farm_name", farm_name);
-    console.log("field_name", field_name);
-    console.log("mission_date", mission_date);
-    console.log("req.files", req.files);
-
     let annotations_file = req.files[0].buffer;
 
-    let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name,
+    let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name,
                                         field_name, mission_date);
 
     console.log("image_set_dir", image_set_dir);
@@ -1143,8 +1119,6 @@ exports.post_annotations_upload = function(req, res, next) {
             });
         }
 
-        console.log("checking", image_name, image_path);
-
         let matched_image_paths;
         try {
             matched_image_paths = glob.sync(image_path);
@@ -1160,7 +1134,6 @@ exports.post_annotations_upload = function(req, res, next) {
                 error: "The uploaded annotation file contains an invalid key: " + entry_name
             });
         }
-
 
         new_annotations[image_name] = {
             "boxes": [],
@@ -1401,12 +1374,14 @@ exports.post_annotations_upload = function(req, res, next) {
         }
     }
 
+    let image_set_key = ([username, farm_name, field_name, mission_date]).join("/");
+
     let image_sets_path;
     if (metadata["is_public"]) {
         image_sets_path = path.join(USR_SHARED_ROOT, "public_image_sets.json");
     }
     else {
-        image_sets_path = path.join(USR_DATA_ROOT, req.session.user.username, "private_image_sets.json");
+        image_sets_path = path.join(USR_DATA_ROOT, username, "private_image_sets.json");
     }
     image_sets_mutex.acquire()
     .then(function(release) {
@@ -1422,42 +1397,12 @@ exports.post_annotations_upload = function(req, res, next) {
         }
 
         if (empty) {
-            if (req.session.user.username in image_sets) {
-                if (farm_name in image_sets[req.session.user.username]) {
-                    if (field_name in image_sets[req.session.user.username][farm_name]) {
-                        if (mission_date in image_sets[req.session.user.username][farm_name][field_name]) {
-                            delete image_sets[req.session.user.username][farm_name][field_name][mission_date];
-
-                            if (Object.keys(image_sets[req.session.user.username][farm_name][field_name]).length == 0) {
-                                delete image_sets[req.session.user.username][farm_name][field_name];
-                            }
-
-                            if (Object.keys(image_sets[req.session.user.username][farm_name]).length == 0) {
-                                delete image_sets[req.session.user.username][farm_name];
-                            }
-
-                            if (Object.keys(image_sets[req.session.user.username]).length == 0) {
-                                delete image_sets[req.session.user.username];
-                            }
-                        }
-                    }
-                }
-            }
+            delete image_sets[image_set_key];
         }
         else {
-
-            if (!(req.session.user.username in image_sets)) {
-                image_sets[req.session.user.username] = {};
-            }
-            if (!(farm_name in image_sets[req.session.user.username])) {
-                image_sets[req.session.user.username][farm_name] = {};
-            }
-            if (!(field_name in image_sets[req.session.user.username][farm_name])) {
-                image_sets[req.session.user.username][farm_name][field_name] = {};
-            }
-            image_sets[req.session.user.username][farm_name][field_name][mission_date] = {
+            image_sets[image_set_key] = {
                 "object_classes": metadata["object_classes"]
-            }
+            };
         }
 
         try {
@@ -1505,12 +1450,13 @@ exports.post_workspace = async function(req, res, next) {
 
     let response = {};
 
+    let username = req.session.user.username;
     let farm_name = req.params.farm_name;
     let field_name = req.params.field_name;
     let mission_date = req.params.mission_date;
     let action = req.body.action;
 
-    let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name,
+    let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name,
                                         field_name, mission_date);
 
     if (action === "save_annotations") {
@@ -1581,9 +1527,10 @@ exports.post_workspace = async function(req, res, next) {
                 image_sets_path = path.join(USR_SHARED_ROOT, "public_image_sets.json");
             }
             else {
-                image_sets_path = path.join(USR_DATA_ROOT, req.session.user.username, "private_image_sets.json");
+                image_sets_path = path.join(USR_DATA_ROOT, username, "private_image_sets.json");
             }
 
+            let image_set_key = ([username, farm_name, field_name, mission_date]).join("/");
             
 
             image_sets_mutex.acquire()
@@ -1600,42 +1547,12 @@ exports.post_workspace = async function(req, res, next) {
                 }
 
                 if (empty) {
-                    if (req.session.user.username in image_sets) {
-                        if (farm_name in image_sets[req.session.user.username]) {
-                            if (field_name in image_sets[req.session.user.username][farm_name]) {
-                                if (mission_date in image_sets[req.session.user.username][farm_name][field_name]) {
-                                    delete image_sets[req.session.user.username][farm_name][field_name][mission_date];
-
-                                    if (Object.keys(image_sets[req.session.user.username][farm_name][field_name]).length == 0) {
-                                        delete image_sets[req.session.user.username][farm_name][field_name];
-                                    }
-
-                                    if (Object.keys(image_sets[req.session.user.username][farm_name]).length == 0) {
-                                        delete image_sets[req.session.user.username][farm_name];
-                                    }
-
-                                    if (Object.keys(image_sets[req.session.user.username]).length == 0) {
-                                        delete image_sets[req.session.user.username];
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    delete image_sets[image_set_key];
                 }
                 else {
-
-                    if (!(req.session.user.username in image_sets)) {
-                        image_sets[req.session.user.username] = {};
-                    }
-                    if (!(farm_name in image_sets[req.session.user.username])) {
-                        image_sets[req.session.user.username][farm_name] = {};
-                    }
-                    if (!(field_name in image_sets[req.session.user.username][farm_name])) {
-                        image_sets[req.session.user.username][farm_name][field_name] = {};
-                    }
-                    image_sets[req.session.user.username][farm_name][field_name][mission_date] = {
+                    image_sets[image_set_key] = {
                         "object_classes": req.body.object_classes.split(",")
-                    }
+                    };
                 }
 
                 try {
@@ -1776,7 +1693,7 @@ exports.post_workspace = async function(req, res, next) {
             }
 
             console.log("finished gathering predictions. building map...")
-            let rebuild_command = "python ../../backend/src/interpolate.py " + req.session.user.username + " " +
+            let rebuild_command = "python ../../backend/src/interpolate.py " + username + " " +
                 farm_name + " " + field_name + " " + mission_date + " " + predictions_out_path + 
                 " " + maps_dir + " " + req.body.class_index + " obj_density";
 
@@ -1807,7 +1724,6 @@ exports.post_workspace = async function(req, res, next) {
     }
     else if (action === "fetch_models") {
         let object_classes = req.body.object_classes.split(",");
-        console.log("object_classes", object_classes);
 
         let models = [];
         let usr_dirs;
@@ -1835,7 +1751,7 @@ exports.post_workspace = async function(req, res, next) {
 
             let cur_models;
             try {
-                cur_models = get_models(public_dirs, req.session.user.username, farm_name, field_name, mission_date, object_classes);
+                cur_models = get_models(public_dirs, username, farm_name, field_name, mission_date, object_classes);
             }
             catch (error) {
                 response.message = "Failed to retrieve models.";
@@ -1845,7 +1761,7 @@ exports.post_workspace = async function(req, res, next) {
 
             models = models.concat(cur_models);
 
-            if (path.basename(usr_dir) === req.session.user.username) {
+            if (path.basename(usr_dir) === username) {
 
                 let private_models_dir = path.join(usr_dir, "models", "available", "private");
 
@@ -1862,7 +1778,7 @@ exports.post_workspace = async function(req, res, next) {
                 console.log("private_dirs", private_dirs)
 
                 try {
-                    cur_models = get_models(private_dirs, req.session.user.username, farm_name, field_name, mission_date, object_classes);
+                    cur_models = get_models(private_dirs, username, farm_name, field_name, mission_date, object_classes);
                 }
                 catch (error) {
                     response.message = "Failed to retrieve models.";
@@ -1948,17 +1864,27 @@ exports.post_workspace = async function(req, res, next) {
 
         console.log("Fine-tuning requested");
 
-        let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+        let training_regime = req.body.training_regime;
+
+        let job_key = ([username, farm_name, field_name, mission_date]).join("/");
         let request = {
             "key": job_key,
             "task": "fine_tune",
+            "training_regime": training_regime,
             "request_time": Math.floor(Date.now() / 1000),
-            "username": req.session.user.username,
+            "username": username,
             "farm_name": farm_name,
             "field_name": field_name,
             "mission_date": mission_date
         };
 
+        if (training_regime === "fixed_num_epochs") {
+            request["num_epochs"] = parseInt(req.body.num_epochs);
+        }
+        else {
+            request["training_percent"] = parseFloat(req.body.training_percent);
+            request["improvement_tolerance"] = parseFloat(req.body.improvement_tolerance);
+        }
 
         response = await notify_scheduler(request); 
         return res.json(response);
@@ -1973,13 +1899,13 @@ exports.post_workspace = async function(req, res, next) {
         let save_result = JSON.parse(req.body.save_result);
         let regions_only = JSON.parse(req.body.regions_only);
         let calculate_vegetation_coverage = JSON.parse(req.body.calculate_vegetation_coverage);
-        let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+        let job_key = ([username, farm_name, field_name, mission_date]).join("/");
 
         let request = {
             "key": job_key,
             "task": "predict",
             "request_time": Math.floor(Date.now() / 1000),
-            "username": req.session.user.username,
+            "username": username,
             "farm_name": farm_name,
             "field_name": field_name,
             "mission_date": mission_date,
@@ -2068,23 +1994,18 @@ exports.post_workspace = async function(req, res, next) {
     }
     else if (action === "switch_model") {
 
-        let job_key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+        let job_key = ([username, farm_name, field_name, mission_date]).join("/");
         let request = {
             "key": job_key,
             "task": "switch",
             "request_time": Math.floor(Date.now() / 1000),
-            "username": req.session.user.username,
+            "username": username,
             "farm_name": farm_name,
             "field_name": field_name,
             "mission_date": mission_date,
             "model_name": req.body.model_name,
             "model_creator": req.body.model_creator,
         };
-
-        if (req.body.model_name === "Random Weights") {
-            request["num_classes"] = parseInt(req.body.num_classes);
-        }
-
 
         response = await notify_scheduler(request);
         return res.json(response);
@@ -2141,20 +2062,14 @@ function remove_image_set(username, farm_name, field_name, mission_date) {
 
 exports.post_orthomosaic_upload = function(req, res, next) {
 
-    console.log("got_to_post_orthomosaic_upload");
-    // console.log(req);
-
     let dzchunkindex = req.body.dzchunkindex;
-    let dztotalfilesize = req.body.dztotalfilesize;
-    let dzchunksize = req.body.dzchunksize;
     let dztotalchunkcount = req.body.dztotalchunkcount;
-    let dzchunkbyteoffset = req.body.dzchunkbyteoffset;
 
     let upload_uuid = req.body.upload_uuid;
+    let username = req.session.user.username;
     let farm_name = req.body.farm_name;
     let field_name = req.body.field_name;
     let mission_date = req.body.mission_date;
-    // let object_name = req.body.object_name;
     let object_classes = req.body.object_classes.split(",");
     let is_public = JSON.parse(req.body.is_public);
     let camera_height = req.body.camera_height;
@@ -2167,12 +2082,12 @@ exports.post_orthomosaic_upload = function(req, res, next) {
     let last = dzchunkindex == dztotalchunkcount - 1;
 
 
-    let image_sets_root = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets");
+    let image_sets_root = path.join(USR_DATA_ROOT, username, "image_sets");
     let farm_dir = path.join(image_sets_root, farm_name);
     let field_dir = path.join(farm_dir, field_name);
     let mission_dir = path.join(field_dir, mission_date);
     let images_dir = path.join(mission_dir, "images");
-    let fpath = path.join(images_dir, filename); //filename.substring(0, filename.length-4) + "_" + dzchunkindex + ".JPG");
+    let fpath = path.join(images_dir, filename);
     
 
     if (queued_filenames.length != 1) {
@@ -2189,7 +2104,6 @@ exports.post_orthomosaic_upload = function(req, res, next) {
     console.log("upload_uuid", upload_uuid);
 
     if (first) {
-        //let writeStream = fs.createWriteStream(fpath);
         if (upload_uuid in active_uploads) {
             return res.status(422).json({
                 error: "Upload key conflict."
@@ -2198,7 +2112,6 @@ exports.post_orthomosaic_upload = function(req, res, next) {
         else {
             active_uploads[upload_uuid] = {
                 "status": "active"
-                //"stream": writeStream
             };
         }
     }
@@ -2211,9 +2124,6 @@ exports.post_orthomosaic_upload = function(req, res, next) {
     }
 
 
-
-
-    
     if (first) {
         let split_filename = filename.split(".");
 
@@ -2324,7 +2234,7 @@ exports.post_orthomosaic_upload = function(req, res, next) {
     else {
         if (!(fpath_exists(mission_dir))) {
             try {
-                remove_image_set(req.session.user.username, farm_name, field_name, mission_date);
+                remove_image_set(username, farm_name, field_name, mission_date);
             }
             catch (error) {
                 console.log("Failed to remove image set");
@@ -2346,7 +2256,7 @@ exports.post_orthomosaic_upload = function(req, res, next) {
     active_uploads[upload_uuid]["stream"].write(file.buffer, file.encoding, function(error) {
         if (error) {
             try {
-                remove_image_set(req.session.user.username, farm_name, field_name, mission_date);
+                remove_image_set(username, farm_name, field_name, mission_date);
             }
             catch (error) {
                 console.log("Failed to remove image set");
@@ -2362,7 +2272,7 @@ exports.post_orthomosaic_upload = function(req, res, next) {
             active_uploads[upload_uuid]["stream"].end();
 
             let config = {
-                "username": req.session.user.username,
+                "username": username,
                 "farm_name": farm_name,
                 "field_name": field_name,
                 "mission_date": mission_date,
@@ -2420,6 +2330,8 @@ exports.post_image_set_upload = async function(req, res, next) {
     let last;
     let queued_filenames;
     let camera_height;
+
+    let username = req.session.user.username;
     
     if (req.files.length > 1) {
         upload_uuid = req.body.upload_uuid[0];
@@ -2484,7 +2396,7 @@ exports.post_image_set_upload = async function(req, res, next) {
                     if (queued_filenames.length != active_uploads[upload_uuid]) {
 
                         try {
-                            remove_image_set(req.session.user.username, farm_name, field_name, mission_date);
+                            remove_image_set(username, farm_name, field_name, mission_date);
                         }
                         catch (error) {
                             console.log("Failed to remove image set");
@@ -2502,7 +2414,7 @@ exports.post_image_set_upload = async function(req, res, next) {
                 if (queued_filenames.length != active_uploads[upload_uuid]) {
 
                     try {
-                        remove_image_set(req.session.user.username, farm_name, field_name, mission_date);
+                        remove_image_set(username, farm_name, field_name, mission_date);
                     }
                     catch (error) {
                         console.log("Failed to remove image set");
@@ -2517,7 +2429,7 @@ exports.post_image_set_upload = async function(req, res, next) {
         }
     }
 
-    let image_sets_root = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets");
+    let image_sets_root = path.join(USR_DATA_ROOT, username, "image_sets");
     let farm_dir = path.join(image_sets_root, farm_name);
     let field_dir = path.join(farm_dir, field_name);
     let mission_dir = path.join(field_dir, mission_date);
@@ -2630,7 +2542,6 @@ exports.post_image_set_upload = async function(req, res, next) {
             }
         }
 
-
         console.log("Making the images directory");
         fs.mkdirSync(images_dir, { recursive: true });
 
@@ -2638,7 +2549,7 @@ exports.post_image_set_upload = async function(req, res, next) {
     else {
         if (!(fpath_exists(mission_dir))) {
             try {
-                remove_image_set(req.session.user.username, farm_name, field_name, mission_date);
+                remove_image_set(username, farm_name, field_name, mission_date);
             }
             catch (error) {
                 console.log("Failed to remove image set");
@@ -2661,7 +2572,7 @@ exports.post_image_set_upload = async function(req, res, next) {
         let extensionless_fname = split_filename[0];
         if (extensionless_fname.length > MAX_EXTENSIONLESS_FILENAME_LENGTH) {
             try {
-                remove_image_set(req.session.user.username, farm_name, field_name, mission_date);
+                remove_image_set(username, farm_name, field_name, mission_date);
             }
             catch (error) {
                 console.log("Failed to remove image set");
@@ -2680,7 +2591,7 @@ exports.post_image_set_upload = async function(req, res, next) {
         catch (error) {
             console.log(error);
             try {
-                remove_image_set(req.session.user.username, farm_name, field_name, mission_date);
+                remove_image_set(username, farm_name, field_name, mission_date);
             }
             catch (error) {
                 console.log("Failed to remove image set");
@@ -2696,7 +2607,7 @@ exports.post_image_set_upload = async function(req, res, next) {
     if (last) {
 
         let config = {
-            "username": req.session.user.username,
+            "username": username,
             "farm_name": farm_name,
             "field_name": field_name,
             "mission_date": mission_date,
@@ -2745,15 +2656,16 @@ exports.post_image_set_upload = async function(req, res, next) {
 exports.post_home = async function(req, res, next) {
 
     let action = req.body.action;
+    let username = req.session.user.username;
     let response = {};
 
     if (action === "get_annotations") {
         let anno_username = req.body.username; 
-        let farm_name = req.body.farm_name;
-        let field_name = req.body.field_name;
-        let mission_date = req.body.mission_date;
+        let anno_farm_name = req.body.farm_name;
+        let anno_field_name = req.body.field_name;
+        let anno_mission_date = req.body.mission_date;
         let image_set_dir = path.join(USR_DATA_ROOT, anno_username, "image_sets", 
-                                        farm_name, field_name, mission_date);
+                                        anno_farm_name, anno_field_name, anno_mission_date);
         let annotations_path = path.join(image_set_dir, "annotations", "annotations.json");
         let annotations;
         try {
@@ -2784,7 +2696,7 @@ exports.post_home = async function(req, res, next) {
     else if (action === "destroy_model") {
         let model_name = req.body.model_name;
         let model_state = req.body.model_state;
-        let models_dir = path.join(USR_DATA_ROOT, req.session.user.username, "models");
+        let models_dir = path.join(USR_DATA_ROOT, username, "models");
 
         if (model_state !== "available" && model_state !== "aborted") {
             response.message = "Invalid model state provided.";
@@ -2844,7 +2756,7 @@ exports.post_home = async function(req, res, next) {
     else if (action === "fetch_my_models") {
 
         let model_state = req.body.model_state;
-        let models_dir = path.join(USR_DATA_ROOT, req.session.user.username, "models");
+        let models_dir = path.join(USR_DATA_ROOT, username, "models");
 
         if (model_state === "available") {
 
@@ -2880,9 +2792,7 @@ exports.post_home = async function(req, res, next) {
                             return res.json(response);
                         }
                         models.push({
-                            //"model_name": path.basename(public_path),
                             "log": log,
-                            //"public": true
                         });
                     }
                     for (let private_path of private_paths) {
@@ -2898,9 +2808,7 @@ exports.post_home = async function(req, res, next) {
                             return res.json(response);
                         }
                         models.push({
-                            //"model_name": path.basename(private_path),
                             "log": log,
-                            //"public": false
                         });
                     }
                     response.models = models;
@@ -2934,8 +2842,6 @@ exports.post_home = async function(req, res, next) {
                     }
 
                     models.push({
-                        //"model_name": path.basename(model_path),
-                       // "public": log["public"]
                        "log": log
                     });
                 }
@@ -2986,12 +2892,11 @@ exports.post_home = async function(req, res, next) {
     }
     else if (action === "get_overview_info") {
 
-        console.log("get_overview_info");
         let farm_name = req.body.farm_name;
         let field_name = req.body.field_name;
         let mission_date = req.body.mission_date;
 
-        let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", 
+        let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets", 
                                     farm_name, field_name, mission_date);
 
         let annotations_path = path.join(image_set_dir, "annotations", "annotations.json");
@@ -3055,13 +2960,13 @@ exports.post_home = async function(req, res, next) {
         }
 
 
-        let mission_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", 
+        let mission_dir = path.join(USR_DATA_ROOT, username, "image_sets", 
                                     farm_name, field_name, mission_date);
 
-        let key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+        let image_set_key = ([username, farm_name, field_name, mission_date]).join("/");
         for (let socket_id of Object.keys(socket_api.workspace_id_to_key)) {
-            if (socket_api.workspace_id_to_key[socket_id] === key) {
-                response.message = "The image set cannot be deleted since the corresponding annotation file is currently in use. Please try again later.";
+            if (socket_api.workspace_id_to_key[socket_id] === image_set_key) {
+                response.message = "The image set cannot be deleted since the corresponding workspace is currently occupied. Please try again later.";
                 response.error = true;
                 return res.json(response);
             }
@@ -3077,11 +2982,11 @@ exports.post_home = async function(req, res, next) {
             try {
                 fs.rmSync(mission_dir, { recursive: true, force: false });
 
-                let field_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name, field_name);
+                let field_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name, field_name);
                 let missions = get_subdirnames(field_dir);
                 if (missions.length == 0) {
                     fs.rmSync(field_dir, { recursive: true, force: false });
-                    let farm_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name);
+                    let farm_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name);
                     let fields = get_subdirnames(farm_dir);
                     if (fields.length == 0) {
                         fs.rmSync(farm_dir, { recursive: true, force: false });
@@ -3095,7 +3000,7 @@ exports.post_home = async function(req, res, next) {
                 return res.json(response);
             }
             response.error = false;
-            response.redirect = process.env.AC_PATH + "/home/" + req.session.user.username;
+            response.redirect = process.env.AC_PATH + "/home/" + username;
             return res.json(response);
         }
 
@@ -3118,11 +3023,11 @@ exports.post_home = async function(req, res, next) {
             try {
                 fs.rmSync(mission_dir, { recursive: true, force: false });
 
-                let field_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name, field_name);
+                let field_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name, field_name);
                 let missions = get_subdirnames(field_dir);
                 if (missions.length == 0) {
                     fs.rmSync(field_dir, { recursive: true, force: false });
-                    let farm_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name);
+                    let farm_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name);
                     let fields = get_subdirnames(farm_dir);
                     if (fields.length == 0) {
                         fs.rmSync(farm_dir, { recursive: true, force: false });
@@ -3136,11 +3041,8 @@ exports.post_home = async function(req, res, next) {
                 return res.json(response);
             }
 
-            // TODO: remove unneeded keys from cameras.json ??
-            
-
             response.error = false;
-            response.redirect = process.env.AC_PATH + "/home/" + req.session.user.username;
+            response.redirect = process.env.AC_PATH + "/home/" + username;
             return res.json(response);
         }
 
@@ -3151,11 +3053,10 @@ exports.post_home = async function(req, res, next) {
         let field_name = req.body.field_name;
         let mission_date = req.body.mission_date;
 
-
-        let key = req.session.user.username + "/" + farm_name + "/" + field_name + "/" + mission_date;
+        let image_set_key = ([username, farm_name, field_name, mission_date]).join("/");
         for (let socket_id of Object.keys(socket_api.workspace_id_to_key)) {
-            if (socket_api.workspace_id_to_key[socket_id] === key) {
-                console.log("The workspace is in use", key);
+            if (socket_api.workspace_id_to_key[socket_id] === image_set_key) {
+                console.log("The workspace is in use", image_set_key);
                 response.error = true;
                 response.message = "This workspace is currently in use. Please try again later.";
                 return res.json(response);
@@ -3163,7 +3064,7 @@ exports.post_home = async function(req, res, next) {
         }
 
         response.error = false;
-        response.redirect = process.env.AC_PATH + "/workspace/" + req.session.user.username + "/" + farm_name + "/" +
+        response.redirect = process.env.AC_PATH + "/workspace/" + username + "/" + farm_name + "/" +
                             field_name + "/" + mission_date;
         return res.json(response);
     }
@@ -3174,7 +3075,7 @@ exports.post_home = async function(req, res, next) {
         let mission_date = req.body.mission_date;
 
 
-        let upload_status_path = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+        let upload_status_path = path.join(USR_DATA_ROOT, username, "image_sets",
                                   farm_name, field_name, mission_date, "upload_status.json");
 
         try {
@@ -3196,13 +3097,12 @@ exports.post_home = async function(req, res, next) {
         let mission_date = req.body.mission_date;
 
 
-        let model_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+        let model_dir = path.join(USR_DATA_ROOT, username, "image_sets",
                                   farm_name, field_name, mission_date, "model");
         let results_dir = path.join(model_dir, "results");
 
         response.aborted_results = [];
         response.completed_results = [];
-
 
         glob(path.join(results_dir, "aborted", "*"), function(error, aborted_dirs) {
 
@@ -3270,11 +3170,11 @@ exports.post_home = async function(req, res, next) {
 
         let result_dir;
         if (result_type === "completed") {
-            result_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+            result_dir = path.join(USR_DATA_ROOT, username, "image_sets",
             farm_name, field_name, mission_date, "model", "results", "available", result_id);
         }
         else {
-            result_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+            result_dir = path.join(USR_DATA_ROOT, username, "image_sets",
             farm_name, field_name, mission_date, "model", "results", "aborted", result_id);
         }
 
@@ -3288,8 +3188,7 @@ exports.post_home = async function(req, res, next) {
             return res.json(response);
         }
 
-
-        socket_api.results_notification(req.session.user.username, farm_name, field_name, mission_date);
+        socket_api.results_notification(username, farm_name, field_name, mission_date);
 
         response.error = false;
         return res.json(response);
@@ -3362,7 +3261,7 @@ exports.post_home = async function(req, res, next) {
         .then(function(release) {
 
             let camera_specs;
-            let camera_specs_path = path.join(USR_DATA_ROOT, req.session.user.username, "cameras", "cameras.json");
+            let camera_specs_path = path.join(USR_DATA_ROOT, username, "cameras", "cameras.json");
             try {
                 camera_specs = JSON.parse(fs.readFileSync(camera_specs_path, 'utf8'));
             }
@@ -3387,7 +3286,7 @@ exports.post_home = async function(req, res, next) {
             }
 
             let metadata;
-            let metadata_path = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+            let metadata_path = path.join(USR_DATA_ROOT, username, "image_sets",
                                          farm_name, field_name, mission_date, "metadata", "metadata.json");
             try {
                 metadata = JSON.parse(fs.readFileSync(metadata_path, 'utf8'));
@@ -3426,7 +3325,6 @@ exports.post_home = async function(req, res, next) {
             }
 
             release();
-            
             response.error = false;
             response.camera_specs = camera_specs;
 
@@ -3448,7 +3346,7 @@ exports.post_home = async function(req, res, next) {
         let mission_date = req.body.mission_date;
         let camera_height = req.body.camera_height;
 
-        let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+        let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets",
                                       farm_name, field_name, mission_date);
 
         let metadata_path = path.join(image_set_dir, "metadata", "metadata.json");
@@ -3461,7 +3359,6 @@ exports.post_home = async function(req, res, next) {
             camera_height_val = "";
         }
         else {
-
             if (!(isNumeric(camera_height))) {
                 response.error = true;
                 response.message = "Provided camera height is invalid.";
@@ -3474,8 +3371,6 @@ exports.post_home = async function(req, res, next) {
                 return res.json(response);
             }
         }
-
-
 
         if (fpath_exists(metadata_path)) {
             try {
@@ -3504,16 +3399,8 @@ exports.post_home = async function(req, res, next) {
             response.message = "Metadata file does not exist.";
             return res.json(response);
         }
-
-        
-
-
-
     }
     else if (action === "train") {
-
-
-        
 
         let model_name = req.body.model_name;
         if (MODEL_NAME_FORMAT.test(model_name)) {
@@ -3534,15 +3421,12 @@ exports.post_home = async function(req, res, next) {
             return res.json(response);
         }
 
-
         let image_sets = JSON.parse(req.body.image_sets);
-        console.log(image_sets);
         if (image_sets.length == 0) {
             response.message = "At least one training image set must be supplied.";
             response.error = true;
             return res.json(response);
         }
-
 
         let model_classes = [];
         for (let image_set of Object.values(image_sets)) {
@@ -3553,8 +3437,6 @@ exports.post_home = async function(req, res, next) {
                 }
             }
         }
-
-        console.log(model_classes);
 
         if (model_classes.length == 0) {
             response.message = "Training sets must contain at least one class of object.";
@@ -3588,14 +3470,9 @@ exports.post_home = async function(req, res, next) {
             submission_image_sets.push(submission_image_set);
         }
 
-
-
-
-
-
         /* TODO: additional error checking for image_sets */
 
-        let models_dir = path.join(USR_DATA_ROOT, req.session.user.username, "models");
+        let models_dir = path.join(USR_DATA_ROOT, username, "models");
         let available_dir = path.join(models_dir, "available");
         let pending_dir = path.join(models_dir, "pending");
         let aborted_dir = path.join(models_dir, "aborted");
@@ -3635,12 +3512,22 @@ exports.post_home = async function(req, res, next) {
 
         let log = {
             "model_name": req.body.model_name,
-            "model_creator": req.session.user.username,
+            "model_creator": username,
             "is_public": JSON.parse(req.body.is_public),
             "object_classes": model_classes,
             "image_sets": submission_image_sets,
-            "submission_time": Math.floor(Date.now() / 1000)
+            "submission_time": Math.floor(Date.now() / 1000),
+            "training_regime": req.body.training_regime
         };
+
+        if (req.body.training_regime === "fixed_num_epochs") {
+            log["num_epochs"] = parseInt(req.body.num_epochs);
+        }
+        else {
+            log["training_percent"] = parseFloat(req.body.training_percent);
+            log["improvement_tolerance"] = parseFloat(req.body.improvement_tolerance);
+        }
+
 
         let log_path = path.join(pending_model_path, "log.json");
         try {
@@ -3660,15 +3547,24 @@ exports.post_home = async function(req, res, next) {
         }
 
 
-        let job_key = req.session.user.username;
+        let job_key = username;
 
         let request = {
             "key": job_key,
             "task": "train",
             "request_time": Math.floor(Date.now() / 1000),
-            "model_creator": req.session.user.username,
+            "model_creator": username,
             "model_name": req.body.model_name,
-            "is_public": JSON.parse(req.body.is_public)
+            "is_public": JSON.parse(req.body.is_public),
+            "training_regime": req.body.training_regime
+        }
+
+        if (req.body.training_regime  === "fixed_num_epochs") {
+            request["num_epochs"] = parseInt(req.body.num_epochs);
+        }
+        else {
+            request["training_percent"] = parseFloat(req.body.training_percent);
+            request["improvement_tolerance"] = parseFloat(req.body.improvement_tolerance);
         }
 
         response = await notify_scheduler(request);
@@ -3687,6 +3583,7 @@ exports.get_viewer = function(req, res, next) {
     
     if ((req.session.user && req.cookies.user_sid) && (req.params.username === req.session.user.username)) {
         
+        let username = req.session.user.username;
         let farm_name = req.params.farm_name;
         let field_name = req.params.field_name;
         let mission_date = req.params.mission_date;
@@ -3695,7 +3592,7 @@ exports.get_viewer = function(req, res, next) {
         console.log("result_uuid", result_uuid);
 
 
-        let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets",
+        let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets",
                                       farm_name, field_name, mission_date);
 
         let sel_results_dir = path.join(image_set_dir, "model", "results", "available", result_uuid);
@@ -3704,8 +3601,6 @@ exports.get_viewer = function(req, res, next) {
         if (!(fpath_exists(sel_results_dir))) {
             return res.redirect(process.env.AC_PATH);
         }
-
-
 
         let maintenance_time = "";
         let maintenance_path = path.join(USR_SHARED_ROOT, "maintenance.json");
@@ -3721,9 +3616,8 @@ exports.get_viewer = function(req, res, next) {
             maintenance_time = maintenance_log["maintenance_time"];
         }
 
-
         let overlay_appearance;
-        let overlay_appearance_path = path.join(USR_DATA_ROOT, req.session.user.username, "overlay_appearance.json");
+        let overlay_appearance_path = path.join(USR_DATA_ROOT, username, "overlay_appearance.json");
         try {
             overlay_appearance = JSON.parse(fs.readFileSync(overlay_appearance_path, 'utf8'));
         }
@@ -3761,7 +3655,7 @@ exports.get_viewer = function(req, res, next) {
             console.log(error);
             return res.redirect(process.env.AC_PATH);
         }
-        let camera_specs_path = path.join(USR_DATA_ROOT, req.session.user.username, "cameras", "cameras.json");
+        let camera_specs_path = path.join(USR_DATA_ROOT, username, "cameras", "cameras.json");
         let camera_specs;
         try {
             camera_specs = JSON.parse(fs.readFileSync(camera_specs_path, 'utf8'));
@@ -3854,7 +3748,7 @@ exports.get_viewer = function(req, res, next) {
         data["overlay_appearance"] = overlay_appearance;
         data["maintenance_time"] = maintenance_time;
 
-        res.render("viewer", {username: req.session.user.username, "data": data});
+        res.render("viewer", {username: username, "data": data});
     }
     
     else {
@@ -3866,6 +3760,7 @@ exports.post_viewer = function(req, res, next) {
 
     let response = {};
 
+    let username = req.session.user.username;
     let farm_name = req.params.farm_name;
     let field_name = req.params.field_name;
     let mission_date = req.params.mission_date;
@@ -3876,18 +3771,14 @@ exports.post_viewer = function(req, res, next) {
     if (action === "build_map") {
 
         let interpolated_value = req.body.interpolated_value;
-
-        console.log(farm_name);
-        console.log(field_name);
-        console.log(mission_date);
         
-        let image_set_dir = path.join(USR_DATA_ROOT, req.session.user.username, "image_sets", farm_name, field_name, mission_date);
+        let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name, field_name, mission_date);
         let results_dir = path.join(image_set_dir, "model", "results", result_uuid);
 
         let predictions_path = path.join(results_dir, "predictions.json");
         let maps_dir = path.join(results_dir, "maps");
 
-        let rebuild_command = "python ../../backend/src/interpolate.py " + req.session.user.username + " " +
+        let rebuild_command = "python ../../backend/src/interpolate.py " + username + " " +
             farm_name + " " + field_name + " " + mission_date + " " + predictions_path + 
             " " + maps_dir + " " + req.body.class_index + " " + interpolated_value;
         

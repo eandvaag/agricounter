@@ -374,19 +374,30 @@ html
                                                                         table
                                                                             tr
                                                                                 td 
+                                                                                    div(class="header2" style="width: 170px; text-align: right") Training Regime
+                                                                                td 
+                                                                                    div(style="width: 140px" id="training_regime_text") 50 Epochs
+                                                                                
+                                                                                td
+                                                                                    button(class="button-green button-green-hover" style="font-size: 14px; padding: 2px 4px" onclick="configure_training_regime()") Configure
+
+                                                                            tr
+                                                                                td 
                                                                                     div(class="header2" style="width: 170px; text-align: right") Model Name
                                                                                 td
-                                                                                    div(style="width: 200px")
+                                                                                    div(style="width: 140px")
                                                                                         input(id="model_name_input" class="nonfixed_input")
+                                                                                td
 
                                                                             tr
                                                                                 td 
                                                                                     div(class="header2" style="width: 170px; text-align: right") Make Model Public
                                                                                 td
-                                                                                    div(style="width: 200px; text-align: left")
+                                                                                    div(style="width: 140px; text-align: left")
                                                                                         label(for="model_public" class="container" style="display: inline; margin-botton: 20px; margin-left: 12px")
                                                                                             input(type="checkbox" id="model_public" name="model_public" checked)
                                                                                             span(class="checkmark")
+                                                                                td
 
 
 

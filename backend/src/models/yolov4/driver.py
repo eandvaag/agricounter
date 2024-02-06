@@ -161,20 +161,27 @@ def create_default_config():
                 #         "contrast_limit": [-0.2, 0.2]
                 #     }
                 # },
+                {
+                    "type": "affine",
+                    "parameters": {
+                        "probability": 1.0, 
+                        "scale": (0.85, 1.15), #1.0, 
+                        "translate_percent": (-0.15, 0.15),
+                        "rotate": 0, 
+                        "shear": 0
+                    }
+                }
                 # {
-                #     "type": "affine",
+                #     "type": "shift_scale_rotate",
                 #     "parameters": {
                 #         "probability": 1.0, 
-                #         "scale": 1.0, 
-                #         "translate_percent": (-0.15, 0.15), 
-                #         "rotate": 0, 
-                #         "shear": 0
+                #         "shift_limit": 0.15,
+                #         "scale_limit": 0.0,
+                #         "rotate_limit": 0.0
                 #     }
                 # }
             ],
-            "batch_size": 16,
-            "percent_of_training_set_used": 100,
-            "percent_of_validation_set_used": 100
+            "batch_size": 16
         },
         "inference": {
             "batch_size": 64,
@@ -581,6 +588,7 @@ def train(job):
     training_dir = os.path.join(baseline_pending_dir, "model", "training")
 
     training_tf_record_paths = [os.path.join(training_dir, "training-patches-record.tfrec")]
+
     
     log = json_io.load_json(os.path.join(baseline_pending_dir, "log.json"))
 
@@ -594,9 +602,13 @@ def train(job):
         config["training"]["active"][k] = config["training"][k]
     
     train_data_loader = data_load.TrainDataLoader(training_tf_record_paths, config, shuffle=True, augment=True)
+    train_dataset, num_train_patches = train_data_loader.create_batched_dataset()
 
-    train_dataset, num_train_patches = train_data_loader.create_batched_dataset(
-                                      take_percent=config["training"]["active"]["percent_of_training_set_used"])
+    if job["training_regime"] == "train_val_split":
+        validation_tf_record_paths = [os.path.join(training_dir, "validation-patches-record.tfrec")]
+        val_data_loader = data_load.TrainDataLoader(validation_tf_record_paths, config, shuffle=False, augment=False)
+        val_dataset, num_val_patches = val_data_loader.create_batched_dataset()
+        val_loss_metric = tf.metrics.Mean()
 
 
     logger.info("Building model...")
@@ -642,9 +654,14 @@ def train(job):
         train_loss_metric.update_state(values=loss_value)
 
 
-    logger.info("{} ('{}'): Starting to train model with {} training patches.".format(
-                    config["arch"]["model_type"], config["model_name"], num_train_patches))
-
+    if job["training_regime"] == "fixed_num_epochs":
+        logger.info("{} ('{}'): Starting to train with {} training patches.".format(
+            config["arch"]["model_type"], config["model_name"], num_train_patches
+        ))
+    else:
+        logger.info("{} ('{}'): Starting to train with {} training patches and {} validation patches.".format(
+            config["arch"]["model_type"], config["model_name"], num_train_patches, num_val_patches
+        ))
 
     while True:
 
@@ -652,22 +669,29 @@ def train(job):
         loss_record = json_io.load_json(loss_record_path)
 
 
-        if TRAIN_FOR_FIXED_NUMBER_OF_EPOCHS:
-            num_epochs_trained = len(loss_record["training_loss_values"]) - 1
-            logger.info("{} / {} epochs completed.".format(num_epochs_trained, NUM_EPOCHS_TO_TRAIN))
-            if num_epochs_trained >= NUM_EPOCHS_TO_TRAIN:
+        if job["training_regime"] == "fixed_num_epochs":
+
+            num_epochs_trained = len(loss_record["train"]) - 1
+            logger.info("{} / {} epochs completed.".format(num_epochs_trained, job["num_epochs"]))
+
+            if num_epochs_trained >= job["num_epochs"]:
                 logger.info("Finished training!")
                 shutil.copyfile(best_weights_path, cur_weights_path)
                 return
+
             
         else:
-            epochs_since_substantial_improvement = get_epochs_since_substantial_improvement(loss_record)
 
-            logger.info("Epochs since substantial training loss improvement: {}".format(epochs_since_substantial_improvement))
-            
-            if epochs_since_substantial_improvement >= EPOCHS_WITHOUT_IMPROVEMENT_TOLERANCE:
+            epochs_since_improvement = get_epochs_since_val_loss_improvement(loss_record)
+
+            logger.info("Epochs since validation loss improvement: {}".format(epochs_since_improvement))
+
+            if epochs_since_improvement >= job["improvement_tolerance"]:
+                num_epochs_trained = len(loss_record["train"]) - 1
+                logger.info("Finished training! Trained for {} epochs in total.".format(num_epochs_trained))
                 shutil.copyfile(best_weights_path, cur_weights_path)
                 return
+
 
 
         for batch_data in train_dataset:
@@ -681,16 +705,54 @@ def train(job):
                 raise RuntimeError("NaN loss has occurred.")
             
 
-        cur_training_loss = float(train_loss_metric.result())
+
+        cur_train_loss = float(train_loss_metric.result())
+        loss_record["train"].append(cur_train_loss)
+        train_loss_metric.reset_states()
 
 
-        cur_training_loss_is_best = update_loss_record(loss_record, cur_training_loss)
+
+        if job["training_regime"] == "train_val_split":
+
+            for batch_data in val_dataset:
+
+                batch_images, batch_labels = val_data_loader.read_batch_data(batch_data)
+                conv = yolov4(batch_images, training=False)
+                loss_value = loss_fn(batch_labels, conv)
+                loss_value += sum(yolov4.losses)
+
+                val_loss_metric.update_state(values=loss_value)
+
+                if np.isnan(val_loss_metric.result()):
+                    raise RuntimeError("NaN loss has occurred.")
+                
+
+            cur_val_loss = float(val_loss_metric.result())
+            loss_record["val"].append(cur_val_loss)
+            val_loss_metric.reset_states()
+
+
+
+
+        # cur_training_loss_is_best =  #update_loss_record(loss_record, cur_training_loss)
         yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
-        if cur_training_loss_is_best:
+        if cur_epoch_is_best(loss_record, job):
             yolov4.save_weights(filepath=best_weights_path, save_format="h5")
 
 
-        train_loss_metric.reset_states()
+
+
+
+        # cur_training_loss = float(train_loss_metric.result())
+
+
+        # cur_training_loss_is_best = update_loss_record(loss_record, cur_training_loss)
+        # yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
+        # if cur_training_loss_is_best:
+        #     yolov4.save_weights(filepath=best_weights_path, save_format="h5")
+
+
+        # train_loss_metric.reset_states()
 
         json_io.save_json(loss_record_path, loss_record)
 
@@ -713,6 +775,22 @@ def get_epochs_since_substantial_improvement(loss_record):
             epochs_since_improvement += 1
 
     return epochs_since_improvement
+
+def get_epochs_since_val_loss_improvement(loss_record):
+    
+    vals = loss_record["val"]
+    min_ind = np.argmin(np.array(vals))
+    return (len(vals) - 1) - min_ind
+
+
+
+def cur_epoch_is_best(loss_record, job):
+    if job["training_regime"] == "fixed_num_epochs":
+        key = "train"
+    else:
+        key = "val"
+    loss_vals = loss_record[key]
+    return np.argmin(loss_vals) == (len(loss_vals) - 1)
 
 
 
@@ -738,7 +816,6 @@ def fine_tune(job):
 
 
     training_record_dir = os.path.join(training_dir, "training_tf_records")
-
     training_tf_record_paths = glob.glob(os.path.join(training_record_dir, "*.tfrec"))
 
     config = create_default_config()
@@ -752,10 +829,19 @@ def fine_tune(job):
 
 
     train_data_loader = data_load.TrainDataLoader(training_tf_record_paths, config, shuffle=True, augment=True)
-
-    train_dataset, num_train_patches = train_data_loader.create_batched_dataset(
-                                      take_percent=config["training"]["active"]["percent_of_training_set_used"])
+    train_dataset, num_train_patches = train_data_loader.create_batched_dataset()
     
+
+    if job["training_regime"] == "train_val_split":
+        validation_record_dir = os.path.join(training_dir, "validation_tf_records")
+        val_tf_record_paths = glob.glob(os.path.join(validation_record_dir, "*.tfrec"))
+        val_data_loader = data_load.TrainDataLoader(val_tf_record_paths, config, shuffle=False, augment=False)
+        val_dataset, num_val_patches = val_data_loader.create_batched_dataset()
+
+        val_loss_metric = tf.metrics.Mean()
+
+
+
 
     logger.info("Building model...")
 
@@ -802,38 +888,60 @@ def fine_tune(job):
         train_loss_metric.update_state(values=loss_value)
 
 
-    while True:
+    loss_record = {
+        "train": [1e8],
+    }
+    if job["training_regime"] == "train_val_split":
+        loss_record["val"] = [1e8]
 
+
+    if job["training_regime"] == "fixed_num_epochs":
         logger.info("{} ('{}'): Starting to fine-tune with {} training patches.".format(
             config["arch"]["model_type"], config["model_name"], num_train_patches
         ))
+    else:
+        logger.info("{} ('{}'): Starting to fine-tune with {} training patches and {} validation patches.".format(
+            config["arch"]["model_type"], config["model_name"], num_train_patches, num_val_patches
+        ))
 
-        loss_record_path = os.path.join(training_dir, "loss_record.json")
-        loss_record = json_io.load_json(loss_record_path)
 
-        if TRAIN_FOR_FIXED_NUMBER_OF_EPOCHS:
-            num_epochs_trained = len(loss_record["training_loss_values"]) - 1
-            logger.info("{} / {} epochs completed.".format(num_epochs_trained, NUM_EPOCHS_TO_TRAIN))
-            if num_epochs_trained >= NUM_EPOCHS_TO_TRAIN:
+    while True:
+
+
+        # loss_record_path = os.path.join(training_dir, "loss_record.json")
+        # loss_record = json_io.load_json(loss_record_path)
+
+        if job["training_regime"] == "fixed_num_epochs":
+
+            num_epochs_trained = len(loss_record["train"]) - 1
+            logger.info("{} / {} epochs completed.".format(num_epochs_trained, job["num_epochs"]))
+
+            emit.set_image_set_status(username, farm_name, field_name, mission_date,
+                                      {"state_name": emit.FINE_TUNING,
+                                       "progress": str(num_epochs_trained) + " / "  + str(job["num_epochs"]) + " Epochs Completed"})
+
+            if num_epochs_trained >= job["num_epochs"]:
                 logger.info("Finished training!")
                 shutil.copyfile(best_weights_path, cur_weights_path)
                 return
             
         else:
-            epochs_since_substantial_improvement = get_epochs_since_substantial_improvement(loss_record)
 
-            logger.info("Epochs since substantial training loss improvement: {}".format(epochs_since_substantial_improvement))
+            epochs_since_improvement = get_epochs_since_val_loss_improvement(loss_record)
+
+            logger.info("Epochs since validation loss improvement: {}".format(epochs_since_improvement))
 
             emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                         {"state_name": emit.FINE_TUNING, 
-                                         "progress": "Epochs Since Improvement: " + str(epochs_since_substantial_improvement)})
+                                         "progress": "Epochs Since Improvement: " + str(epochs_since_improvement)})
 
-            if epochs_since_substantial_improvement >= EPOCHS_WITHOUT_IMPROVEMENT_TOLERANCE:
+            if epochs_since_improvement >= job["improvement_tolerance"]:
+                num_epochs_trained = len(loss_record["train"]) - 1
+                logger.info("Finished training! Trained for {} epochs in total.".format(num_epochs_trained))
                 shutil.copyfile(best_weights_path, cur_weights_path)
                 return
 
 
-        start_epoch_time = time.time()
         for batch_data in train_dataset:
 
             optimizer.lr.assign(config["training"]["active"]["learning_rate_schedule"]["learning_rate"])
@@ -843,23 +951,44 @@ def fine_tune(job):
             train_step(batch_images, batch_labels)
             if np.isnan(train_loss_metric.result()):
                 raise RuntimeError("NaN loss has occurred.")
-            
 
-        end_epoch_time = time.time()
-        cur_training_loss = float(train_loss_metric.result())
 
-        elapsed_epoch_time = round(end_epoch_time - start_epoch_time, 4)
-
-        logger.info("Epoch finished. Elapsed time (s): {}.".format(elapsed_epoch_time))
-
-        cur_training_loss_is_best = update_loss_record(loss_record, cur_training_loss)
-        yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
-        if cur_training_loss_is_best:
-            yolov4.save_weights(filepath=best_weights_path, save_format="h5")
-
+        cur_train_loss = float(train_loss_metric.result())
+        loss_record["train"].append(cur_train_loss)
         train_loss_metric.reset_states()
 
-        json_io.save_json(loss_record_path, loss_record)
+
+
+        if job["training_regime"] == "train_val_split":
+
+            for batch_data in val_dataset:
+
+                batch_images, batch_labels = val_data_loader.read_batch_data(batch_data)
+                conv = yolov4(batch_images, training=False)
+                loss_value = loss_fn(batch_labels, conv)
+                loss_value += sum(yolov4.losses)
+
+                val_loss_metric.update_state(values=loss_value)
+
+                if np.isnan(val_loss_metric.result()):
+                    raise RuntimeError("NaN loss has occurred.")
+                
+
+            cur_val_loss = float(val_loss_metric.result())
+            loss_record["val"].append(cur_val_loss)
+            val_loss_metric.reset_states()
+
+
+
+
+        # cur_training_loss_is_best =  #update_loss_record(loss_record, cur_training_loss)
+        yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
+        if cur_epoch_is_best(loss_record, job):
+            yolov4.save_weights(filepath=best_weights_path, save_format="h5")
+
+
+
+        # json_io.save_json(loss_record_path, loss_record)
         
 
 
