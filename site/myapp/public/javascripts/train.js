@@ -6,6 +6,7 @@ let cur_bounds = {};
 
 let cur_inspected_set;
 let added_image_sets = {};
+let training_regime_config = {"training_regime": "fixed_num_epochs", "num_epochs": 50};
 
 const MODEL_NAME_FORMAT = /[\s `!@#$%^&*()+\=\[\]{}.;':"\\|,<>\/?~]/;
 
@@ -23,15 +24,15 @@ function clear_train_form() {
 
     create_image_set_list();
 
-    let first_row = document.getElementById("available_image_sets").rows[0]
-    if (first_row != null) {
-        first_row.scrollIntoView();
-    }
+    // let first_row = document.getElementById("available_image_sets").rows[0]
+    // if (first_row != null) {
+    //     first_row.scrollIntoView();
+    // }
 
 
     // TODO: this is a workaround to prevent the navigation tab from shrinking
-    show_train_tab("available_train_tab_btn");
-    show_train_tab("submit_train_tab_btn");
+    // show_train_tab("available_train_tab_btn");
+    // show_train_tab("submit_train_tab_btn");
 
 }
 
@@ -69,42 +70,145 @@ function show_train_tab(sel_tab_btn_id) {
 
 
 
+function configure_training_regime() {
+    show_modal_message(`Configure Training Regime`,
+    
+        `<table>` +
+            `<tr>` +
+                `<td>` +
+                    `<div class="header2">Training Regime</div>` +
+                `</td>` +
+                `<td style="width: 10px"></td>` +
+                `<td>` +
+                    `<select id="training_regime_dropdown" class="nonfixed_dropdown" style="width: 230px">` +
+                        `<option value="fixed_num_epochs">Fixed Number of Epochs</option>` +
+                        `<option value="train_val_split">Monitor Validation Loss</option>` +
+                    `</select>` +
+                `</td>` +
+            `</tr>` +
+        `</table>` +
+        `<div style="height: 10px"></div>` +
+        `<div id="fixed_num_epochs_settings">` +
+            `<div style="border: 1px solid white; border-radius: 10px; padding: 10px; margin: 10px 20px">` +
+                `<table>` + 
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 510px; padding: 3px 0px">All data will be used for fine-tuning. No data will be used for validation.</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` +
+                    `</tr>` +
+                `</table>` +
+                `<table>` + 
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 200px">Training will terminate after</div>` +
+                        `</td>` +
+                        `<td>` +
+                            `<input id="num_epochs_input" class="number_input" style="width: 60px" type="number" min="1" max="400" value="200" />` +
+                        `</td>` +
+                        `<td>` +
+                            `<div style="width: 5px"></div>` +
+                        `</td>` +
+                        `<td>` +
+                            `<div style="width: 60px">epochs.</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` +
+                    `</tr>` +
+                `</table>` +
+            `</div>` +
+        `</div>` +
+        `<div id="train_val_split_settings" hidden>` +
+            `<div style="border: 1px solid white; border-radius: 10px; padding: 10px; margin: 10px 20px">` +
+                `<table>` + 
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 180px">Training / validation split:</div>` +
+                        `</td>` +
+                        `<td style="width: 10px"></td>` + 
+                        `<td>` +
+                            `<input id="training_percent_input" class="number_input" style="width: 50px" type="number" min="50" max="95" value="80" step="5" />` +
+                        `</td>` +
+                        `<td style="width: 5px"></td>` + 
+                        `<td>` +
+                            `<div style="width: 50px" id="validation_percent">/ 20</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` + 
+                    `</tr>` +
+                `</table>` +
+                `<table>` +
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 110px">Terminate after</div>` +
+                        `</td>` +
+                        `<td style="width: 5px"></td>` + 
+                        `<td>` +
+                            `<input id="improvement_tolerance" class="number_input" style="width: 50px" type="number" min="1" max="50" value="10" step="1" />` +
+                        `</td>` +
+                        `<td style="width: 10px"></td>` + 
+                        `<td>` +
+                            `<div style="width: 300px">epochs without validation improvement.</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` + 
+                    `</tr>` +
+                `</table>` +
+            `</div>` +
+        `</div>` +
+        `<div style="height: 10px"></div>` +
+        `<table>` +
+            `<tr>` +
+                `<td style="width: 50%"></td>` +
+                `<td>` +
+                    `<button onclick="apply_training_regime()" style="width: 180px" class="button-green button-green-hover">Apply</button>` +
+                `</td>` +
+                `<td style="width: 50%"></td>` +
+            `</tr>` +
+        `</table>`                
+    );
 
-// function box_intersects_region(box, region) {
-//     return ((box[1] < region[3] && box[3] > region[1]) && (box[0] < region[2] && box[2] > region[0]));
-// }
+    $("#training_percent_input").change(function() {
+        let training_percent = $("#training_percent_input").val();
+        let validation_percent = 100 - training_percent;
+        $("#validation_percent").html("/ " + validation_percent);
+    }) 
 
-// function get_num_useable_boxes(annotations) {
 
-//     let res = {};
-//     for (let image_name of Object.keys(annotations)) {
-//         for (let i = 0; i < annotations[image_name]["boxes"].length; i++) {
-//             let intersects = false;
-//             for (let j = 0; j < annotations[image_name]["fine_tuning_regions"].length; j++) {
-//                 if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["fine_tuning_regions"][j])) {
-//                     intersects = true;
-//                     break;
-//                 }
-//             }
-//             if (!(intersects)) {
-//                 for (let j = 0; j < annotations[image_name]["test_regions"].length; j++) {
-//                     if (box_intersects_region(annotations[image_name]["boxes"][i], annotations[image_name]["test_regions"][j])) {
-//                         intersects = true;
-//                         break;
-//                     }
-//                 }
-//             }
-//             if (intersects) {
-//                 let class_idx = annotations[image_name]["classes"][i];
-//                 if (!(class_idx in res)) {
-//                     res[class_idx] = 0;
-//                 }
-//                 res[class_idx]++;
-//             }
-//         }
-//     }
-//     return res;
-// }
+    $("#training_regime_dropdown").change(function() {
+        let training_regime = $("#training_regime_dropdown").val();
+        if (training_regime === "fixed_num_epochs") {
+            $("#fixed_num_epochs_settings").show();
+            $("#train_val_split_settings").hide();
+        }
+        else {
+            $("#train_val_split_settings").show();
+            $("#fixed_num_epochs_settings").hide();
+        }
+    });
+}
+
+function apply_training_regime() {
+
+    training_regime_config = {};
+    let training_regime = $("#training_regime_dropdown").val();
+    training_regime_config["training_regime"] = training_regime;
+    if (training_regime === "fixed_num_epochs") {
+        num_epochs = $("#num_epochs_input").val();
+        training_regime_config["num_epochs"] = num_epochs;
+        $("#training_regime_text").text(num_epochs + " Epochs");
+    }
+    else {
+        let training_percent = $("#training_percent_input").val();
+        let validation_percent = 100 - training_percent;
+        let improvement_tolerance = $("#improvement_tolerance").val();
+        training_regime_config["training_percent"] = training_percent;
+        training_regime_config["improvement_tolerance"] = improvement_tolerance;
+        $("#training_regime_text").text(
+            training_percent + "/" + validation_percent + " (Tol.: " + improvement_tolerance + ")"
+        );
+    }
+
+    close_modal();
+}
+
 
 
 function remove_filter_object_class(cls_ind) {
@@ -192,39 +296,29 @@ function get_filtered_datasets() {
     });
 
     let filtered_datasets = [];
-    for (let username of Object.keys(available_image_sets)) {
-        for (let farm_name of Object.keys(available_image_sets[username])) {
-            for (let field_name of Object.keys(available_image_sets[username][farm_name])) {
-                for (let mission_date of Object.keys(available_image_sets[username][farm_name][field_name])) {
-
-                    let object_classes = available_image_sets[username][farm_name][field_name][mission_date]["object_classes"];
-
-                    let valid = true;
-                    if (added_filter_classes.length > 0) {
-                        for (let object_class of added_filter_classes) {
-                            if (!(object_classes.includes(object_class))) {
-                                valid = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (valid) {
-                        filtered_datasets.push({
-                            "username": username,
-                            "farm_name": farm_name,
-                            "field_name": field_name,
-                            "mission_date": mission_date,
-                            "set_name": farm_name + " " + field_name + " " + mission_date,
-                            "set_owner": username
-                        });
-                    }
-
+    for (let image_set_key of available_image_sets) {
+        let object_classes = available_image_sets[image_set_key]["object_classes"];
+        let valid = true;
+        if (added_filter_classes.length > 0) {
+            for (let object_class of added_filter_classes) {
+                if (!(object_classes.includes(object_class))) {
+                    valid = false;
+                    break;
                 }
             }
         }
+        if (valid) {
+            let [username, farm_name, field_name, mission_date] = image_set_key.split("/");
+            filtered_datasets.push({
+                "username": username,
+                "farm_name": farm_name,
+                "field_name": field_name,
+                "mission_date": mission_date,
+                "set_name": farm_name + " " + field_name + " " + mission_date,
+                "set_owner": username
+            });
+        }
     }
-
 
     filtered_datasets.sort(function(a, b) {
         return a["set_owner"].localeCompare(b["set_owner"], undefined, {numeric: true, sensitivity: 'base'}) || 
@@ -1221,15 +1315,18 @@ function initialize_train() {
 
 
         let is_public = ($("#model_public").is(':checked'));
-
-        $.post($(location).attr('href'),
-        {
+        let req_data = {
             action: "train",
             model_name: model_name,
             image_sets: JSON.stringify(added_image_sets),
             is_public: is_public
-        },
-    
+        };
+        for (let k of Object.keys(training_regime_config)) {
+            req_data[k] = training_regime_config[k];
+        }
+
+        $.post($(location).attr('href'),
+        req_data,
         function(response, status) {
 
             if (response.error) {  

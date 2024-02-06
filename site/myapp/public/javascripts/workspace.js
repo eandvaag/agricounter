@@ -2246,9 +2246,126 @@ function submit_result_request() {
 
 }
 
+function show_fine_tuning_modal() {
+    show_modal_message(`Submit Fine-Tuning Request`,
+    
+        `<table>` +
+            `<tr>` +
+                `<td>` +
+                    `<div class="header2">Training Regime</div>` +
+                `</td>` +
+                `<td style="width: 10px"></td>` +
+                `<td>` +
+                    `<select id="training_regime_dropdown" class="nonfixed_dropdown" style="width: 230px">` +
+                        `<option value="fixed_num_epochs">Fixed Number of Epochs</option>` +
+                        `<option value="train_val_split">Monitor Validation Loss</option>` +
+                    `</select>` +
+                `</td>` +
+            `</tr>` +
+        `</table>` +
+        `<div style="height: 10px"></div>` +
+        `<div id="fixed_num_epochs_settings">` +
+            `<div style="border: 1px solid white; border-radius: 10px; padding: 10px; margin: 10px 20px">` +
+                `<table>` + 
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 510px; padding: 3px 0px">All data will be used for fine-tuning. No data will be used for validation.</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` +
+                    `</tr>` +
+                `</table>` +
+                `<table>` + 
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 200px">Training will terminate after</div>` +
+                        `</td>` +
+                        `<td>` +
+                            `<input id="num_epochs_input" class="number_input" style="width: 60px" type="number" min="1" max="400" value="200" />` +
+                        `</td>` +
+                        `<td>` +
+                            `<div style="width: 5px"></div>` +
+                        `</td>` +
+                        `<td>` +
+                            `<div style="width: 60px">epochs.</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` +
+                    `</tr>` +
+                `</table>` +
+            `</div>` +
+        `</div>` +
+        `<div id="train_val_split_settings" hidden>` +
+            `<div style="border: 1px solid white; border-radius: 10px; padding: 10px; margin: 10px 20px">` +
+                `<table>` + 
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 180px">Training / validation split:</div>` +
+                        `</td>` +
+                        `<td style="width: 10px"></td>` + 
+                        `<td>` +
+                            `<input id="training_percent_input" class="number_input" style="width: 50px" type="number" min="50" max="95" value="80" step="5" />` +
+                        `</td>` +
+                        `<td style="width: 5px"></td>` + 
+                        `<td>` +
+                            `<div style="width: 50px" id="validation_percent">/ 20</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` + 
+                    `</tr>` +
+                `</table>` +
+                `<table>` +
+                    `<tr>` + 
+                        `<td>` +
+                            `<div style="width: 110px">Terminate after</div>` +
+                        `</td>` +
+                        `<td style="width: 5px"></td>` + 
+                        `<td>` +
+                            `<input id="improvement_tolerance" class="number_input" style="width: 50px" type="number" min="1" max="50" value="10" step="1" />` +
+                        `</td>` +
+                        `<td style="width: 10px"></td>` + 
+                        `<td>` +
+                            `<div style="width: 300px">epochs without validation improvement.</div>` +
+                        `</td>` +
+                        `<td style="width: 100%"></td>` + 
+                    `</tr>` +
+                `</table>` +
+            `</div>` +
+        `</div>` +
+        `<div style="height: 10px"></div>` +
+        `<table>` +
+            `<tr>` +
+                `<td style="width: 50%"></td>` +
+                `<td>` +
+                    `<button onclick="submit_fine_tuning_request()" style="width: 180px" class="button-green button-green-hover">Submit Request</button>` +
+                `</td>` +
+                `<td style="width: 50%"></td>` +
+            `</tr>` +
+        `</table>`                
+    );
+
+    $("#training_percent_input").change(function() {
+        let training_percent = $("#training_percent_input").val();
+        let validation_percent = 100 - training_percent;
+        $("#validation_percent").html("/ " + validation_percent);
+    }) 
+
+
+    $("#training_regime_dropdown").change(function() {
+        let training_regime = $("#training_regime_dropdown").val();
+        if (training_regime === "fixed_num_epochs") {
+            $("#fixed_num_epochs_settings").show();
+            $("#train_val_split_settings").hide();
+        }
+        else {
+            $("#train_val_split_settings").show();
+            $("#fixed_num_epochs_settings").hide();
+        }
+    });
+}
+
+
 
 function submit_fine_tuning_request() {
     disable_model_actions();
+    close_modal();
 
     let num_fine_tuning_regions = 0;
     for (let image_name of Object.keys(annotations)) {
@@ -2262,11 +2379,22 @@ function submit_fine_tuning_request() {
     else {
 
         let callback = function() {
+            let training_regime = $("#training_regime_dropdown").val();
+            let req_data = {
+                action: "fine_tune",
+                training_regime: training_regime,
+            };
+            if (training_regime === "fixed_num_epochs") {
+                num_epochs = $("#num_epochs_input").val();
+                req_data["num_epochs"] = num_epochs;
+            }
+            else {
+                req_data["training_percent"] = $("#training_percent_input").val();
+                req_data["improvement_tolerance"] = $("#improvement_tolerance").val();
+            }
 
             $.post($(location).attr("href"),
-            {
-                action: "fine_tune"
-            },
+            req_data,
             function(response, status) {
                 if (response.error) {
                     show_modal_message("Error", response.message);
@@ -2900,14 +3028,11 @@ function set_model_weights_to_random() {
     disable_model_actions();
     close_modal();
 
-    let num_classes = metadata["object_classes"].length;
-
     $.post($(location).attr("href"),
     {
         action: "switch_model", 
         model_name: "Random Weights",
         model_creator: "",
-        num_classes: String(num_classes)
     },
     function(response, status) {
 
@@ -3985,7 +4110,7 @@ $(document).ready(function() {
             show_modal_message("No Model Selected", "A model must be selected before fine-tuning can be applied.");
         }
         else {
-            submit_fine_tuning_request();
+            show_fine_tuning_modal();
         }
     });
 

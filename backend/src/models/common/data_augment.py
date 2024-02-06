@@ -126,15 +126,23 @@ def apply_augmentations(augmentations, image, boxes, classes):
                                           g_shift_limit=aug_params["g_shift_limit"],
                                           b_shift_limit=aug_params["b_shift_limit"]))
 
+        elif aug_type == "shift_scale_rotate":
+            aug_methods.append(A.ShiftScaleRotate(p=aug_params["probability"],
+                                                  shift_limit=aug_params["shift_limit"],
+                                                  scale_limit=aug_params["scale_limit"],
+                                                  rotate_limit=aug_params["rotate_limit"]))
 
 
-    transform = A.Compose(aug_methods, bbox_params=A.BboxParams(format='albumentations', label_fields=['class_labels']))
+    transform = A.Compose(
+        aug_methods, 
+        bbox_params=A.BboxParams(format='albumentations', label_fields=['class_labels'])
+    )
     transformed = transform(image=image, bboxes=boxes, class_labels=classes)
-    tf_img = transformed["image"]
-    tf_boxes = np.array(transformed["bboxes"]).reshape(-1, 4)
-    tf_classes = np.array(transformed["class_labels"])
+    img = transformed["image"]
+    boxes = np.array(transformed["bboxes"]).reshape(-1, 4)
+    classes = np.array(transformed["class_labels"])
 
-    return tf_img, tf_boxes, tf_classes
+    return img, boxes, classes
 
 
 

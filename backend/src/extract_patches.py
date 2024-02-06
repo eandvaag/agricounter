@@ -56,7 +56,7 @@ def update_training_patches(image_set_dir, annotations, updated_patch_size):
                 image, 
                 updated_patch_size,
                 image_annotations=annotations[image_name],
-                patch_overlap_percent=50,
+                patch_overlap_percent=0,
                 regions=annotations[image_name]["fine_tuning_regions"],
                 is_ortho=is_ortho,
                 out_dir=patches_dir)
