@@ -296,7 +296,7 @@ function get_filtered_datasets() {
     });
 
     let filtered_datasets = [];
-    for (let image_set_key of available_image_sets) {
+    for (let image_set_key of Object.keys(available_image_sets)) {
         let object_classes = available_image_sets[image_set_key]["object_classes"];
         let valid = true;
         if (added_filter_classes.length > 0) {
