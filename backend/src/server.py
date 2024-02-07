@@ -649,12 +649,6 @@ def process_fine_tune(job):
 
             ret = update_training_tf_records(job, patch_data)
             if ret == 0:
-                # loss_record_path = os.path.join(model_dir, "training", "loss_record.json")
-                # loss_record = {
-                #     "training_loss_values": [1e8]
-                # }
-                # json_io.save_json(loss_record_path, loss_record)
-
                 yolov4_driver.fine_tune(job)
 
 
@@ -861,34 +855,19 @@ def process_train(job):
             patch_records = np.array(all_records)
 
 
-
-
-
             if job["training_regime"] == "fixed_num_epochs":
 
-                # for image_name in patch_data.keys():
                 logger.info("Writing training records for image {} (from: {})".format(image_name, image_set_dir))
-
 
                 if patch_records.size == 0:
                     raise RuntimeError("Cannot train model due to insufficient data.")
-                # training_patch_records = np.array(patch_data[image_name])
 
                 training_tf_records = tf_record_io.create_patch_tf_records(patch_records, patches_dir, is_annotated=True)
                 training_tf_record_path = os.path.join(training_dir, "training-patches-record.tfrec")
                 tf_record_io.output_patch_tf_records(training_tf_record_path, training_tf_records)
 
 
-
-
-
-
-
             else:
-
-                # num_patch_records = 0
-                # for image_name in patch_data.keys():
-                #     num_patch_records += len(patch_data[image_name])
 
                 num_patch_records = patch_records.size
                 inds = np.arange(num_patch_records)
@@ -914,40 +893,6 @@ def process_train(job):
                 val_tf_record_path = os.path.join(training_dir, "validation-patches-record.tfrec")
                 tf_record_io.output_patch_tf_records(val_tf_record_path, val_tf_records)
 
-            
-
-            #     patch_index = 0
-            #     for image_name in patch_data.keys():
-            #         logger.info("Writing training and validation records for image {} (from: {})".format(
-            #             image_name, image_set_dir))
-
-            #         patch_records = np.array(patch_data[image_name])
-                    
-            #         training_patch_records = patch_records[train_mask[patch_index: patch_index + patch_records.size]]
-            #         training_tf_records = tf_record_io.create_patch_tf_records(training_patch_records, patches_dir, is_annotated=True)
-                    
-            #         training_tf_record_path = os.path.join(training_records_dir, image_name + ".tfrec")
-            #         tf_record_io.output_patch_tf_records(training_tf_record_path, training_tf_records)
-
-            #         val_patch_records = patch_records[val_mask[patch_index: patch_index + patch_records.size]]
-            #         val_tf_records = tf_record_io.create_patch_tf_records(val_patch_records, patches_dir, is_annotated=True)
-                    
-            #         val_tf_record_path = os.path.join(validation_records_dir, image_name + ".tfrec")
-            #         tf_record_io.output_patch_tf_records(val_tf_record_path, val_tf_records)
-
-
-            #         patch_index += patch_records.size
-
-
-
-
-            # training_patch_records = patch_records
-
-            # print("have {} patch records".format(patch_records.size))
-
-            # training_tf_records = tf_record_io.create_patch_tf_records(training_patch_records, patches_dir, is_annotated=True)
-            # training_patches_record_path = os.path.join(training_dir, "training-patches-record.tfrec")
-            # tf_record_io.output_patch_tf_records(training_patches_record_path, training_tf_records)
 
             loss_record_path = os.path.join(baseline_pending_dir, "model", "training", "loss_record.json")
             loss_record = {

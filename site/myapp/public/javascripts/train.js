@@ -6,7 +6,8 @@ let cur_bounds = {};
 
 let cur_inspected_set;
 let added_image_sets = {};
-let training_regime_config = {"training_regime": "fixed_num_epochs", "num_epochs": 50};
+let default_training_regime_config = {"training_regime": "fixed_num_epochs", "num_epochs": 50};
+let training_regime_config = default_training_regime_config;
 
 const MODEL_NAME_FORMAT = /[\s `!@#$%^&*()+\=\[\]{}.;':"\\|,<>\/?~]/;
 
@@ -24,15 +25,9 @@ function clear_train_form() {
 
     create_image_set_list();
 
-    // let first_row = document.getElementById("available_image_sets").rows[0]
-    // if (first_row != null) {
-    //     first_row.scrollIntoView();
-    // }
-
-
-    // TODO: this is a workaround to prevent the navigation tab from shrinking
-    // show_train_tab("available_train_tab_btn");
-    // show_train_tab("submit_train_tab_btn");
+    training_regime_config = default_training_regime_config;
+    let num_epochs = training_regime_config["num_epochs"];
+    $("#training_regime_text").text(num_epochs + " Epochs");
 
 }
 
@@ -191,7 +186,7 @@ function apply_training_regime() {
     let training_regime = $("#training_regime_dropdown").val();
     training_regime_config["training_regime"] = training_regime;
     if (training_regime === "fixed_num_epochs") {
-        num_epochs = $("#num_epochs_input").val();
+        let num_epochs = $("#num_epochs_input").val();
         training_regime_config["num_epochs"] = num_epochs;
         $("#training_regime_text").text(num_epochs + " Epochs");
     }
