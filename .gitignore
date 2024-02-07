@@ -1,13 +1,12 @@
 site/myapp/usr
 site/myapp/node_modules
 site/myapp/config/config.js
-site/myapp/seeders
+# site/myapp/seeders
 site/docker-compose.yml
 site/myapp/cert.pem
 site/myapp/key.pem
 
-backend/src/usr/*
-
+# backend/src/usr/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
