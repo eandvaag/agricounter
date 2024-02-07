@@ -8,6 +8,10 @@ site/myapp/key.pem
 
 backend/src/usr/data
 
+# note: to freeze version control on a file, use:
+# git update-index --skip-worktree <file>
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1412,3 +1412,8 @@ $(document).ready(function() {
     });
 
 });
+
+
+window.onoffline = (event) => {
+    display_offline_modal();
+};

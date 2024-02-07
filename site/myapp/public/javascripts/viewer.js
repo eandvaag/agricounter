@@ -1294,3 +1294,7 @@ $(document).ready(function() {
 $(window).resize(function() {
     resize_window();
 });
+
+window.onoffline = (event) => {
+    display_offline_modal();
+};

@@ -1685,7 +1685,7 @@ function draw_customize_overlays_table(redraw=true) {
 
 function show_customize_overlays_modal() {
 
-    new_overlay_appearance = overlay_appearance;
+    new_overlay_appearance = JSON.parse(JSON.stringify(overlay_appearance));
     let content = 
 
     `<table>` +
@@ -2030,3 +2030,37 @@ function set_heights() {
     $("#image_name_table").height(max_height);
 }
 
+
+
+function display_offline_modal() {
+    display_sign_in_required_modal("Disconnected", 
+    "The network connection has been lost. You must log in again to continue using the AgriCounter tool.");
+}
+
+
+// function display_session_expired_modal() {
+//     display_sign_in_required_modal("Session Expired", 
+//     "Your session has expired. You must log in again to continue using the AgriCounter tool.");
+// }
+
+function display_sign_in_required_modal(header_text, body_text) {
+    show_modal_message(header_text,
+        `<div>${body_text}</div>` +
+        `<div style="height: 10px"></div>` +
+        `<table>` +
+            `<tr>` +
+                `<td style="width: 50%"></td>` +
+                `<td>` +
+                    `<button style="width: 250px" id="return_to_sign_in" class="button-green button-green-hover">Return to Login Page</button>` +
+                `</td>` +
+                `<td style="width: 50%"></td>` +
+            `</tr>` +
+        `</table>`
+        , modal_width=650, display=true, include_close_button=false
+    );
+    $("#return_to_sign_in").click(function() {
+        window.location.href = get_AC_PATH();
+    }); 
+
+
+}
