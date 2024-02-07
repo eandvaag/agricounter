@@ -1634,10 +1634,6 @@ function show_image(image_name) {
     change_image(image_name + "/" + cur_region_index);
 }
 
-// function continue_with_save() {
-//     close_modal();
-//     save_annotations();
-// }
 
 function save_annotations(callback=null) {
 
@@ -1689,7 +1685,6 @@ function save_annotations(callback=null) {
     },
     
     function(response, status) {
-        
         if (response.error) {
             show_modal_message("Error", "An error occurred while saving: " + response.message);
         }
@@ -2411,7 +2406,6 @@ function submit_fine_tuning_request() {
 
 function submit_prediction_request_confirmed(image_list, region_list, save_result, result_regions_only, calculate_vegetation_coverage) {
 
-    // disable_green_buttons(["request_result_button", "predict_single_button", "predict_all_button"]);
     disable_model_actions();
     close_modal();
 
@@ -4119,13 +4113,8 @@ $(document).ready(function() {
 
 
     $("#use_predictions_button").click(function() {
-        $("#modal_head").empty();
-        $("#modal_body").empty();
-    
-        $("#modal_head").append(
-        `<span class="close close-hover" id="modal_close">&times;</span>` +
-        `<p>Are you sure?</p>`);
-    
+
+
         let navigation_type = $('#navigation_dropdown').val();
         let roi;
         if (navigation_type === "images") {
@@ -4144,22 +4133,31 @@ $(document).ready(function() {
             object_str = (metadata["object_classes"][cur_class_ind]).toLowerCase();
         }
 
-        $("#modal_body").append(`<p id="modal_message" align="left"></p>`);
-        $("#modal_message").html("This action will remove all existing " + object_str + " annotations for this " + roi + ".");
 
-        $("#modal_body").append(`<div id="modal_button_container">
-        <button class="button-green button-green-hover" `+
-        `style="width: 200px" onclick="confirmed_use_predictions()">Continue</button>` +
-        `<div style="display: inline-block; width: 10px"></div>` +
-        `<button class="button-green button-green-hover" ` +
-        `style="width: 200px" onclick="close_modal()">Cancel</button>` +
-        `</div>`);
-        
-        $("#modal_close").click(function() {
-            close_modal();
-        });
-    
-        $("#modal").css("display", "block");
+        show_modal_message(
+            `Are you sure?`,
+            `<div>This action will remove all existing ${object_str} annotations for this ${roi}.</div>` +
+            `<div style="height: 10px"></div>` +
+            `<table>` +
+                `<tr>` +
+                    `<td style="width: 50%"></td>` +
+                    `<td>` +
+                        `<button class="button-green button-green-hover" `+
+                            `style="width: 150px" onclick="confirmed_use_predictions()">Continue` +
+                        `</button>` +
+                    `</td>` +
+                    `<td>` +
+                        `<div style="width: 10px"></div>` +
+                    `</td>` +
+                    `<td>` +
+                        `<button class="button-green button-green-hover" ` +
+                            `style="width: 150px" onclick="close_modal()">Cancel` +
+                        `</button>` +
+                    `</td>` +
+                    `<td style="width: 50%"></td>` +
+                `</tr>` +
+            `</table>`
+        );
     });
 
     
@@ -4631,24 +4629,6 @@ function excess_green_values_are_all_the_same() {
     return true;
 }
 
-function resize_window() {
-    let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
-    $("#seadragon_viewer").height(new_viewer_height);
-    $("#chart_container").height(new_viewer_height);
-    let image_name_table_height = $("#image_name_table").height();
-    let new_navigation_table_container_height = new_viewer_height - image_name_table_height - 365;
-    let min_navigation_table_height = 370;
-    if (new_navigation_table_container_height < min_navigation_table_height) {
-        new_navigation_table_container_height = min_navigation_table_height;
-    }
-    $("#navigation_table_container").height(new_navigation_table_container_height);
-}
-
-
-$(window).resize(function() {
-    resize_window();
-});
-
 
 
 function gridview_onRedraw() {
@@ -5071,3 +5051,26 @@ function grid_keydown_handler(e) {
         $("#prev_tile_button").click();
     }
 }
+
+
+function resize_window() {
+    let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
+    $("#seadragon_viewer").height(new_viewer_height);
+    $("#chart_container").height(new_viewer_height);
+    let image_name_table_height = $("#image_name_table").height();
+    let new_navigation_table_container_height = new_viewer_height - image_name_table_height - 365;
+    let min_navigation_table_height = 370;
+    if (new_navigation_table_container_height < min_navigation_table_height) {
+        new_navigation_table_container_height = min_navigation_table_height;
+    }
+    $("#navigation_table_container").height(new_navigation_table_container_height);
+}
+
+
+$(window).resize(function() {
+    resize_window();
+});
+
+window.onoffline = (event) => {
+    display_offline_modal();
+};

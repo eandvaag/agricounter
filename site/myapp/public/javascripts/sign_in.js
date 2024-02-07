@@ -15,7 +15,6 @@ $(document).ready(function(){
         },
         
         function(response, status) {
-
             if (response.error) {
                 $("#error_message").html("Sorry, an error occurred during the sign-in.");
                 $("#error_message").show();
