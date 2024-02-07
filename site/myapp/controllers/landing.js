@@ -859,7 +859,7 @@ exports.get_workspace = function(req, res, next) {
 
             let prediction_dir = path.join(image_set_dir, "model", "prediction");
             let predictions = {};
-            glob(path.join(prediction_dir, "images", "*"), function(error, image_prediction_dirs) {
+            glob(path.join(prediction_dir, "*"), function(error, image_prediction_dirs) {
 
                 if (error) {
                     console.log(error);
@@ -1599,6 +1599,7 @@ exports.post_workspace = async function(req, res, next) {
 
 
             for (let annotation_key of ["regions_of_interest", "fine_tuning_regions", "test_regions"]) {
+                download_annotations[image_name][annotation_key] = [];
                 for (let i = 0; i < annotations[image_name][annotation_key].length; i++) {
                     let download_region = [];
                     for (let j = 0; j < annotations[image_name][annotation_key][i].length; j++) {

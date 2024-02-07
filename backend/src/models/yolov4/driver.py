@@ -205,16 +205,57 @@ def update_loss_record(loss_record, cur_loss):
 
 def get_number_of_prediction_batches(request, patch_size, overlap_px, config):
 
+    start_time = time.time()
+
     num_batches = 0
     for i in range(len(request["image_names"])):
+
         for region in request["regions"][i]:
+            num_patches = 0
 
-            bbox_region = poly_utils.get_poly_bbox(region)
+            region_bbox = poly_utils.get_poly_bbox(region)
 
-            region_width = bbox_region[3] - bbox_region[1]
-            region_height = bbox_region[2] - bbox_region[0]
+            region_width = region_bbox[3] - region_bbox[1]
+            region_height = region_bbox[2] - region_bbox[0]
 
             incr = patch_size - overlap_px
+
+
+            # col_covered = False
+            # patch_min_y = region_bbox[0]
+            # while not col_covered:
+            #     patch_max_y = patch_min_y + patch_size
+            #     if patch_max_y >= region_bbox[2]:
+            #         col_covered = True
+
+            #     row_covered = False
+            #     patch_min_x = region_bbox[1]
+            #     while not row_covered:
+            #         patch_max_x = patch_min_x + patch_size
+            #         if patch_max_x >= region_bbox[3]:
+            #             row_covered = True
+
+
+            #         patch_poly = [
+            #             [patch_min_y, patch_min_x],
+            #             [patch_min_y, patch_max_x],
+            #             [patch_max_y, patch_max_x],
+            #             [patch_max_y, patch_min_x]
+            #         ]
+            #         intersects, _ = poly_utils.get_intersection_polys(region, patch_poly)
+            #         if intersects:
+            #             num_patches += 1
+
+
+            #         patch_min_x += (patch_size - overlap_px)
+
+            #     patch_min_y += (patch_size - overlap_px)          
+
+
+            # num_batches += m.ceil(num_patches / config["inference"]["batch_size"])
+
+
+
             w_covered = max(region_width - patch_size, 0)
             num_w_patches = m.ceil(w_covered / incr) + 1
 
@@ -224,8 +265,14 @@ def get_number_of_prediction_batches(request, patch_size, overlap_px, config):
             num_patches = num_w_patches * num_h_patches
 
             num_batches += m.ceil(num_patches / config["inference"]["batch_size"])
+    
+
+    end_time = time.time()
+    elapsed = end_time - start_time
+    print("Took {} seconds to figure out the number of batches.".format(elapsed))
+
     return num_batches
-        
+
 
 
 def save_random_weights(num_classes, out_path):
@@ -732,27 +779,10 @@ def train(job):
             val_loss_metric.reset_states()
 
 
-
-
-        # cur_training_loss_is_best =  #update_loss_record(loss_record, cur_training_loss)
         yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
         if cur_epoch_is_best(loss_record, job):
             yolov4.save_weights(filepath=best_weights_path, save_format="h5")
 
-
-
-
-
-        # cur_training_loss = float(train_loss_metric.result())
-
-
-        # cur_training_loss_is_best = update_loss_record(loss_record, cur_training_loss)
-        # yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
-        # if cur_training_loss_is_best:
-        #     yolov4.save_weights(filepath=best_weights_path, save_format="h5")
-
-
-        # train_loss_metric.reset_states()
 
         json_io.save_json(loss_record_path, loss_record)
 
@@ -907,10 +937,6 @@ def fine_tune(job):
 
     while True:
 
-
-        # loss_record_path = os.path.join(training_dir, "loss_record.json")
-        # loss_record = json_io.load_json(loss_record_path)
-
         if job["training_regime"] == "fixed_num_epochs":
 
             num_epochs_trained = len(loss_record["train"]) - 1
@@ -980,15 +1006,10 @@ def fine_tune(job):
 
 
 
-
-        # cur_training_loss_is_best =  #update_loss_record(loss_record, cur_training_loss)
         yolov4.save_weights(filepath=cur_weights_path, save_format="h5")
         if cur_epoch_is_best(loss_record, job):
             yolov4.save_weights(filepath=best_weights_path, save_format="h5")
 
-
-
-        # json_io.save_json(loss_record_path, loss_record)
         
 
 

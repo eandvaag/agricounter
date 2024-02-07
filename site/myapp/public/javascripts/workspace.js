@@ -3695,7 +3695,6 @@ $(document).ready(function() {
         }
         if (prediction_image_names !== "") {
             
-
             $.post($(location).attr('href'),
             {
                 action: "retrieve_predictions",

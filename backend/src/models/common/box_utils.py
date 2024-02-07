@@ -24,8 +24,10 @@ def get_intersection_rect(box_1, box_2):
 
 
 def swap_xy_np(boxes):
-
-    return np.stack([boxes[:, 1], boxes[:, 0], boxes[:, 3], boxes[:, 2]], axis=-1)
+    if boxes.size == 0:
+        return boxes
+    else:
+        return np.stack([boxes[:, 1], boxes[:, 0], boxes[:, 3], boxes[:, 2]], axis=-1)
 
 
 def swap_xy_tf(boxes):
@@ -37,7 +39,10 @@ def swap_xy_tf(boxes):
     Returns:
       swapped boxes with shape same as that of boxes.
     """
-    return tf.stack([boxes[:, 1], boxes[:, 0], boxes[:, 3], boxes[:, 2]], axis=-1)
+    if tf.size(boxes) == 0:
+        return boxes
+    else:
+        return tf.stack([boxes[:, 1], boxes[:, 0], boxes[:, 3], boxes[:, 2]], axis=-1)
 
 
 def convert_to_xywh_tf(boxes):
