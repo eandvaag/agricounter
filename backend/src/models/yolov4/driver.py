@@ -9,11 +9,10 @@ import math as m
 import numpy as np
 import tensorflow as tf
 import uuid
-import cv2
 from osgeo import gdal
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
-
+from shapely import Polygon, STRtree
 
 from io_utils import json_io
 
@@ -30,16 +29,6 @@ from models.yolov4.loss import YOLOv4Loss
 from models.yolov4.yolov4 import YOLOv4, YOLOv4Tiny
 import models.yolov4.data_load as data_load
 from models.yolov4.encode import Decoder
-
-# VALIDATION_IMPROVEMENT_TOLERANCE = 10
-EPOCHS_WITHOUT_IMPROVEMENT_TOLERANCE = 10 #20
-TRAINING_TIME_SESSION_CEILING = 5000000           # number of seconds before current session is stopped in order to give others a chance
-
-TRAIN_FOR_FIXED_NUMBER_OF_EPOCHS = False #True #True #False
-NUM_EPOCHS_TO_TRAIN = 1000 #200
-# MAX_IN_MEMORY_IMAGE_SIZE = 5e+8     # 500 megabytes
-
-
 
 
 
@@ -203,58 +192,25 @@ def update_loss_record(loss_record, cur_loss):
 
 
 
-def get_number_of_prediction_batches(request, patch_size, overlap_px, config):
+
+def get_prediction_patches(request, patch_size, overlap_px, config):
+
+    incr = patch_size - overlap_px
 
     start_time = time.time()
-
     num_batches = 0
-    for i in range(len(request["image_names"])):
-
+    num_patches = 0
+    all_patch_coords = {}
+    region_bboxes = {}
+    for i, image_name in enumerate(request["image_names"]):
+        all_patch_coords[image_name] = []
+        region_bboxes[image_name] = []
         for region in request["regions"][i]:
-            num_patches = 0
 
             region_bbox = poly_utils.get_poly_bbox(region)
 
-            region_width = region_bbox[3] - region_bbox[1]
             region_height = region_bbox[2] - region_bbox[0]
-
-            incr = patch_size - overlap_px
-
-
-            # col_covered = False
-            # patch_min_y = region_bbox[0]
-            # while not col_covered:
-            #     patch_max_y = patch_min_y + patch_size
-            #     if patch_max_y >= region_bbox[2]:
-            #         col_covered = True
-
-            #     row_covered = False
-            #     patch_min_x = region_bbox[1]
-            #     while not row_covered:
-            #         patch_max_x = patch_min_x + patch_size
-            #         if patch_max_x >= region_bbox[3]:
-            #             row_covered = True
-
-
-            #         patch_poly = [
-            #             [patch_min_y, patch_min_x],
-            #             [patch_min_y, patch_max_x],
-            #             [patch_max_y, patch_max_x],
-            #             [patch_max_y, patch_min_x]
-            #         ]
-            #         intersects, _ = poly_utils.get_intersection_polys(region, patch_poly)
-            #         if intersects:
-            #             num_patches += 1
-
-
-            #         patch_min_x += (patch_size - overlap_px)
-
-            #     patch_min_y += (patch_size - overlap_px)          
-
-
-            # num_batches += m.ceil(num_patches / config["inference"]["batch_size"])
-
-
+            region_width = region_bbox[3] - region_bbox[1]
 
             w_covered = max(region_width - patch_size, 0)
             num_w_patches = m.ceil(w_covered / incr) + 1
@@ -262,16 +218,30 @@ def get_number_of_prediction_batches(request, patch_size, overlap_px, config):
             h_covered = max(region_height - patch_size, 0)
             num_h_patches = m.ceil(h_covered / incr) + 1
 
-            num_patches = num_w_patches * num_h_patches
+            min_coords = np.array(list(np.ndindex(num_h_patches, num_w_patches))) * incr
+            patch_coords = np.hstack([min_coords, min_coords + patch_size])
 
-            num_batches += m.ceil(num_patches / config["inference"]["batch_size"])
-    
+            polys = np.stack([patch_coords[:, 0:2], patch_coords[:, 1:3], patch_coords[:, 2:4], patch_coords[:, [3,0]]], axis=1)
+
+            s = STRtree([Polygon(x) for x in polys])
+            result = s.query(Polygon(region), predicate="intersects")
+
+            num_patches_for_region = len(result)
+
+            num_patches += num_patches_for_region
+
+            num_batches += m.ceil(num_patches_for_region / config["inference"]["batch_size"])
+
+            all_patch_coords[image_name].append(patch_coords[result])
+            region_bboxes[image_name].append(region_bbox)
+            
 
     end_time = time.time()
     elapsed = end_time - start_time
-    print("Took {} seconds to figure out the number of batches.".format(elapsed))
-
-    return num_batches
+    print("Determined there are {} patches and {} batches in {} seconds.".format(
+        num_patches, num_batches, elapsed))
+    
+    return all_patch_coords, region_bboxes, num_batches
 
 
 
@@ -350,8 +320,7 @@ def predict(job):
     patch_overlap_percent = 50
     overlap_px = int(m.floor(patch_size * (patch_overlap_percent / 100)))
 
-
-    num_batches = get_number_of_prediction_batches(job, patch_size, overlap_px, config)
+    all_patch_data, region_bboxes, num_batches = get_prediction_patches(job, patch_size, overlap_px, config)
     percent_complete = 0
     batch_index = 0
     for image_index, image_name in enumerate(job["image_names"]):
@@ -364,161 +333,147 @@ def predict(job):
         else:
             image_array = image.load_image_array()
 
-        for region in job["regions"][image_index]:
+        for region_index, region in enumerate(job["regions"][image_index]):
 
-            region_bbox = poly_utils.get_poly_bbox(region)
+            region_bbox = region_bboxes[image_name][region_index]
+            region_patch_coords = all_patch_data[image_name][region_index]
+
 
             batch_patch_arrays = []
             batch_ratios = []
             batch_patch_coords = []
 
-            col_covered = False
-            patch_min_y = region_bbox[0]
-            while not col_covered:
-                patch_max_y = patch_min_y + patch_size
-                max_content_y = patch_max_y
-                if patch_max_y >= region_bbox[2]:
-                    max_content_y = region_bbox[2]
-                    col_covered = True
+            for patch_index in range(len(region_patch_coords)):
 
-                row_covered = False
-                patch_min_x = region_bbox[1]
-                while not row_covered:
-
-                    patch_max_x = patch_min_x + patch_size
-                    max_content_x = patch_max_x
-                    if patch_max_x >= region_bbox[3]:
-                        max_content_x = region_bbox[3]
-                        row_covered = True
+                patch_coords = region_patch_coords[patch_index]
+                patch_min_y = patch_coords[0]
+                patch_min_x = patch_coords[1]
+                patch_max_y = patch_coords[2]
+                patch_max_x = patch_coords[3]
 
 
-                    
-                    patch_coords = [patch_min_y, patch_min_x, patch_max_y, patch_max_x]
+                max_content_y = min(patch_max_y, region_bbox[2])
+                max_content_x = min(patch_max_x, region_bbox[3])
 
-                    patch_poly = [
-                        [patch_min_y, patch_min_x],
-                        [patch_min_y, patch_max_x],
-                        [patch_max_y, patch_max_x],
-                        [patch_max_y, patch_min_x]
-                    ]
-                    intersects, intersect_regions = poly_utils.get_intersection_polys(region, patch_poly)
+                patch_poly = [
+                    [patch_min_y, patch_min_x],
+                    [patch_min_y, patch_max_x],
+                    [patch_max_y, patch_max_x],
+                    [patch_max_y, patch_min_x]
+                ]
 
-                    if intersects:
+                intersects, intersect_regions = poly_utils.get_intersection_polys(region, patch_poly)
+                if intersects:
 
-                        patch_array = np.zeros(shape=(patch_size, patch_size, 3), dtype=np.uint8)
-                        if is_ortho:
-                            image_array = ds.ReadAsArray(patch_min_x, patch_min_y, (max_content_x-patch_min_x), (max_content_y-patch_min_y))
-                            image_array = np.transpose(image_array, (1, 2, 0))
-                            patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array
+                    patch_array = np.zeros(shape=(patch_size, patch_size, 3), dtype=np.uint8)
+                    if is_ortho:
+                        image_array = ds.ReadAsArray(patch_min_x, patch_min_y, (max_content_x-patch_min_x), (max_content_y-patch_min_y))
+                        image_array = np.transpose(image_array, (1, 2, 0))
+                        patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array
+                    else:
+                        patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array[patch_min_y:max_content_y, patch_min_x:max_content_x]
+
+                        tmp_img = PILImage.new("L", (patch_size, patch_size))
+
+                    for intersect_region in intersect_regions:
+                        polygon = []
+                        for coord in intersect_region:
+                            polygon.append((min(patch_size, max(0, round(coord[1] - patch_min_x))), 
+                                            min(patch_size, max(0, round(coord[0] - patch_min_y)))))
+
+                        if len(polygon) == 1:
+                            PILImageDraw.Draw(tmp_img).point(polygon, fill=1)
                         else:
-                            patch_array[0:(max_content_y-patch_min_y), 0:(max_content_x-patch_min_x)] = image_array[patch_min_y:max_content_y, patch_min_x:max_content_x]
+                            PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
+                    mask = np.array(tmp_img) != 1
+                    patch_array[mask] = [0, 0, 0]
 
-                            tmp_img = PILImage.new("L", (patch_size, patch_size))
+                    patch_array = tf.cast(patch_array, dtype=tf.float32)
+                    patch_ratio = np.array(patch_array.shape[:2]) / np.array(config["arch"]["input_image_shape"][:2])
+                    patch_array = tf.image.resize(images=patch_array, size=config["arch"]["input_image_shape"][:2])
 
-                        for intersect_region in intersect_regions:
-                            polygon = []
-                            for coord in intersect_region:
-                                polygon.append((min(patch_size, max(0, round(coord[1] - patch_min_x))), 
-                                                min(patch_size, max(0, round(coord[0] - patch_min_y)))))
-
-                            if len(polygon) == 1:
-                                PILImageDraw.Draw(tmp_img).point(polygon, fill=1)
-                            else:
-                                PILImageDraw.Draw(tmp_img).polygon(polygon, outline=1, fill=1)
-                        mask = np.array(tmp_img) != 1
-                        patch_array[mask] = [0, 0, 0]
-
-
-
-                        patch_array = tf.cast(patch_array, dtype=tf.float32)
-                        patch_ratio = np.array(patch_array.shape[:2]) / np.array(config["arch"]["input_image_shape"][:2])
-                        patch_array = tf.image.resize(images=patch_array, size=config["arch"]["input_image_shape"][:2])
-
-                        batch_patch_coords.append(patch_coords)
-                        batch_patch_arrays.append(patch_array)
-                        batch_ratios.append(patch_ratio)
-
-                    if len(batch_patch_arrays) == config["inference"]["batch_size"] or (row_covered and col_covered):
-                        
-                        batch_patch_arrays = tf.stack(batch_patch_arrays, axis=0)
-                        batch_size = batch_patch_arrays.shape[0]
-                        
-                        pred = yolov4(batch_patch_arrays, training=False)
-                        detections = decoder(pred)
-
-                        batch_pred_bbox = [tf.reshape(x, (batch_size, -1, tf.shape(x)[-1])) for x in detections]
-
-                        batch_pred_bbox = tf.concat(batch_pred_bbox, axis=1)
-
-
-                        for i in range(batch_size):
-
-                            pred_bbox = batch_pred_bbox[i]
-                            ratio = batch_ratios[i]
-                            patch_coords = batch_patch_coords[i]
-
-
-                            if store_patch_predictions:
-                                pred_patch_abs_boxes, pred_patch_scores, _ = \
-                                    post_process_sample(pred_bbox, ratio, patch_coords, config, region_bbox, apply_nms=False, score_threshold=0.01) #config["inference"]["score_thresh"])
-                                
-                                if image_name not in patch_predictions:
-                                    patch_predictions[image_name] = {
-                                        "patch_coords": [],
-                                        "patch_boxes": [],
-                                        "patch_scores": []
-                                    }
-                                
-                                patch_predictions[image_name]["patch_coords"].append(patch_coords)
-                                patch_predictions[image_name]["patch_boxes"].append(pred_patch_abs_boxes.tolist())
-                                patch_predictions[image_name]["patch_scores"].append(pred_patch_scores.tolist())
-
-                            
-
-                            pred_patch_abs_boxes, pred_patch_scores, pred_patch_classes = \
-                                    post_process_sample(pred_bbox, ratio, patch_coords, config, region_bbox, score_threshold=0.01) #config["inference"]["score_thresh"])
-
-
-
-                            if image_name not in predictions:
-                                predictions[image_name] = {
-                                        "boxes": [],
-                                        "scores": [],
-                                        "classes": [],    
-                                }
-
-
-                            pred_image_abs_boxes, pred_image_scores, pred_image_classes = \
-                                driver_utils.get_image_detections(pred_patch_abs_boxes, 
-                                                                pred_patch_scores,
-                                                                pred_patch_classes,
-                                                                patch_coords, 
-                                                                region_bbox,
-                                                                trim=True)
-
-                            predictions[image_name]["boxes"].extend(pred_image_abs_boxes.tolist())
-                            predictions[image_name]["scores"].extend(pred_image_scores.tolist())
-                            predictions[image_name]["classes"].extend(pred_image_classes.tolist())
-
-
-                        batch_patch_arrays = []
-                        batch_ratios = []
-                        batch_patch_coords = []
-
-
-                        batch_index += 1
-                        prev_percent_complete = percent_complete
-                        percent_complete = round((batch_index / num_batches) * 100)
-                        if m.floor(percent_complete) > m.floor(prev_percent_complete):
-                            emit.set_image_set_status(username, farm_name, field_name, mission_date, 
-                                                      {"state_name": emit.PREDICTING, 
-                                                       "progress": str(percent_complete) + "% Complete"}) 
+                    batch_patch_coords.append(patch_coords)
+                    batch_patch_arrays.append(patch_array)
+                    batch_ratios.append(patch_ratio)
+                else:
+                    logger.info("Unexpected non-intersection (patch: {}, region: {})".format(patch_coords, region))
 
                 
-                    patch_min_x += (patch_size - overlap_px)
+                if len(batch_patch_arrays) == config["inference"]["batch_size"] or patch_index == len(region_patch_coords) - 1:
+                    
+                    batch_patch_arrays = tf.stack(batch_patch_arrays, axis=0)
+                    batch_size = batch_patch_arrays.shape[0]
+                    
+                    pred = yolov4(batch_patch_arrays, training=False)
+                    detections = decoder(pred)
 
-                patch_min_y += (patch_size - overlap_px)            
+                    batch_pred_bbox = [tf.reshape(x, (batch_size, -1, tf.shape(x)[-1])) for x in detections]
 
+                    batch_pred_bbox = tf.concat(batch_pred_bbox, axis=1)
+
+
+                    for i in range(batch_size):
+
+                        pred_bbox = batch_pred_bbox[i]
+                        ratio = batch_ratios[i]
+                        patch_coords = batch_patch_coords[i]
+
+
+                        if store_patch_predictions:
+                            pred_patch_abs_boxes, pred_patch_scores, _ = \
+                                post_process_sample(pred_bbox, ratio, patch_coords, config, region_bbox, apply_nms=False, score_threshold=0.01) #config["inference"]["score_thresh"])
+                            
+                            if image_name not in patch_predictions:
+                                patch_predictions[image_name] = {
+                                    "patch_coords": [],
+                                    "patch_boxes": [],
+                                    "patch_scores": []
+                                }
+                            
+                            patch_predictions[image_name]["patch_coords"].append(patch_coords)
+                            patch_predictions[image_name]["patch_boxes"].append(pred_patch_abs_boxes.tolist())
+                            patch_predictions[image_name]["patch_scores"].append(pred_patch_scores.tolist())
+
+                        
+
+                        pred_patch_abs_boxes, pred_patch_scores, pred_patch_classes = \
+                                post_process_sample(pred_bbox, ratio, patch_coords, config, region_bbox, score_threshold=0.01) #config["inference"]["score_thresh"])
+
+
+
+                        if image_name not in predictions:
+                            predictions[image_name] = {
+                                    "boxes": [],
+                                    "scores": [],
+                                    "classes": [],    
+                            }
+
+
+                        pred_image_abs_boxes, pred_image_scores, pred_image_classes = \
+                            driver_utils.get_image_detections(pred_patch_abs_boxes, 
+                                                            pred_patch_scores,
+                                                            pred_patch_classes,
+                                                            patch_coords, 
+                                                            region_bbox,
+                                                            trim=True)
+
+                        predictions[image_name]["boxes"].extend(pred_image_abs_boxes.tolist())
+                        predictions[image_name]["scores"].extend(pred_image_scores.tolist())
+                        predictions[image_name]["classes"].extend(pred_image_classes.tolist())
+
+
+                    batch_patch_arrays = []
+                    batch_ratios = []
+                    batch_patch_coords = []
+
+
+                    batch_index += 1
+                    prev_percent_complete = percent_complete
+                    percent_complete = round((batch_index / num_batches) * 100)
+                    if m.floor(percent_complete) > m.floor(prev_percent_complete):
+                        emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                                                    {"state_name": emit.PREDICTING, 
+                                                    "progress": str(percent_complete) + "% Complete"}) 
 
     end_time = time.time()
 

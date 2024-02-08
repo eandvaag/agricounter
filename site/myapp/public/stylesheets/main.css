@@ -151,7 +151,7 @@ hr {
   border: 1px solid white;
   color: white;
   font-size: 16px;
-  transition: all 0.5s;
+  transition: all 0.25s;
   cursor: pointer;
   padding: 5px;
   margin: 0px 5px;
@@ -191,7 +191,7 @@ hr {
   text-align: center;
   font-size: 18px;
   padding: 5px;
-  transition: all 0.5s;
+  transition: all 0.25s;
   cursor: pointer;
 }
 
@@ -200,7 +200,7 @@ hr {
   cursor: pointer;
   display: inline-block;
   position: relative;
-  transition: 0.5s;
+  transition: 0.25s;
 }
 
 .button-green span:after {
@@ -209,7 +209,7 @@ hr {
   opacity: 0;
   top: 0;
   right: -20px;
-  transition: 0.5s;
+  transition: 0.25s;
 }
 
 /* button hover is a separate class so that hover animation 
@@ -236,7 +236,7 @@ hr {
   text-align: center;
   font-size: 18px;
   padding: 5px;
-  transition: all 0.5s;
+  transition: all 0.25s;
   cursor: pointer;
 }
 
@@ -245,7 +245,7 @@ hr {
   cursor: pointer;
   display: inline-block;
   position: relative;
-  transition: 0.5s;
+  transition: 0.25s;
 }
 
 .button-red span:after {
@@ -254,7 +254,7 @@ hr {
   opacity: 0;
   top: 0;
   right: -20px;
-  transition: 0.5s;
+  transition: 0.25s;
 }
 
 /* button hover is a separate class so that hover animation 
@@ -317,12 +317,12 @@ li.nav a.nav {
   outline: none;
   color: inherit;
   text-decoration: none;
-  transition: 0.5s;
+  transition: 0.25s;
 }
 
 li.nav a.nav:hover {
   color: white;
-  transition: 0.5s;
+  transition: 0.25s;
   background-color:  #4c6645;
   cursor:  pointer;
 }
@@ -386,6 +386,17 @@ input[type="date"] {
   width:  90%;
   margin: 0px 0px;
 }
+
+.no-transition {
+  -o-transition: none !important;
+  -ms-transition: none !important;
+  -moz-transition: none !important;
+  -webkit-transition: none !important;
+  transition: none !important;
+}
+
+
+
 
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
@@ -526,7 +537,7 @@ textarea {
   background-color: #998866;
   color: white;
   text-decoration: none;
-  transition: 0.5s;
+  transition: 0.25s;
   cursor: pointer;
 }
 
@@ -734,7 +745,7 @@ textarea {
   padding: 0px 4px;
   margin: 0px;
   margin-top: 4px;
-  transition: all 0.5s;
+  transition: all 0.25s;
 
 }
 

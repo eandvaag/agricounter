@@ -8,6 +8,7 @@ import threading
 import numpy as np
 import math as m
 import random
+import urllib3
 
 from flask import Flask, request
 
@@ -1035,7 +1036,7 @@ if __name__ == "__main__":
     # # gpus = None
 
 
-    # urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
     logging.basicConfig(level=logging.INFO)
