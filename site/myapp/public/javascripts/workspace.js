@@ -3361,79 +3361,27 @@ function add_prediction_buttons() {
     }
 
 
-    $("#predict_container").empty();
+    $("#predict_single_button").addClass("no-transition");
+    $("#predict_all_button").addClass("no-transition");
+
     if (multiple) {
-        $("#predict_container").append(
-            `<button id="predict_single_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px">${single_text}</button>` +
-            `<button id="predict_all_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 0px 30px 30px 0px; border-left: none">${all_text}</button>`
-        );
+        $("#predict_single_button").css({"width": "130px", "border-radius": "30px 0px 0px 30px"});
+        $("#predict_single_button").text(single_text);
+        $("#predict_all_button").css({"width": "130px", "border-radius": "0px 30px 30px 0px", "border-left": "none"});
+        $("#predict_all_button").text(all_text);
+        $("#predict_all_button").show();
     }
     else {
-        $("#predict_container").append(
-            `<button id="predict_single_button" class="button-green button-green-hover" style="font-size: 16px; width: 260px">${single_text}</button>` 
-        );
+        $("#predict_single_button").css({"width": "260px", "border-radius": "30px 30px 30px 30px"});
+        $("#predict_single_button").text(single_text);
+        $("#predict_all_button").hide();
     }
 
-    $("#predict_single_button").click(function() {
-        if (model_unassigned) {
-            show_modal_message("No Model Selected", "A model must be selected before predictions can be generated.");
-        }
-        else {
-            let predict_single_callback = function() {
+    $("#predict_single_button")[0].offsetHeight;
+    $("#predict_all_button")[0].offsetHeight;
 
-                let navigation_type = $('#navigation_dropdown').val();
-                let image_list;
-                let region_list;
-                if (navigation_type === "images") {
-                    let image_width = metadata["images"][cur_img_name]["width_px"];
-                    let image_height = metadata["images"][cur_img_name]["height_px"];
-                    image_list = [cur_img_name];
-                    region_list = [[
-                        [
-                            [0, 0],
-                            [0, image_width],
-                            [image_height, image_width],
-                            [image_height, 0]
-                        ]
-                    ]];
-                }
-                else {
-                    image_list = [cur_img_name];
-                    let region = annotations[cur_img_name][navigation_type][cur_region_index];
-                    region_list = [[region]];
-                }
-    
-                submit_prediction_request_confirmed(image_list, region_list, false, false, false);
-
-            }
-            
-            save_annotations(predict_single_callback);
-
-
-        }
-    });
-
-    $("#predict_all_button").click(function() {
-        if (model_unassigned) {
-            show_modal_message("No Model Selected", "A model must be selected before predictions can be generated.");
-        }
-        else {
-            let predict_all_callback = function() {
-                let navigation_type = $('#navigation_dropdown').val();
-                let predict_on_images = navigation_type === "images";
-                let res = get_image_list_and_region_list_for_predicting_on_all(predict_on_images);
-                let image_list = res[0];
-                let region_list = res[1];
-                
-                submit_prediction_request_confirmed(image_list, region_list, false, false, false);
-            }
-
-            save_annotations(predict_all_callback);
-
-
-        }
-    });
-
+    $("#predict_single_button").removeClass("no-transition");
+    $("#predict_all_button").removeClass("no-transition");
 }
 
 function get_image_list_and_region_list_for_predicting_on_all(predict_on_images) {
@@ -4564,7 +4512,65 @@ $(document).ready(function() {
         viewer.raiseEvent('update-viewport');
     });
 
+    $("#predict_single_button").click(function() {
+        if (model_unassigned) {
+            show_modal_message("No Model Selected", "A model must be selected before predictions can be generated.");
+        }
+        else {
+            let predict_single_callback = function() {
 
+                let navigation_type = $('#navigation_dropdown').val();
+                let image_list;
+                let region_list;
+                if (navigation_type === "images") {
+                    let image_width = metadata["images"][cur_img_name]["width_px"];
+                    let image_height = metadata["images"][cur_img_name]["height_px"];
+                    image_list = [cur_img_name];
+                    region_list = [[
+                        [
+                            [0, 0],
+                            [0, image_width],
+                            [image_height, image_width],
+                            [image_height, 0]
+                        ]
+                    ]];
+                }
+                else {
+                    image_list = [cur_img_name];
+                    let region = annotations[cur_img_name][navigation_type][cur_region_index];
+                    region_list = [[region]];
+                }
+    
+                submit_prediction_request_confirmed(image_list, region_list, false, false, false);
+
+            }
+            
+            save_annotations(predict_single_callback);
+
+
+        }
+    });
+
+    $("#predict_all_button").click(function() {
+        if (model_unassigned) {
+            show_modal_message("No Model Selected", "A model must be selected before predictions can be generated.");
+        }
+        else {
+            let predict_all_callback = function() {
+                let navigation_type = $('#navigation_dropdown').val();
+                let predict_on_images = navigation_type === "images";
+                let res = get_image_list_and_region_list_for_predicting_on_all(predict_on_images);
+                let image_list = res[0];
+                let region_list = res[1];
+                
+                submit_prediction_request_confirmed(image_list, region_list, false, false, false);
+            }
+
+            save_annotations(predict_all_callback);
+
+
+        }
+    });
 
 });
 
