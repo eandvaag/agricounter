@@ -262,7 +262,7 @@ function edit_metadata(make, model) {
 function add_sensor_fields(left_col_width_px) {
 
     let message =
-        `<table class="transparent_table">` +
+        `<table>` +
         `<tr>` +
             `<td>` + 
                 `<div class="table_head" style="width: ${left_col_width_px}; padding-right: 10px">Sensor Width (mm)</div>` +
@@ -332,7 +332,7 @@ function add_sensor_metadata(make, model) {
 
     message = message + `<div style="height: 20px"></div>`;
 
-    message = message + `<table class="transparent_table"><tr>` +
+    message = message + `<table><tr>` +
     `<td>` +
     `<button class="button-black button-black-hover" style="width: 220px; height: 30px;" id="camera_add_button" ` +
     `onclick="add_camera('${make}', '${model}')">`+

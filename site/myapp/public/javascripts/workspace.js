@@ -17,8 +17,6 @@ let cur_region_index;
 let cur_nav_list;
 let cur_view;
 
-let cur_update_num = -1;
-
 let show_bookmarks = true;
 
 let cur_panel;
@@ -39,12 +37,8 @@ let selected_annotation = null;
 let cur_edit_layer = "annotation";
 
 
-let num_regions_fully_trained_on;
-
 let d_rgb;
 let rgb_ctx;
-
-let annotations_dropzone;
 
 let voronoi_data = {};
 
@@ -1335,9 +1329,9 @@ function create_viewer(viewer_id) {
     create_anno();
 
 
-    $("#seadragon_viewer").on("pointermove", function(event) {
+    $("#" + viewer_id).on("pointermove", function(event) {
         if (cur_panel === "annotation") {
-            $("#seadragon_viewer").css("cursor", "none");
+            $("#" + viewer_id).css("cursor", "none");
             cur_mouse_x = event.offsetX;
             cur_mouse_y = event.offsetY;
             overlay.clear();
@@ -1349,7 +1343,7 @@ function create_viewer(viewer_id) {
             }
         }
         else {
-            $("#seadragon_viewer").css("cursor", "default");
+            $("#" + viewer_id).css("cursor", "default");
         }
     });
     
@@ -1898,6 +1892,10 @@ async function show_prediction(change_image=false) {
     else {
         viewer.world.resetItems();
     }
+
+
+
+    
 }
 
 
@@ -1937,6 +1935,7 @@ function pan_viewport() {
     overlay.onOpen = function() {
 
         if (cur_bounds) {
+            console.log("THIS HAPPENED");
             withFastOSDAnimation(viewer.viewport, function() {
                 viewer.viewport.fitBounds(cur_bounds);
             });
@@ -4390,7 +4389,7 @@ $(document).ready(function() {
         );
 
         disable_green_buttons(["submit_annotations_button"]);
-        annotations_dropzone = new Dropzone("#annotations_dropzone", { 
+        let annotations_dropzone = new Dropzone("#annotations_dropzone", { 
             url: $(location).attr('href') + "/annotations_upload",
             autoProcessQueue: false,
             paramName: function(n) { return 'source_file[]'; },

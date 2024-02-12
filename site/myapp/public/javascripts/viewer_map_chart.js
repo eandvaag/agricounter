@@ -37,7 +37,7 @@ function draw_map_chart() {
     $("#chart_container").empty();
 
     $("#chart_container").append(
-        `<table class="transparent_table"><tr id="map_row"></tr></table>`);
+        `<table><tr id="map_row"></tr></table>`);
 
     if (include_annotated_map) {
 

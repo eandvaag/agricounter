@@ -91,6 +91,13 @@ sudo apt install libvips-tools
 sudo apt install libgdal-dev gdal-bin
 ```
 
+
+Create symlink for storing user data.
+```
+ln -s backend/src/usr site/myapp/usr
+```
+
+
 To start the Node.js application, execute the following command from the `site/myapp` directory:
 ```
 DEBUG=myapp:* npm start
