@@ -47,37 +47,42 @@ html
 
                     div(class="modal-footer")
 
-            div(id="body")
-                    
-                div(style="height: 8px")
+                
+            div(style="height: 8px")
 
-                div(class="main_container" style="padding-top: 2px")
+            div(class="main_container" style="padding-top: 2px")
 
-                    div
+                div
+                    table
+                        tr
+                            td(style="padding: 2px 0px")
+                                div(style="width: 300px")
+
+                            td(style="width: 100%")
+                                div(class="image-set-title" id="image_set_name")
+
+                            td(style="padding: 2px 0px")
+                                div(style="width: 300px")
+                                    table 
+                                        tr 
+                                            td(style="padding; 0px; width: 100%")
+                                            td(style="padding: 0px")
+                                                div(id="view_button_container" style="width: 140px;" hidden)
+                                                    button(style="width: 140px; margin: 0px;" id="view_button" class="button-black button-black-hover")
+                                                        div(id="view_button_text")
+                                                            i(class="fa-solid fa-location-dot" style="padding-right: 10px; color: white;")
+                                                            |
+                                                            | Map View
+
+                    div(id="image_view_container")
                         table
+
                             tr
-                                td 
-                                    div(style="width: 140px")
+                                td(class="dark-bg" style="vertical-align:top")
+                                    div(style="width: 280px;")
+                                        div(id="left_panel")
 
-                                td(style="width:100%")
-                                    h(id="image_set_name" class="header2" style="font-size: 22px; text-align: center; white-space: pre-wrap; color: white")
-                                td(style="padding: 0px")
-                                    div(style="width: 140px")
-                                        div(id="view_button_container" style="width: 140px" hidden)
-                                            button(style="width: 140px; margin: 0px;" id="view_button" class="button-black button-black-hover")
-                                                div(id="view_button_text")
-                                                    i(class="fa-solid fa-location-dot" style="padding-right: 10px; color: white;")
-                                                    |
-                                                    | Map View
-
-
-                        div(id="image_view_container")
-                            table
-
-                                tr
-                                    td(class="dark-bg" style="vertical-align:top")
-                                        div(style="width: 280px;")
-                                            div(id="left_panel")
+                                            div(id="non_nav_container")
 
                                                 div(style="font-size: 20px; height: 20px; word-wrap: break-word;" id="result_name")
                                                 div(style="height: 10px")
@@ -116,48 +121,49 @@ html
                                                             select(id="navigation_dropdown" class="nonfixed_dropdown" style="display: inline-block; width: 200px")
                                                                 option(value="images") Images 
 
+                                            div(id="navigation_table_container" class="scrollable_area" style="width: 280px; border: none; overflow-y: scroll")
+                                                table(id="navigation_table")
 
-                                                div(id="navigation_table_container" class="scrollable_area" style="width: 280px; border: none; overflow-y: scroll")
-                                                    table(id="navigation_table")
+                                            div(style="height: 10px")
 
-                                                div(style="height: 10px")
-
-                                                button(id="prev_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px") 
-                                                    i(class="fa-solid fa-circle-chevron-left" style="padding-right: 5px")
-                                                    | 
-                                                    | Previous 
-                                                button(id="next_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 0px 30px 30px 0px; margin-left: -1px") Next 
-                                                    i(class="fa-solid fa-circle-chevron-right" style="padding-left: 5px")                                 
-
-
-                                    td(style="width: 100%; border-left: none; border-right: none" class="viewer" id="seadragon_viewer")
+                                            button(id="prev_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px") 
+                                                i(class="fa-solid fa-circle-chevron-left" style="padding-right: 5px")
+                                                | 
+                                                | Previous 
+                                            button(id="next_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 0px 30px 30px 0px; margin-left: -1px") Next 
+                                                i(class="fa-solid fa-circle-chevron-right" style="padding-left: 5px")                                 
 
 
-                                    td(class="dark-bg" style="vertical-align:top")
-                                        div(style="width: 280px;")
-
-                                            div(id="right_panel")
-
-                                                h(class="header2" style="width: 170px; text-align: left; margin-top: -2px") Download
-                                                table 
-                                                    tr 
-                                                        td 
-                                                            button(id="view_download_options_button" class="button-green button-green-hover" style="font-size: 16px; width: 215px")
-                                                                i(class="fa-solid fa-file-arrow-down" style="padding-right: 5px")
-                                                                |
-                                                                | View Download Options
+                                td(style="width: 100%; border-left: none; border-right: none" class="viewer" id="seadragon_viewer")
 
 
-                                                hr
+                                td(class="dark-bg" style="vertical-align:top")
+                                    div(style="width: 280px;")
 
-                                                div(style="height: 40px")
-                                                    table
-                                                        td(style="text-align: left")
-                                                            h(class="header2") Class
-                                                        td(style="width: 100%")
-                                                            select(id="pred_class_select" class="nonfixed_dropdown")
+                                        div(id="control_panel")
 
-                                                hr
+                                            h(class="header2" style="width: 170px; text-align: left; margin-top: -2px") Download
+                                            table 
+                                                tr 
+                                                    td 
+                                                        button(id="view_download_options_button" class="button-green button-green-hover" style="font-size: 16px; width: 215px")
+                                                            i(class="fa-solid fa-file-arrow-down" style="padding-right: 5px")
+                                                            |
+                                                            | View Download Options
+
+
+                                            hr
+
+                                            div(style="height: 35px")
+                                                table
+                                                    td(style="text-align: left")
+                                                        h(class="header2") Class
+                                                    td(style="width: 100%")
+                                                        select(id="pred_class_select" class="nonfixed_dropdown")
+
+                                            hr
+
+                                            div(id="count_area")
 
                                                 div(style="height: 40px")
                                                     table
@@ -173,17 +179,19 @@ html
 
                                                 div(style="height: 15px")
                                                                 
-                                                div(id="count_chart" style="height: 95px; border:none")
+                                                div(id="count_chart" style="height: 90px; border:none")
                                                     div(id="count_chart_tooltip" class="tooltip" style="z-index: 10")
 
                                                 hr
-                                                
-                                                h(class="header2" style="text-align:left") Overlays
+                                            
+                                            h(class="header2" style="text-align:left") Overlays
 
-                                                table(id="overlays_table" style="margin-top: -22px;")
+                                            table(id="overlays_table" style="margin-top: -22px;")
 
 
-                                                hr
+                                            hr
+
+                                            div(id="score_area")
 
                                                 table
                                                     td(style="text-align: left")
@@ -200,147 +208,148 @@ html
                                                 div(id="score_chart" style="height: 175px; width: 275px; border:none")
                                                 
                                                 hr
+                                                
+                                            table
+                                                tr
+                                                    td
+                                                        div(style="width: 147px; text-align:left; margin: 2px 0px;" class="header2") Show Image
+                                                    td
+                                                        label(class="switch")
+                                                            input(id="image_visible_switch" type="checkbox" checked)
+                                                            span(class="switch_slider round")
+                                                    td(style="width: 100%")       
+                                                tr
+                                                    td
+                                                        div(style="width: 147px; text-align:left; margin: 2px 0px;" class="header2") Show Scores
+                                                    td
+                                                        label(class="switch")
+                                                            input(id="scores_switch" type="checkbox")
+                                                            span(class="switch_slider round")
+                                                    td(style="width: 100%")
+
+                                            table
+                                                tr
+                                                    td
+                                                        div(style="width: 50px; text-align:left" class="header2") Filter
+
+                                                    td
+                                                        button(id="score_down" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
+                                                            i(class="fa-solid fa-circle-chevron-left")
+                                                            
+                                                    td(style="width: 100%")
+                                                        div(class="slidecontainer" style="width: 100%")
+                                                            input(type="range" min="0.25" max="0.99" step="0.01" value="0.5" class="slider" id="confidence_slider" style="margin: 0px")
+
+                                                    td
+                                                        button(id="score_up" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
+                                                            i(class="fa-solid fa-circle-chevron-right")
                                                     
+                                                    td
+                                                        div(id="confidence_slider_val" style="margin-left: 2px; padding: 4px 2px; margin-top: -4px; border-radius: 5px; border: 1px solid white; width: 55px") > 0.50
+
+                                            //div(style="height: 5px")
+                                            //hr
+                                            hr(style="margin-top: 2px")
+
+
+                    div(id="map_view_container" hidden)
+                        table
+
+                            tr
+                                td(class="dark-bg" style="vertical-align:top;")
+                                    div(style="width: 280px")
+
+                                        div(id="map_builder_controls_container" hidden)
+
+                                            div(style="font-size: 20px") Map Builder Controls 
+                                            br
+
+                                            div(class="header2" style="text-align: left; padding-left: 10px") Class 
+                                            select(id="map_builder_class_select" class="nonfixed_dropdown")
+
+                                            br
+                                            br
+
+
+                                            div(class="header2" style="text-align: left; padding-left: 10px") Interpolation 
+                                            table(style="border: 1px solid white; width: 260px; padding-top: 15px; padding-left: 25px")
+                                                tr 
+                                                    td 
+                                                        label(class="custom_radio_container") Linear 
+                                                            input(type="radio" name="interpolation_radio" value="linear" checked)
+                                                            span(class="custom_radio")
+                                                    td 
+                                                        label(class="custom_radio_container") Nearest 
+                                                            input(type="radio" name="interpolation_radio" value="nearest")
+                                                            span(class="custom_radio")
+
+                                            br
+                                            
+                                            div(id="interpolated_value_controls")
+                                                div(class="header2" style="text-align: left; padding-left: 10px") Interpolated Value 
+                                                table(style="border: 1px solid white; width: 260px; padding-top: 15px; padding-left: 25px")
+                                                    tr 
+                                                        td 
+                                                            label(class="custom_radio_container") Number of Objects Per Square Metre
+                                                                input(type="radio" name="interpolated_value_radio" value="obj_density" checked)
+                                                                span(class="custom_radio")
+                                                    tr(id="map_perc_veg_row")
+                                                        td 
+                                                            label(class="custom_radio_container") Percent Vegetation
+                                                                input(type="radio" name="interpolated_value_radio" value="perc_veg")
+                                                                span(class="custom_radio")
+                                                    tr(id="map_perc_veg_obj_row")
+                                                        td 
+                                                            label(class="custom_radio_container") Percent Vegetation and Object
+                                                                input(type="radio" name="interpolated_value_radio" value="perc_veg_obj")
+                                                                span(class="custom_radio")
+                                                    tr(id="map_perc_veg_non_obj_row")
+                                                        td 
+                                                            label(class="custom_radio_container") Percent Vegetation and Non-Object
+                                                                input(type="radio" name="interpolated_value_radio" value="perc_veg_non_obj")
+                                                                span(class="custom_radio") 
+
+                                            br
+                                            div(id="map_tile_size_controls")
                                                 table
                                                     tr
                                                         td
-                                                            div(style="width: 147px; text-align:left; margin: 2px 0px;" class="header2") Show Image
-                                                        td
-                                                            label(class="switch")
-                                                                input(id="image_visible_switch" type="checkbox" checked)
-                                                                span(class="switch_slider round")
-                                                        td(style="width: 100%")       
-                                                    tr
-                                                        td
-                                                            div(style="width: 147px; text-align:left; margin: 2px 0px;" class="header2") Show Scores
-                                                        td
-                                                            label(class="switch")
-                                                                input(id="scores_switch" type="checkbox")
-                                                                span(class="switch_slider round")
+                                                            div(style="width: 80px; text-align:left; padding-left: 10px" class="header2") Tile Size
                                                         td(style="width: 100%")
-
                                                 table
                                                     tr
                                                         td
-                                                            div(style="width: 50px; text-align:left" class="header2") Filter
-
+                                                            div(style="width: 10px")
                                                         td
-                                                            button(id="score_down" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
+                                                            button(id="tile_size_down" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
                                                                 i(class="fa-solid fa-circle-chevron-left")
                                                                 
                                                         td(style="width: 100%")
                                                             div(class="slidecontainer" style="width: 100%")
-                                                                input(type="range" min="0.25" max="0.99" step="0.01" value="0.5" class="slider" id="confidence_slider" style="margin: 0px")
+                                                                input(type="range" class="slider" id="tile_size_slider" step="0.25"  style="margin: 0px")
 
                                                         td
-                                                            button(id="score_up" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
+                                                            button(id="tile_size_up" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
                                                                 i(class="fa-solid fa-circle-chevron-right")
                                                         
                                                         td
-                                                            div(id="confidence_slider_val" style="margin-left: 2px; padding: 4px 2px; margin-top: -4px; border-radius: 5px; border: 1px solid white; width: 55px") > 0.50
+                                                            div(id="tile_size_slider_val" style="padding: 4px 2px; margin-top: -4px; border-radius: 5px; border: 1px solid white; width: 65px; margin-left: 4px;") 
+                                                        td
+                                                            div(style="width: 10px")
 
-                                                div(style="height: 5px")
-                                                hr
-
-
-                        div(id="map_view_container" hidden)
-                            table
-
-                                tr
-                                    td(class="dark-bg" style="vertical-align:top;")
-                                        div(style="width: 280px")
-
-                                            div(id="map_builder_controls_container" hidden)
-
-                                                div(style="font-size: 20px") Map Builder Controls 
-                                                br
-
-                                                div(class="header2" style="text-align: left; padding-left: 10px") Class 
-                                                select(id="map_builder_class_select" class="nonfixed_dropdown")
-
-                                                br
-                                                br
+                                            br
+                                            hr
+                                            br
+                                            button(style="width: 140px; margin: 0px" id="build_map_button" class="button-black button-black-hover" onclick="build_map()")
+                                                i(class="fa-solid fa-gears" style="padding-right: 10px; color: white")
+                                                |
+                                                | Build Map 
+                                            br
+                                            br
+                                            div(id="build_loader" class="loader" hidden)
 
 
-                                                div(class="header2" style="text-align: left; padding-left: 10px") Interpolation 
-                                                table(style="border: 1px solid white; width: 260px; padding-top: 15px; padding-left: 25px")
-                                                    tr 
-                                                        td 
-                                                            label(class="custom_radio_container") Linear 
-                                                                input(type="radio" name="interpolation_radio" value="linear" checked)
-                                                                span(class="custom_radio")
-                                                        td 
-                                                            label(class="custom_radio_container") Nearest 
-                                                                input(type="radio" name="interpolation_radio" value="nearest")
-                                                                span(class="custom_radio")
-
-                                                br
-                                                
-                                                div(id="interpolated_value_controls")
-                                                    div(class="header2" style="text-align: left; padding-left: 10px") Interpolated Value 
-                                                    table(style="border: 1px solid white; width: 260px; padding-top: 15px; padding-left: 25px")
-                                                        tr 
-                                                            td 
-                                                                label(class="custom_radio_container") Number of Objects Per Square Metre
-                                                                    input(type="radio" name="interpolated_value_radio" value="obj_density" checked)
-                                                                    span(class="custom_radio")
-                                                        tr(id="map_perc_veg_row")
-                                                            td 
-                                                                label(class="custom_radio_container") Percent Vegetation
-                                                                    input(type="radio" name="interpolated_value_radio" value="perc_veg")
-                                                                    span(class="custom_radio")
-                                                        tr(id="map_perc_veg_obj_row")
-                                                            td 
-                                                                label(class="custom_radio_container") Percent Vegetation and Object
-                                                                    input(type="radio" name="interpolated_value_radio" value="perc_veg_obj")
-                                                                    span(class="custom_radio")
-                                                        tr(id="map_perc_veg_non_obj_row")
-                                                            td 
-                                                                label(class="custom_radio_container") Percent Vegetation and Non-Object
-                                                                    input(type="radio" name="interpolated_value_radio" value="perc_veg_non_obj")
-                                                                    span(class="custom_radio") 
-
-                                                br
-                                                div(id="map_tile_size_controls")
-                                                    table
-                                                        tr
-                                                            td
-                                                                div(style="width: 80px; text-align:left; padding-left: 10px" class="header2") Tile Size
-                                                            td(style="width: 100%")
-                                                    table
-                                                        tr
-                                                            td
-                                                                div(style="width: 10px")
-                                                            td
-                                                                button(id="tile_size_down" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
-                                                                    i(class="fa-solid fa-circle-chevron-left")
-                                                                    
-                                                            td(style="width: 100%")
-                                                                div(class="slidecontainer" style="width: 100%")
-                                                                    input(type="range" class="slider" id="tile_size_slider" step="0.25"  style="margin: 0px")
-
-                                                            td
-                                                                button(id="tile_size_up" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")
-                                                                    i(class="fa-solid fa-circle-chevron-right")
-                                                            
-                                                            td
-                                                                div(id="tile_size_slider_val" style="padding: 4px 2px; margin-top: -4px; border-radius: 5px; border: 1px solid white; width: 65px; margin-left: 4px;") 
-                                                            td
-                                                                div(style="width: 10px")
-
-                                                br
-                                                hr
-                                                br
-                                                button(style="width: 140px; margin: 0px" id="build_map_button" class="button-black button-black-hover" onclick="build_map()")
-                                                    i(class="fa-solid fa-gears" style="padding-right: 10px; color: white")
-                                                    |
-                                                    | Build Map 
-                                                br
-                                                br
-                                                div(id="build_loader" class="loader" hidden)
-
-
-                                    td(style="width: 100%; border-left: none" id="chart_container")                        
+                                td(style="width: 100%; border-left: none" id="chart_container")                        
 
     script.
         let username = !{JSON.stringify(username)};

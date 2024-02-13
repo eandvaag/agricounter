@@ -78,11 +78,17 @@ hr {
 }
 
 
-.panel_center {
-  display: flex;
-  justify-content:  center;
-  align-items: center;
-  height: 800px;
+#centering_panel {
+  border: 1px solid white;
+  display: fixed;
+  top: 0; 
+  left: 0;
+  transform: translate(calc(50vw - 50%), calc(50vh - 50%));
+  background-color: #2a3829;
+  border-radius: 30px;
+  width: 400px;
+  height: 400px;
+  text-align: center; 
 }
 
 .panel {
@@ -90,17 +96,6 @@ hr {
   text-align: center;
 }
 
-.sign_in_panel {
-  margin: 0 auto;
-  background-color: #2a3829;
-  border: 1px solid white;
-  border-style: solid;
-  border-radius: 30px;
-  width: 400px; 
-  padding-top: 25px;
-  padding-bottom: 25px;
-  text-align: center; 
-}
 
 .main_container {
   margin: auto;
@@ -143,6 +138,17 @@ hr {
   font-size: 16px;
   margin: 0px 5px;
   padding: 5px;
+}
+
+.image-set-title {
+  word-break: break-all;
+  background-color:  #222621;
+  border: 1px solid white;
+  color: white;
+  font-size: 20px;
+  padding: 2px;
+  margin: 0px;
+  border-radius: 50px;
 }
 
 .button-black {

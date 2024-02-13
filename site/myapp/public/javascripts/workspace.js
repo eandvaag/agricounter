@@ -58,22 +58,31 @@ let keydown_handler = async function(e) {
 
     if (cur_view === "image") {
 
-        let valid_keys = [];
-        for (let i = 0; i < metadata["object_classes"].length; i++) {
-            valid_keys.push((i+1).toString());
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            change_to_prev_image();
         }
-        if ((cur_panel === "prediction") && (metadata["object_classes"].length > 1)) {
-            valid_keys.push("0");
+        else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            change_to_next_image();
         }
-        if (valid_keys.includes(e.key)) {
+        else {
 
-            let num_val = parseInt(e.key) - 1;
-
-            if (cur_panel === "annotation") {
-                $("#class_select").val(num_val).change();
+            let valid_keys = [];
+            for (let i = 0; i < metadata["object_classes"].length; i++) {
+                valid_keys.push((i+1).toString());
             }
-            else if (cur_panel === "prediction") {
-                $("#pred_class_select").val(num_val).change();
+            if ((cur_panel === "prediction") && (metadata["object_classes"].length > 1)) {
+                valid_keys.push("0");
+            }
+            if (valid_keys.includes(e.key)) {
+
+                let num_val = parseInt(e.key) - 1;
+
+                if (cur_panel === "annotation") {
+                    $("#class_select").val(num_val).change();
+                }
+                else if (cur_panel === "prediction") {
+                    $("#pred_class_select").val(num_val).change();
+                }
             }
         }
     }
@@ -139,78 +148,20 @@ let selected_keydown_handler = async function(e) {
 
             update_navigation_dropdown();
 
-
-            if (cur_edit_layer === "region_of_interest") {
+            if (cur_edit_layer === "annotation") {
+                if (sel_box_array.length == 0) {
+                    annotations[cur_img_name]["source"] = "NA";
+                }
+            }
+            else {
                 update_region_name();
                 create_navigation_table();
-            }
-            else if (cur_edit_layer === "fine_tuning_region") {
-                update_region_name();
-                create_navigation_table();
-            }
-            else if (cur_edit_layer === "test_region") {
-                update_region_name();
-                create_navigation_table();
-            }
-            else if ((cur_edit_layer === "annotation") && (sel_box_array.length == 0)) {
-                annotations[cur_img_name]["source"] = "NA";
             }
 
             $("#save_icon").css("color", "#ed452b");
         }
 
     }
-
-
-
-    // else if (e.key === "m") {
-
-    //     if ((selected_annotation != null) && (cur_edit_layer === "test_region")) {
-
-    //         let held_annotation_index = selected_annotation_index;
-    //         await anno.updateSelected(selected_annotation, true);
-
-            
-    //         let source_box_array;
-    //         let target_box_array;
-    //         let selected_region;
-    //         let illegal_intersection = false;
-
-    //         source_box_array = annotations[cur_img_name]["test_regions"];
-    //         target_box_array = annotations[cur_img_name]["fine_tuning_regions"];
-    //         selected_region = source_box_array[held_annotation_index];
-
-
-    //         loop1:
-    //         for (let region_key of ["fine_tuning_regions", "test_regions"]) {
-    //             for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
-    //                 if (i == held_annotation_index) {
-    //                     continue;
-    //                 }
-    //                 if (box_intersects_region(selected_region, annotations[cur_img_name][region_key][i])) {
-    //                     illegal_intersection = true;
-    //                     break loop1;
-    //                 }
-    //             }
-    //         }
-
-    //         if (!(illegal_intersection)) {
-    //             source_box_array.splice(held_annotation_index, 1);
-    //             target_box_array.push(selected_region);
-    //             selected_annotation = null;
-    //             selected_annotation_index = -1;
-
-    //             update_navigation_dropdown();
-    //             update_region_name();
-    //             create_navigation_table();
-
-    //             $("#save_icon").css("color", "#ed452b");
-
-    //             viewer.raiseEvent('update-viewport');
-
-    //         }
-    //     }
-    // }
     else {
         let valid_keys = [];
         for (let i = 0; i < metadata["object_classes"].length; i++) {
@@ -221,16 +172,12 @@ let selected_keydown_handler = async function(e) {
             let held_annotation_index = selected_annotation_index;
             await anno.updateSelected(selected_annotation, true);
 
-
-
             let new_cls = parseInt(e.key) - 1;
 
             annotations[cur_img_name]["classes"][held_annotation_index] = new_cls;
 
-
             $("#save_icon").css("color", "#ed452b");
             viewer.raiseEvent('update-viewport');
-
         }
     }
 }
@@ -241,7 +188,7 @@ async function change_image(cur_nav_item) {
 
     await unselect_selected_annotation();
 
-    document.getElementById(cur_nav_item + "_row").scrollIntoView({behavior: "smooth"});
+    document.getElementById(cur_nav_item + "_row").scrollIntoView({behavior: "instant"});
 
     let pieces = cur_nav_item.split("/");
     cur_img_name = pieces[0];
@@ -387,7 +334,7 @@ function resize_px_str(px_str) {
         img_max_y = img_dims.y;
         img_max_x = img_dims.x;
     }
-    else if (navigation_type == "regions_of_interest") {
+    else {
         let region = annotations[cur_img_name][navigation_type][cur_region_index];
         let poly_bbox = get_bounding_box_for_polygon(region);
         img_min_y = poly_bbox[0];
@@ -396,13 +343,6 @@ function resize_px_str(px_str) {
         img_max_x = poly_bbox[3];
 
     }
-    else {
-        let img_bounds = annotations[cur_img_name][navigation_type][cur_region_index];
-        img_min_y = img_bounds[0];
-        img_min_x = img_bounds[1];
-        img_max_y = img_bounds[2];
-        img_max_x = img_bounds[3];
-    }
 
     let box_min_x = px_lst[0];
     let box_min_y = px_lst[1];
@@ -410,7 +350,16 @@ function resize_px_str(px_str) {
     let box_max_y = px_lst[1] + px_lst[3];
 
 
-    if (navigation_type === "regions_of_interest") {
+    if (navigation_type === "images") {
+        if ((box_min_x < img_min_x && box_max_x < img_min_x) || 
+            (box_min_x > img_max_x && box_max_x > img_max_x) ||
+            (box_min_y < img_min_y && box_max_y < img_min_y) ||
+            (box_min_y > img_max_y && box_max_y > img_max_y)) {
+
+            return "illegal";
+        }
+    }
+    else {
         let box_pts = [
             [box_min_y, box_min_x],
             [box_min_y, box_max_x],
@@ -424,123 +373,114 @@ function resize_px_str(px_str) {
             }
         }
     }
-    else {
-        if ((box_min_x < img_min_x && box_max_x < img_min_x) || 
-            (box_min_x > img_max_x && box_max_x > img_max_x) ||
-            (box_min_y < img_min_y && box_max_y < img_min_y) ||
-            (box_min_y > img_max_y && box_max_y > img_max_y)) {
 
-            return "illegal";
+
+    box_min_x = Math.max(box_min_x, img_min_x);
+    box_min_y = Math.max(box_min_y, img_min_y);
+
+    box_max_x = Math.min(box_max_x, img_max_x);
+    box_max_y = Math.min(box_max_y, img_max_y);
+
+    let box_w = box_max_x - box_min_x;
+    let box_h = box_max_y - box_min_y;
+
+
+    let min_dim = 1;
+    let max_dim = 800;
+    if (box_w < min_dim) {
+
+        let tentative_box_min_x = Math.floor(box_min_x);
+        let tentative_box_max_x = tentative_box_min_x + 1;
+        if (tentative_box_min_x < img_min_x) {
+            box_min_x = img_min_x;
+            box_max_x = img_min_x + min_dim;
+        }
+        else if (tentative_box_max_x > img_max_x) {
+            box_min_x = (img_max_x) - min_dim;
+            box_max_x = img_max_x;
+        }
+        else {
+            box_min_x = tentative_box_min_x;
+            box_max_x = tentative_box_max_x;
+        }
+        
+    }
+
+    // if (cur_edit_layer === "annotation") { 
+    //     if (box_w > max_dim) {
+
+    //         let tentative_box_min_x = box_centre_x - Math.floor(max_dim / 2);
+    //         let tentative_box_max_x = box_centre_x + Math.floor(max_dim / 2);
+    //         if (max_dim > (img_max_x - img_min_x)) {
+    //             box_min_x = img_min_x;
+    //             box_max_x = img_max_x;
+    //         }
+    //         else if (tentative_box_min_x < img_min_x) {
+    //             box_min_x = img_min_x;
+    //             box_max_x = img_min_x + max_dim;
+    //         }
+    //         else if (tentative_box_max_x > img_max_x) {
+    //             box_min_x = (img_max_x) - max_dim;
+    //             box_max_x = img_max_x;
+    //         }
+    //         else {
+    //             box_min_x = tentative_box_min_x;
+    //             box_max_x = tentative_box_max_x;
+    //         }
+    //     }
+    // }
+
+
+    if (box_h < min_dim) {
+        let tentative_box_min_y = Math.floor(box_min_y);
+        let tentative_box_max_y = tentative_box_min_y + 1;
+        if (tentative_box_min_y < img_min_y) {
+            box_min_y = img_min_y;
+            box_max_y = img_min_y + min_dim;
+        }
+        else if (tentative_box_max_y > img_max_y) {
+            box_min_y = (img_max_y) - min_dim;
+            box_max_y = img_max_y;
+        }
+        else {
+            box_min_y = tentative_box_min_y;
+            box_max_y = tentative_box_max_y;
         }
     }
 
+    // if (cur_edit_layer === "annotation") { 
+    //     if (box_h > max_dim) {
 
-        box_min_x = Math.max(box_min_x, img_min_x);
-        box_min_y = Math.max(box_min_y, img_min_y);
-
-        box_max_x = Math.min(box_max_x, img_max_x);
-        box_max_y = Math.min(box_max_y, img_max_y);
-
-        let box_w = box_max_x - box_min_x;
-        let box_h = box_max_y - box_min_y;
-
-
-        let min_dim = 1;
-        let max_dim = 800;
-        if (box_w < min_dim) {
-
-            let tentative_box_min_x = Math.floor(box_min_x);
-            let tentative_box_max_x = tentative_box_min_x + 1;
-            if (tentative_box_min_x < img_min_x) {
-                box_min_x = img_min_x;
-                box_max_x = img_min_x + min_dim;
-            }
-            else if (tentative_box_max_x > img_max_x) {
-                box_min_x = (img_max_x) - min_dim;
-                box_max_x = img_max_x;
-            }
-            else {
-                box_min_x = tentative_box_min_x;
-                box_max_x = tentative_box_max_x;
-            }
-            
-        }
-
-        // if (cur_edit_layer === "annotation") { 
-        //     if (box_w > max_dim) {
-
-        //         let tentative_box_min_x = box_centre_x - Math.floor(max_dim / 2);
-        //         let tentative_box_max_x = box_centre_x + Math.floor(max_dim / 2);
-        //         if (max_dim > (img_max_x - img_min_x)) {
-        //             box_min_x = img_min_x;
-        //             box_max_x = img_max_x;
-        //         }
-        //         else if (tentative_box_min_x < img_min_x) {
-        //             box_min_x = img_min_x;
-        //             box_max_x = img_min_x + max_dim;
-        //         }
-        //         else if (tentative_box_max_x > img_max_x) {
-        //             box_min_x = (img_max_x) - max_dim;
-        //             box_max_x = img_max_x;
-        //         }
-        //         else {
-        //             box_min_x = tentative_box_min_x;
-        //             box_max_x = tentative_box_max_x;
-        //         }
-        //     }
-        // }
+    //         let tentative_box_min_y = box_centre_y - Math.floor(max_dim / 2);
+    //         let tentative_box_max_y = box_centre_y + Math.floor(max_dim / 2);
+    //         if (max_dim > (img_max_y - img_min_y)) {
+    //             box_min_y = img_min_y;
+    //             box_max_y = img_max_y;
+    //         }
+    //         else if (tentative_box_min_y < img_min_y) {
+    //             box_min_y = img_min_y;
+    //             box_max_y = img_min_y + max_dim;
+    //         }
+    //         else if (tentative_box_max_y > img_max_y) {
+    //             box_min_y = (img_max_y) - max_dim;
+    //             box_max_y = img_max_y;
+    //         }
+    //         else {
+    //             box_min_y = tentative_box_min_y;
+    //             box_max_y = tentative_box_max_y;
+    //         }
+    //     }
+    // }
 
 
-        if (box_h < min_dim) {
-            let tentative_box_min_y = Math.floor(box_min_y);
-            let tentative_box_max_y = tentative_box_min_y + 1;
-            if (tentative_box_min_y < img_min_y) {
-                box_min_y = img_min_y;
-                box_max_y = img_min_y + min_dim;
-            }
-            else if (tentative_box_max_y > img_max_y) {
-                box_min_y = (img_max_y) - min_dim;
-                box_max_y = img_max_y;
-            }
-            else {
-                box_min_y = tentative_box_min_y;
-                box_max_y = tentative_box_max_y;
-            }
-        }
+    box_w = box_max_x - box_min_x;
+    box_h = box_max_y - box_min_y;
 
-        // if (cur_edit_layer === "annotation") { 
-        //     if (box_h > max_dim) {
+    let updated_px_str = "xywh=pixel:" + box_min_x + "," + box_min_y +
+                        "," + box_w + "," + box_h;
 
-        //         let tentative_box_min_y = box_centre_y - Math.floor(max_dim / 2);
-        //         let tentative_box_max_y = box_centre_y + Math.floor(max_dim / 2);
-        //         if (max_dim > (img_max_y - img_min_y)) {
-        //             box_min_y = img_min_y;
-        //             box_max_y = img_max_y;
-        //         }
-        //         else if (tentative_box_min_y < img_min_y) {
-        //             box_min_y = img_min_y;
-        //             box_max_y = img_min_y + max_dim;
-        //         }
-        //         else if (tentative_box_max_y > img_max_y) {
-        //             box_min_y = (img_max_y) - max_dim;
-        //             box_max_y = img_max_y;
-        //         }
-        //         else {
-        //             box_min_y = tentative_box_min_y;
-        //             box_max_y = tentative_box_max_y;
-        //         }
-        //     }
-        // }
-
-
-        box_w = box_max_x - box_min_x;
-        box_h = box_max_y - box_min_y;
-
-        let updated_px_str = "xywh=pixel:" + box_min_x + "," + box_min_y +
-                            "," + box_w + "," + box_h;
-
-        
-        return updated_px_str;
+    
+    return updated_px_str;
 
 
 }
@@ -781,25 +721,6 @@ function create_anno() {
 
             let illegal_intersection = false;
 
-            // if (cur_edit_layer === "region_of_interest") {
-            //     if (polygon_is_self_intersecting(updated_box)) {
-            //         illegal_intersection = true;
-            //     }
-            // }
-            // else if ((cur_edit_layer === "fine_tuning_region") || (cur_edit_layer === "test_region")) {
-            //     loop1:
-            //     for (let region_key of ["fine_tuning_regions", "test_regions"]) {
-            //         for (let i = 0; i < annotations[cur_img_name][region_key].length; i++) {
-            //             if ((region_key === cur_edit_layer + "s") && (i == selected_annotation_index)) {
-            //                 continue;
-            //             }
-            //             if (box_intersects_region(updated_box, annotations[cur_img_name][region_key][i])) {
-            //                 illegal_intersection = true;
-            //                 break loop1;
-            //             }
-            //         }
-            //     }
-            // }
             if (cur_edit_layer !== "annotation") {
                 if (sel_array.length >= 99) {
                     illegal_intersection = true;
@@ -908,9 +829,7 @@ function anno_and_pred_onRedraw() {
 
         let cur_region = annotations[cur_img_name][navigation_type][cur_region_index];
         cur_region = get_bounding_box_for_polygon(cur_region);
-        // if (navigation_type == "regions_of_interest") {
-        //     cur_region = get_bounding_box_for_polygon(cur_region);
-        // }
+
         min_y = Math.max(min_y, cur_region[0]);
         min_x = Math.max(min_x, cur_region[1]);
         max_y = Math.min(max_y, cur_region[2]);
@@ -954,7 +873,6 @@ function anno_and_pred_onRedraw() {
             if (voronoi_data[cur_img_name][key][cur_pred_cls_idx] != null) {
                 let visible_edges = [];
                 for (let edge of voronoi_data[cur_img_name][key][cur_pred_cls_idx].edges) {
-
 
                     let line_box_min_x = Math.min(edge.va.x, edge.vb.x);
                     let line_box_min_y = Math.min(edge.va.y, edge.vb.y);
@@ -1893,7 +1811,8 @@ async function show_prediction(change_image=false) {
         viewer.world.resetItems();
     }
 
-
+    // potentially remove some elements, depending on the zoom level
+    resize_window();
 
     
 }
@@ -1935,7 +1854,6 @@ function pan_viewport() {
     overlay.onOpen = function() {
 
         if (cur_bounds) {
-            console.log("THIS HAPPENED");
             withFastOSDAnimation(viewer.viewport, function() {
                 viewer.viewport.fitBounds(cur_bounds);
             });
@@ -3530,9 +3448,14 @@ $(document).ready(function() {
         disable_green_buttons(["next_image_button"]);
     }
 
-    $("#image_set_name").text(image_set_info["farm_name"] + "  |  " + 
-                              image_set_info["field_name"] + "  |  " + 
-                              image_set_info["mission_date"]);
+    $("#image_set_name").html(`<table><tr>` +
+                                `<td>${image_set_info["farm_name"]}</td>` +
+                                `<td style="width: 40px"></td>` +
+                                `<td>${image_set_info["field_name"]}</td>` +
+                                `<td style="width: 40px"></td>` +                                
+                                `<td>${image_set_info["mission_date"]}</td>` +
+                                `</tr></table>`
+                                );
 
     image_to_dzi = {};
     for (let dzi_image_path of dzi_image_paths) {
@@ -4025,15 +3948,15 @@ $(document).ready(function() {
     $("#help_button").click(function() {
 
         let head = "Help";
-        let message = `<div style="line-height: 150%; padding: 10px">&#8226; Hold the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>SHIFT</span> key and left mouse button to create a new annotation or region.` +
-        `<br><br>&#8226; Click on an existing annotation / region to select it and change its boundaries.` +
-        `<br><br>&#8226; Use the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>DELETE</span> key to remove whichever annotation / region is currently selected.` + 
-        `<br><br>&#8226; When creating a region of interest, double click the left mouse button to complete the region.` +                
+        let message = `<div style="line-height: 150%; padding: 10px">&#8226; Hold the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>SHIFT</span> key and left mouse button to create a new box annotation or region.` +
+        `<br><br>&#8226; When creating a region, double click the left mouse button to complete the region.` + 
+        `<br><br>&#8226; Click on an existing box annotation / region to select it and change its boundaries.` +
+        `<br><br>&#8226; Use the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>DELETE</span> key to remove whichever box annotation / region is currently selected.` + 
         // `<br><br>&#8226; If a test region is selected, pressing the <span style='border: 1px solid white; font-size: 16px; padding: 5px 10px; margin: 0px 5px'>m</span> key will change that region into a fine-tuning region.` + 
         `<br><br>&#8226; Use the number keys to switch between different object classes.` + 
         `<br><br>&#8226; Don't forget to save your work!</div>`;
         show_modal_message(head, message, modal_width=750);
-    })
+    });
 
     $("#request_result_button").click(function() {
         if (model_unassigned) {
@@ -4163,15 +4086,11 @@ $(document).ready(function() {
 
     
     $("#next_image_button").click(function() {
-        let cur_nav_item = cur_img_name + "/" + cur_region_index;
-        let index = cur_nav_list.findIndex(x => x == cur_nav_item) + 1;
-        change_image(cur_nav_list[index]);
+        change_to_next_image();
     });
 
     $("#prev_image_button").click(function() {
-        let cur_nav_item = cur_img_name + "/" + cur_region_index;
-        let index = cur_nav_list.findIndex(x => x == cur_nav_item) - 1;
-        change_image(cur_nav_list[index]);
+        change_to_prev_image();
     });
 
 
@@ -4236,14 +4155,21 @@ $(document).ready(function() {
         add_prediction_buttons();
 
         let navigation_type = $("#navigation_dropdown").val();
+        let region_radio_labels = ["region_of_interest_label", "fine_tuning_region_label", "test_region_label"];
         if ((navigation_type == "regions_of_interest") || (navigation_type === "fine_tuning_regions" || navigation_type == "test_regions")) {
             $("input:radio[name=edit_layer_radio]").prop("disabled", true);
-            $("#active_layer_table").css("opacity", 0.5);
+            for (let radio_label of region_radio_labels) {
+                $("#" + radio_label).css("opacity", 0.5);
+                $("#" + radio_label).css("cursor", "default");
+            }
             $("#show_segmentation_button").hide();
         }
         else {
-            $("#active_layer_table").css("opacity", 1.0);
             $("input:radio[name=edit_layer_radio]").prop("disabled", false);
+            for (let radio_label of region_radio_labels) {
+                $("#" + radio_label).css("opacity", 1.0);
+                $("#" + radio_label).css("cursor", "pointer");
+            }
             $("#show_segmentation_button").show();
 
         }
@@ -5049,27 +4975,27 @@ function update_grid_overlap_percent() {
 
 
 function grid_keydown_handler(e) {
-    if ((e.keyCode == 88) || ((e.keyCode == 39) || (e.keyCode == 32))) {
+    if ((e.key === "x") || ((e.key === "ArrowRight") || (e.key === " "))) {
         $("#next_tile_button").click();
     }
-    if ((e.keyCode == 90) || (e.keyCode == 37)) {
+    if ((e.key === "z") || (e.key == "ArrowLeft")) {
         $("#prev_tile_button").click();
     }
 }
 
 
-function resize_window() {
-    let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
-    $("#seadragon_viewer").height(new_viewer_height);
-    $("#chart_container").height(new_viewer_height);
-    let image_name_table_height = $("#image_name_table").height();
-    let new_navigation_table_container_height = new_viewer_height - image_name_table_height - 365;
-    let min_navigation_table_height = 370;
-    if (new_navigation_table_container_height < min_navigation_table_height) {
-        new_navigation_table_container_height = min_navigation_table_height;
-    }
-    $("#navigation_table_container").height(new_navigation_table_container_height);
-}
+// function resize_window() {
+//     let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
+//     $("#seadragon_viewer").height(new_viewer_height);
+//     $("#chart_container").height(new_viewer_height);
+//     let image_name_table_height = $("#image_name_table").height();
+//     let new_navigation_table_container_height = new_viewer_height - image_name_table_height - 365;
+//     let min_navigation_table_height = 300; //370;
+//     if (new_navigation_table_container_height < min_navigation_table_height) {
+//         new_navigation_table_container_height = min_navigation_table_height;
+//     }
+//     $("#navigation_table_container").height(new_navigation_table_container_height);
+// }
 
 
 $(window).resize(function() {
