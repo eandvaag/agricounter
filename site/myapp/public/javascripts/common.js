@@ -1755,7 +1755,7 @@ function show_customize_overlays_modal() {
 
 
     
-    show_modal_message(`Customize Overlay Appearance`, content, modal_width=750);
+    show_modal_message(`Change Overlay Appearance`, content, modal_width=750);
     draw_customize_overlays_table(false);
 }
 
@@ -2016,6 +2016,21 @@ function set_overlay_color_css_rules() {
 
 }
 
+function change_to_prev_image() {
+    let cur_nav_item = cur_img_name + "/" + cur_region_index;
+    let index = cur_nav_list.findIndex(x => x == cur_nav_item) - 1;
+    if (index > -1) {
+        change_image(cur_nav_list[index]);
+    }
+}
+function change_to_next_image() {
+    let cur_nav_item = cur_img_name + "/" + cur_region_index;
+    let index = cur_nav_list.findIndex(x => x == cur_nav_item) + 1;
+    if (index < cur_nav_list.length) {
+        change_image(cur_nav_list[index]);
+    }
+}
+
 
 function set_heights() {
     $("#image_view_container").show();
@@ -2028,6 +2043,28 @@ function set_heights() {
         };
     }
     $("#image_name_table").height(max_height);
+}
+
+
+
+function resize_window() {
+
+    let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
+    $("#seadragon_viewer").height(new_viewer_height);
+    $("#chart_container").height(new_viewer_height);
+    let non_nav_container_height = $("#non_nav_container").height();
+    let new_navigation_table_container_height = new_viewer_height - non_nav_container_height - 50;
+    $("#score_area").show();
+    $("#count_area").show();
+    let right_panel_height = $("#control_panel").height();
+    if (right_panel_height > new_viewer_height) {
+        $("#score_area").hide();
+    }
+    right_panel_height = $("#control_panel").height();
+    if (right_panel_height > new_viewer_height) {
+        $("#count_area").hide();
+    }
+    $("#navigation_table_container").height(new_navigation_table_container_height);
 }
 
 

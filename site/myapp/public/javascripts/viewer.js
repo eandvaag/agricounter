@@ -49,7 +49,7 @@ function show_metrics_modal() {
 function change_image(cur_nav_item) {
 
 
-    document.getElementById(cur_nav_item + "_row").scrollIntoView({behavior: "smooth"});
+    document.getElementById(cur_nav_item + "_row").scrollIntoView({behavior: "instant"});
 
     let pieces = cur_nav_item.split("/");
     cur_img_name = pieces[0];
@@ -591,21 +591,6 @@ function create_viewer() {
 
 
 
-function resize_window() {
-
-    let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
-    $("#seadragon_viewer").height(new_viewer_height);
-    $("#chart_container").height(new_viewer_height);
-    let image_name_table_height = $("#image_name_table").height();
-    let result_name_height = $("#result_name").height();
-    let new_navigation_table_container_height = new_viewer_height - image_name_table_height - result_name_height - 215;
-    let min_navigation_table_height = 500;
-    if (new_navigation_table_container_height < min_navigation_table_height) {
-        new_navigation_table_container_height = min_navigation_table_height;
-    }
-    $("#navigation_table_container").height(new_navigation_table_container_height);
-}
-
 
 
 function show_download_metrics() {
@@ -884,22 +869,33 @@ function show_download_raw_outputs() {
 let keydown_handler = async function(e) {
 
     if (cur_view === "image") {
-        let valid_keys = [];
-        for (let i = 0; i < metadata["object_classes"].length; i++) {
-            valid_keys.push((i+1).toString());
+
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            change_to_prev_image();
         }
-        if (metadata["object_classes"].length > 1) {
-            valid_keys.push("0");
+        else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            change_to_next_image();
         }
+        else {
+            let valid_keys = [];
+            for (let i = 0; i < metadata["object_classes"].length; i++) {
+                valid_keys.push((i+1).toString());
+            }
+            if (metadata["object_classes"].length > 1) {
+                valid_keys.push("0");
+            }
 
-        if (valid_keys.includes(e.key)) {
+            if (valid_keys.includes(e.key)) {
 
-            let num_val = parseInt(e.key) - 1;
+                let num_val = parseInt(e.key) - 1;
 
-            $("#pred_class_select").val(num_val).change();
+                $("#pred_class_select").val(num_val).change();
+            }
         }
     }
 }
+
+
 
 
 $(document).ready(function() {
@@ -958,8 +954,7 @@ $(document).ready(function() {
     }
 
 
-    set_heights();
-    resize_window();
+
 
     if ((can_calculate_density(metadata, camera_specs))) {
         gsd = get_gsd();
@@ -1121,9 +1116,14 @@ $(document).ready(function() {
         disable_green_buttons(["next_image_button"]);
     }
 
-    $("#image_set_name").text(farm_name + "  |  " + 
-                              field_name + "  |  " + 
-                              mission_date);
+    $("#image_set_name").html(`<table><tr>` +
+                                `<td>${image_set_info["farm_name"]}</td>` +
+                                `<td style="width: 40px"></td>` +
+                                `<td>${image_set_info["field_name"]}</td>` +
+                                `<td style="width: 40px"></td>` +                                
+                                `<td>${image_set_info["mission_date"]}</td>` +
+                                `</tr></table>`
+                                );
 
     update_count_combo(true);
 
@@ -1255,15 +1255,11 @@ $(document).ready(function() {
     });
 
     $("#next_image_button").click(function() {
-        let cur_nav_item = cur_img_name + "/" + cur_region_index;
-        let index = cur_nav_list.findIndex(x => x == cur_nav_item) + 1;
-        change_image(cur_nav_list[index]);
+        change_to_next_image();
     });
 
     $("#prev_image_button").click(function() {
-        let cur_nav_item = cur_img_name + "/" + cur_region_index;
-        let index = cur_nav_list.findIndex(x => x == cur_nav_item) - 1;
-        change_image(cur_nav_list[index]);
+        change_to_prev_image();
     });
 
     $("#navigation_dropdown").change(function() {
@@ -1289,6 +1285,10 @@ $(document).ready(function() {
     $("#image_visible_switch").change(function() {
         viewer.raiseEvent('update-viewport');
     });
+
+
+    set_heights();
+    resize_window();
 });
 
 $(window).resize(function() {

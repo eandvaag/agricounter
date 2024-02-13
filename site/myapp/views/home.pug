@@ -46,402 +46,400 @@ html
                     div(class="modal-footer")
 
 
-            div(id="body")
-                    
 
-                div(style="height: 8px")
+            div(style="height: 8px")
 
-                div(id="home_container")
+            div(id="home_container")
 
-                    div(class="panel" style="width: 1500px;")
+                div(class="panel" style="width: 1500px;")
 
-                        div(class="content" style="display:block; height: 800px")
+                    div(class="content" style="display:block; height: 800px")
 
-                            ul(class="nav" id="browse_upload")
-                                li(id="browse_tab_btn" class="nav tab-btn-active")
-                                    a(class="nav")
-                                        span
-                                            i(class="fa-solid fa-seedling" style="margin-right:3px")
-                                            |
-                                            | Browse
+                        ul(class="nav" id="browse_upload")
+                            li(id="browse_tab_btn" class="nav tab-btn-active")
+                                a(class="nav")
+                                    span
+                                        i(class="fa-solid fa-seedling" style="margin-right:3px")
+                                        |
+                                        | Browse
 
-                                li(id="upload_tab_btn" class="nav")
-                                    a(class="nav")
-                                        span
-                                            i(class="fa-solid fa-file-arrow-up" style="margin-right:3px")
-                                            |
-                                            | Upload
+                            li(id="upload_tab_btn" class="nav")
+                                a(class="nav")
+                                    span
+                                        i(class="fa-solid fa-file-arrow-up" style="margin-right:3px")
+                                        |
+                                        | Upload
 
-                                li(id="train_tab_btn" class="nav")
-                                    a(class="nav")
-                                        span
-                                            i(class="fa-solid fa-layer-group" style="margin-right:3px")
-                                            |
-                                            | Train
+                            li(id="train_tab_btn" class="nav")
+                                a(class="nav")
+                                    span
+                                        i(class="fa-solid fa-layer-group" style="margin-right:3px")
+                                        |
+                                        | Train
 
 
-                            div(id="main_area")
+                        div(id="main_area")
 
 
-                                div(id="browse")
+                            div(id="browse")
 
-                                    div(style="height: 70px")
+                                div(style="height: 70px")
 
-                                    table(id="combo_table")
+                                table(id="combo_table")
+                                    tr
+                                        th
+                                            div(class="table_head" style="width: 170px") Farm Name 
+                                        th 
+                                            div(style="width: 250px")
+                                                select(id="farm_combo" class="nonfixed_dropdown")
+
+                                    tr
+                                        th 
+                                            div(class="table_head" style="width: 170px") Field Name 
+                                        th 
+                                            div(style="width: 250px")
+                                                select(id="field_combo" class="nonfixed_dropdown")
+
+                                    tr
+                                        th 
+                                            div(class="table_head" style="width: 170px") Mission Date
+                                        th 
+                                            div(style="width: 250px")
+                                                select(id="mission_combo" class="nonfixed_dropdown")
+
+                                div(style="height: 50px")
+                                hr(style="margin: 0px")
+                                div(id="image_set_container")
+
+
+                            div(id="upload" hidden)
+
+
+                                div(style="height: 70px")
+                                form(id="upload_form" action="")
+
+
+                                    table 
+
+                                        tr 
+                                            td(style="text-align: left")
+                                                div(style="font-weight: bold") Image Set Information
+                                            td 
+                                            td(style="text-align: left")
+                                                div(style="font-weight: bold") Object Classes
                                         tr
-                                            th
-                                                div(class="table_head" style="width: 170px") Farm Name 
-                                            th 
-                                                div(style="width: 250px")
-                                                    select(id="farm_combo" class="nonfixed_dropdown")
 
-                                        tr
-                                            th 
-                                                div(class="table_head" style="width: 170px") Field Name 
-                                            th 
-                                                div(style="width: 250px")
-                                                    select(id="field_combo" class="nonfixed_dropdown")
+                                            td(style="border: 1px solid white; border-radius: 25px; padding: 15px 30px 15px 30px")
 
-                                        tr
-                                            th 
-                                                div(class="table_head" style="width: 170px") Mission Date
-                                            th 
-                                                div(style="width: 250px")
-                                                    select(id="mission_combo" class="nonfixed_dropdown")
+                                                table(id="input_table")
+                                                    tr 
+                                                        th 
+                                                            div(class="table_head" style="width: 170px") Farm Name 
+                                                                span(style="color: yellow") *
+                                                        th 
+                                                            div(style="width: 250px")
+                                                                input(id="farm_input" class="nonfixed_input")
+                                                
+                                                    tr 
+                                                        th 
+                                                            div(class="table_head" style="width: 170px") Field Name 
+                                                                span(style="color: yellow") *
+                                                        th 
+                                                            div(style="width: 250px")
+                                                                input(id="field_input" class="nonfixed_input")
+
+                                                    tr 
+                                                        th 
+                                                            div(class="table_head" style="width: 170px") Mission Date 
+                                                                span(style="color: yellow") *
+                                                        th 
+                                                            div(style="width: 250px")
+                                                                input(id="mission_input" type="date" class="nonfixed_input")
+
+                                                    tr 
+                                                        th 
+                                                            div(class="table_head" style="width: 170px") Camera Height (m)
+                                                        th 
+                                                            div(style="width: 250px")
+                                                                input(id="camera_height_input" class="nonfixed_input")
+
+                                                    tr
+                                                        td 
+                                                            div(class="table_head" style="width: 170px") Make Image Set Public
+                                                        td
+                                                            div(style="width: 250px; text-align: left; padding-left: 2px")
+                                                                label(for="upload_set_public" class="container" style="display: inline; margin-botton: 20px; margin-left: 12px")
+                                                                    input(type="checkbox" id="upload_set_public" name="upload_set_public" checked)
+                                                                    span(class="checkmark")
+
+
+
+                                                br
+                                                div(style="color: yellow") * 
+                                                    span(style="color: white") Indicates required field.
+
+
+                                            td(style="width: 200px")
+
+
+                                            td(style="border: 1px solid white; border-radius: 25px; padding: 15px 30px 15px 30px")
+
+                                                table(id="object_table")
+                                                    tr 
+                                                        td 
+                                                            div(class="table_head") Class Name
+                                                        td 
+                                                            div(style="width: 250px")
+                                                                select(id="object_input" class="nonfixed_dropdown")
+
+                                                        td
+                                                            div(style="width: 30px")
+                                                                button(class="button-green button-green-hover" style="width: 25px; height: 25px; border-radius: 5px; font-size: 12px;" type="button" id="add_cls_button")
+                                                                    i(class="fa-solid fa-circle-plus")
+
+                                                div(class="scrollable_area" style="height: 130px; margin-top: 5px; border-radius: 10px; overflow-y: scroll")
+                                                    table(id="added_classes" style="border-collapse: collapse")
+
+
+                                    br
+
+                                    div(style="width: 99%; margin: auto; border: 1px solid white; border-bottom: none")
+                                        ul(class="nav")
+                                            li(id="image_set_tab_btn" class="nav tab-btn-active")
+                                                a(class="nav")
+                                                    span
+                                                        i(class="fa-solid fa-images" style="margin-right:3px")
+                                                        |
+                                                        | Image Set
+
+                                            li(id="orthomosaic_tab_btn" class="nav")
+                                                a(class="nav")
+                                                    span
+                                                        i(class="fa-solid fa-image" style="margin-right:3px")
+                                                        |
+                                                        | Orthomosaic
+
+
+
+                                        div(id="image_set_tab")
+
+
+                                        div(id="orthomosaic_tab" hidden)
+
+
+                                    div(style="width: 99%; margin: auto; height: 25px; border-top: none; border-left: 1px solid white; border-bottom: 1px solid white; border-right: 1px solid white; border-radius: 0px 0px 50px 50px")
+
+
+                                    div(style="height: 10px")
+                                    button(id="upload_button" class="button-green button-green-hover" style="width: 200px; height: 40px;" type="submit") 
+                                        i(class="fa-solid fa-file-arrow-up" style="padding-right: 5px")
+                                        |
+                                        | Upload 
+                            
+                            div(id="train" hidden)
+
+                                br
+                                br
+                                br
+
+                                ul(class="nav" style="border-top: 1px solid white;")
+                                    li(id="submit_train_tab_btn" class="nav tab-btn-active" onclick="show_train_tab(this.id)")
+                                        a(class="nav")
+                                            span
+                                                i(class="fa-solid fa-circle-plus" style="margin-right:3px")
+                                                |
+                                                | Submit
+
+                                    li(id="available_train_tab_btn" class="nav" onclick="show_train_tab(this.id)")
+                                        a(class="nav")
+                                            span
+                                                i(class="fa-solid fa-circle-check" style="margin-right:3px")
+                                                |
+                                                | Available
+
+                                    li(id="pending_train_tab_btn" class="nav" onclick="show_train_tab(this.id)")
+                                        a(class="nav")
+                                            span
+                                                i(class="fa-solid fa-clock" style="margin-right:3px")
+                                                |
+                                                | Pending
+
+                                    li(id="aborted_train_tab_btn" class="nav" onclick="show_train_tab(this.id)")
+                                        a(class="nav")
+                                            span
+                                                i(class="fa-solid fa-circle-xmark" style="margin-right:3px")
+                                                |
+                                                | Aborted
+
+
+
+                                div(id="submit_train_tab")
 
                                     div(style="height: 50px")
-                                    hr(style="margin: 0px")
-                                    div(id="image_set_container")
 
-
-                                div(id="upload" hidden)
-
-
-                                    div(style="height: 70px")
-                                    form(id="upload_form" action="")
-
-
-                                        table 
-
+                                    div(style="border: 1px solid white; margin: 5px; border-radius: 25px")
+                                        table(style="padding: 10px")
                                             tr 
-                                                td(style="text-align: left")
-                                                    div(style="font-weight: bold") Image Set Information
-                                                td 
-                                                td(style="text-align: left")
-                                                    div(style="font-weight: bold") Object Classes
-                                            tr
-
-                                                td(style="border: 1px solid white; border-radius: 25px; padding: 15px 30px 15px 30px")
-
-                                                    table(id="input_table")
-                                                        tr 
-                                                            th 
-                                                                div(class="table_head" style="width: 170px") Farm Name 
-                                                                    span(style="color: yellow") *
-                                                            th 
-                                                                div(style="width: 250px")
-                                                                    input(id="farm_input" class="nonfixed_input")
+                                                td
+                                                    div(style="border: 1px solid white; width: 700px; height: 400px")
                                                     
-                                                        tr 
-                                                            th 
-                                                                div(class="table_head" style="width: 170px") Field Name 
-                                                                    span(style="color: yellow") *
-                                                            th 
-                                                                div(style="width: 250px")
-                                                                    input(id="field_input" class="nonfixed_input")
-
-                                                        tr 
-                                                            th 
-                                                                div(class="table_head" style="width: 170px") Mission Date 
-                                                                    span(style="color: yellow") *
-                                                            th 
-                                                                div(style="width: 250px")
-                                                                    input(id="mission_input" type="date" class="nonfixed_input")
-
-                                                        tr 
-                                                            th 
-                                                                div(class="table_head" style="width: 170px") Camera Height (m)
-                                                            th 
-                                                                div(style="width: 250px")
-                                                                    input(id="camera_height_input" class="nonfixed_input")
-
-                                                        tr
-                                                            td 
-                                                                div(class="table_head" style="width: 170px") Make Image Set Public
-                                                            td
-                                                                div(style="width: 250px; text-align: left; padding-left: 2px")
-                                                                    label(for="upload_set_public" class="container" style="display: inline; margin-botton: 20px; margin-left: 12px")
-                                                                        input(type="checkbox" id="upload_set_public" name="upload_set_public" checked)
-                                                                        span(class="checkmark")
+                                                        table(style="margin: 5px")
+                                                            tr
+                                                                td
+                                                                    h(class="header2" style="text-align: left; width: 200px; padding-left: 5px") Available Sets
+                                                                td(style="width: 100%")
 
 
+                                                                td(style="border: 1px solid white; border-radius: 5px;")
 
-                                                    br
-                                                    div(style="color: yellow") * 
-                                                        span(style="color: white") Indicates required field.
+                                                                    h(class="header2" style="text-align: left; width: 350px; padding-left: 5px") Class Filter
+                                                                    table(id="object_table")
+                                                                        tr 
+                                                                            td
+                                                                                div(class="table_head") Class Name
+                                                                            td 
+                                                                                div(style="width: 250px")
+                                                                                    select(id="object_filter_input" class="nonfixed_dropdown")
 
+                                                                            td
+                                                                                div(style="width: 30px")
+                                                                                    button(class="button-green button-green-hover"  style="width: 25px; height: 25px; border-radius: 5px; font-size: 12px;" type="button" id="add_filter_cls_button")
+                                                                                        i(class="fa-solid fa-circle-plus")
 
-                                                td(style="width: 200px")
-
-
-                                                td(style="border: 1px solid white; border-radius: 25px; padding: 15px 30px 15px 30px")
-
-                                                    table(id="object_table")
-                                                        tr 
-                                                            td 
-                                                                div(class="table_head") Class Name
-                                                            td 
-                                                                div(style="width: 250px")
-                                                                    select(id="object_input" class="nonfixed_dropdown")
-
-                                                            td
-                                                                div(style="width: 30px")
-                                                                    button(class="button-green button-green-hover" style="width: 25px; height: 25px; border-radius: 5px; font-size: 12px;" type="button" id="add_cls_button")
-                                                                        i(class="fa-solid fa-circle-plus")
-
-                                                    div(class="scrollable_area" style="height: 130px; margin-top: 5px; border-radius: 10px; overflow-y: scroll")
-                                                        table(id="added_classes" style="border-collapse: collapse")
+                                                                    div(class="scrollable_area" style="height: 80px; margin-top: 5px; border-radius: 10px; overflow-y: scroll")
+                                                                        table(id="added_filter_classes" style="border-collapse: collapse")
 
 
-                                        br
+                                                        div(class="scrollable_area" style="height: 200px; border: 1px solid white; width: 100%; overflow-y: scroll; border-radius: 5px;")
+                                                            table(id="available_image_sets" style="border-collapse: collapse")
+                                                    
+                                                td
 
-                                        div(style="width: 99%; margin: auto; border: 1px solid white; border-bottom: none")
-                                            ul(class="nav")
-                                                li(id="image_set_tab_btn" class="nav tab-btn-active")
-                                                    a(class="nav")
-                                                        span
-                                                            i(class="fa-solid fa-images" style="margin-right:3px")
-                                                            |
-                                                            | Image Set
+                                                    div(style="width: 700px; border: 1px solid white; height: 400px")
 
-                                                li(id="orthomosaic_tab_btn" class="nav")
-                                                    a(class="nav")
-                                                        span
-                                                            i(class="fa-solid fa-image" style="margin-right:3px")
-                                                            |
-                                                            | Orthomosaic
+                                                        div(id="inspection_area" hidden)
+                                                            div(style="height: 10px")
+                                                            div(id="inspected_set" style="height: 30px")
 
-
-
-                                            div(id="image_set_tab")
-
-
-                                            div(id="orthomosaic_tab" hidden)
-
-
-                                        div(style="width: 99%; margin: auto; height: 25px; border-top: none; border-left: 1px solid white; border-bottom: 1px solid white; border-right: 1px solid white; border-radius: 0px 0px 50px 50px")
-
-
-                                        div(style="height: 10px")
-                                        button(id="upload_button" class="button-green button-green-hover" style="width: 200px; height: 40px;" type="submit") 
-                                            i(class="fa-solid fa-file-arrow-up" style="padding-right: 5px")
-                                            |
-                                            | Upload 
-                                
-                                div(id="train" hidden)
-
-                                    br
-                                    br
-                                    br
-
-                                    ul(class="nav" style="border-top: 1px solid white;")
-                                        li(id="submit_train_tab_btn" class="nav tab-btn-active" onclick="show_train_tab(this.id)")
-                                            a(class="nav")
-                                                span
-                                                    i(class="fa-solid fa-circle-plus" style="margin-right:3px")
-                                                    |
-                                                    | Submit
-
-                                        li(id="available_train_tab_btn" class="nav" onclick="show_train_tab(this.id)")
-                                            a(class="nav")
-                                                span
-                                                    i(class="fa-solid fa-circle-check" style="margin-right:3px")
-                                                    |
-                                                    | Available
-
-                                        li(id="pending_train_tab_btn" class="nav" onclick="show_train_tab(this.id)")
-                                            a(class="nav")
-                                                span
-                                                    i(class="fa-solid fa-clock" style="margin-right:3px")
-                                                    |
-                                                    | Pending
-
-                                        li(id="aborted_train_tab_btn" class="nav" onclick="show_train_tab(this.id)")
-                                            a(class="nav")
-                                                span
-                                                    i(class="fa-solid fa-circle-xmark" style="margin-right:3px")
-                                                    |
-                                                    | Aborted
-
-
-
-                                    div(id="submit_train_tab")
-
-                                        div(style="height: 50px")
-
-                                        div(style="border: 1px solid white; margin: 5px; border-radius: 25px")
-                                            table(style="padding: 10px")
-                                                tr 
-                                                    td
-                                                        div(style="border: 1px solid white; width: 700px; height: 400px")
-                                                        
-                                                            table(style="margin: 5px")
-                                                                tr
+                                                            table
+                                                                tr 
+                                                                    td 
                                                                     td
-                                                                        h(class="header2" style="text-align: left; width: 200px; padding-left: 5px") Available Sets
-                                                                    td(style="width: 100%")
+                                                                        table
+                                                                            tr
+                                                                                td(style="width: 100%")
+                                                                                td(style="width: 100px")
+                                                                                    button(id="inspect_prev" class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 50px") 
+                                                                                        i(class="fa-solid fa-circle-chevron-left")
+                                                                                td(style="width: 100px")
+                                                                                    button(id="inspect_next" class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 50px") 
+                                                                                        i(class="fa-solid fa-circle-chevron-right")
 
-
-                                                                    td(style="border: 1px solid white; border-radius: 5px;")
-
-                                                                        h(class="header2" style="text-align: left; width: 350px; padding-left: 5px") Class Filter
-                                                                        table(id="object_table")
-                                                                            tr 
-                                                                                td
-                                                                                    div(class="table_head") Class Name
-                                                                                td 
-                                                                                    div(style="width: 250px")
-                                                                                        select(id="object_filter_input" class="nonfixed_dropdown")
-
-                                                                                td
-                                                                                    div(style="width: 30px")
-                                                                                        button(class="button-green button-green-hover"  style="width: 25px; height: 25px; border-radius: 5px; font-size: 12px;" type="button" id="add_filter_cls_button")
-                                                                                            i(class="fa-solid fa-circle-plus")
-
-                                                                        div(class="scrollable_area" style="height: 80px; margin-top: 5px; border-radius: 10px; overflow-y: scroll")
-                                                                            table(id="added_filter_classes" style="border-collapse: collapse")
-
-
-                                                            div(class="scrollable_area" style="height: 200px; border: 1px solid white; width: 100%; overflow-y: scroll; border-radius: 5px;")
-                                                                table(id="available_image_sets" style="border-collapse: collapse")
-                                                        
-                                                    td
-
-                                                        div(style="width: 700px; border: 1px solid white; height: 400px")
-
-                                                            div(id="inspection_area" hidden)
-                                                                div(style="height: 10px")
-                                                                div(id="inspected_set" style="height: 30px")
-
-                                                                table
-                                                                    tr 
-                                                                        td 
-                                                                        td
-                                                                            table
-                                                                                tr
-                                                                                    td(style="width: 100%")
-                                                                                    td(style="width: 100px")
-                                                                                        button(id="inspect_prev" class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 50px") 
-                                                                                            i(class="fa-solid fa-circle-chevron-left")
-                                                                                    td(style="width: 100px")
-                                                                                        button(id="inspect_next" class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 50px") 
-                                                                                            i(class="fa-solid fa-circle-chevron-right")
-
-                                                                    tr 
-                                                                        td
-                                                                            div(style="width: 280px")
-
-                                                                                h(class="header2" style="text-align: left; padding-left: 5px;") Classes 
-                                                                                div(class="scrollable_area" style="height: 220px; border: 1px solid white; width: 100%; overflow-y: scroll; border-radius: 5px;")
-                                                                                    table(id="image_set_class_list" style="border-collapse: collapse")
-                                                                                div(style="height: 10px")
-                                                                                button(id="add_image_set_button" class="button-green button-green-hover" style="width: 95%") Add Image Set
-
-                                                                        td 
-                                                                            div(id="inspect_viewer" class="viewer" style="height: 295px; width: 400px;")
-
-
-                                        div(style="border: 1px solid white; margin: 5px; border-radius: 25px")
-                                            h(class="header2" style="text-align: left; padding-left: 20px; padding-top: 10px") New Submission
-                                            table(style="padding: 10px")
-                                                tr
-                                                    td
-                                                        div(style="width: 700px; height: 200px; border: 1px solid white")
-                                                            h(class="header2" style="text-align: left; padding-left: 5px;") Training Sets
-                                                            div(class="scrollable_area" style="height: 150px; border: 1px solid white; width: 100%; overflow-y: scroll")
-                                                                table(id="added_image_sets" style="border-collapse: collapse")
-                                                    td
-                                                        div(style="width: 700px; height: 200px; border: 1px solid white")
-                                                            table 
                                                                 tr 
                                                                     td
                                                                         div(style="width: 280px")
-                                                                            h(class="header2" style="text-align: left; padding-left: 5px;") Model Classes 
-                                                                            div(class="scrollable_area" style="height: 160px; border: 1px solid white; width: 100%; overflow-y: scroll; border-radius: 5px;")
-                                                                                table(id="model_class_list" style="border-collapse: collapse")
-                                            
+
+                                                                            h(class="header2" style="text-align: left; padding-left: 5px;") Classes 
+                                                                            div(class="scrollable_area" style="height: 220px; border: 1px solid white; width: 100%; overflow-y: scroll; border-radius: 5px;")
+                                                                                table(id="image_set_class_list" style="border-collapse: collapse")
+                                                                            div(style="height: 10px")
+                                                                            button(id="add_image_set_button" class="button-green button-green-hover" style="width: 95%") Add Image Set
+
                                                                     td 
-                                                                        table
-                                                                            tr
-                                                                                td 
-                                                                                    div(class="header2" style="width: 170px; text-align: right") Training Regime
-                                                                                td 
-                                                                                    div(style="width: 140px" id="training_regime_text") 50 Epochs
-                                                                                
-                                                                                td
-                                                                                    button(class="button-green button-green-hover" style="font-size: 14px; padding: 2px 4px" onclick="configure_training_regime()") Configure
-
-                                                                            tr
-                                                                                td 
-                                                                                    div(class="header2" style="width: 170px; text-align: right") Model Name
-                                                                                td
-                                                                                    div(style="width: 140px")
-                                                                                        input(id="model_name_input" class="nonfixed_input")
-                                                                                td
-
-                                                                            tr
-                                                                                td 
-                                                                                    div(class="header2" style="width: 170px; text-align: right") Make Model Public
-                                                                                td
-                                                                                    div(style="width: 140px; text-align: left")
-                                                                                        label(for="model_public" class="container" style="display: inline; margin-botton: 20px; margin-left: 12px")
-                                                                                            input(type="checkbox" id="model_public" name="model_public" checked)
-                                                                                            span(class="checkmark")
-                                                                                td
+                                                                        div(id="inspect_viewer" class="viewer" style="height: 295px; width: 400px;")
 
 
-
-                                                                        div(style="height: 50px")
-                                                                        button(id="submit_training_request" class="button-green button-green-hover" style="width: 250px; height: 30px;") Submit Training Request
-
-                                    div(id="available_train_tab")
-                                        br
-                                        br
-                                        br
-                                        h(style="font-weight: bold") #{username}'s
-                                        div(class="header2") Trained Models
-
-                                        br
-                                        br
-
-                                        div(id="available_models")
-
+                                    div(style="border: 1px solid white; margin: 5px; border-radius: 25px")
+                                        h(class="header2" style="text-align: left; padding-left: 20px; padding-top: 10px") New Submission
+                                        table(style="padding: 10px")
+                                            tr
+                                                td
+                                                    div(style="width: 700px; height: 200px; border: 1px solid white")
+                                                        h(class="header2" style="text-align: left; padding-left: 5px;") Training Sets
+                                                        div(class="scrollable_area" style="height: 150px; border: 1px solid white; width: 100%; overflow-y: scroll")
+                                                            table(id="added_image_sets" style="border-collapse: collapse")
+                                                td
+                                                    div(style="width: 700px; height: 200px; border: 1px solid white")
+                                                        table 
+                                                            tr 
+                                                                td
+                                                                    div(style="width: 280px")
+                                                                        h(class="header2" style="text-align: left; padding-left: 5px;") Model Classes 
+                                                                        div(class="scrollable_area" style="height: 160px; border: 1px solid white; width: 100%; overflow-y: scroll; border-radius: 5px;")
+                                                                            table(id="model_class_list" style="border-collapse: collapse")
                                         
+                                                                td 
+                                                                    table
+                                                                        tr
+                                                                            td 
+                                                                                div(class="header2" style="width: 170px; text-align: right") Training Regime
+                                                                            td 
+                                                                                div(style="width: 140px" id="training_regime_text") 50 Epochs
+                                                                            
+                                                                            td
+                                                                                button(class="button-green button-green-hover" style="font-size: 14px; padding: 2px 4px" onclick="configure_training_regime()") Configure
 
-                                    div(id="pending_train_tab")
-                                        br
-                                        br
-                                        br
-                                        h(style="font-weight: bold") #{username}'s
-                                        div(class="header2") Pending Models
+                                                                        tr
+                                                                            td 
+                                                                                div(class="header2" style="width: 170px; text-align: right") Model Name
+                                                                            td
+                                                                                div(style="width: 140px")
+                                                                                    input(id="model_name_input" class="nonfixed_input")
+                                                                            td
 
-                                        br
-                                        br
+                                                                        tr
+                                                                            td 
+                                                                                div(class="header2" style="width: 170px; text-align: right") Make Model Public
+                                                                            td
+                                                                                div(style="width: 140px; text-align: left")
+                                                                                    label(for="model_public" class="container" style="display: inline; margin-botton: 20px; margin-left: 12px")
+                                                                                        input(type="checkbox" id="model_public" name="model_public" checked)
+                                                                                        span(class="checkmark")
+                                                                            td
 
-                                        div(id="pending_models")
-                                
+
+
+                                                                    div(style="height: 50px")
+                                                                    button(id="submit_training_request" class="button-green button-green-hover" style="width: 250px; height: 30px;") Submit Training Request
+
+                                div(id="available_train_tab")
+                                    br
+                                    br
+                                    br
+                                    h(style="font-weight: bold") #{username}'s
+                                    div(class="header2") Trained Models
+
+                                    br
+                                    br
+
+                                    div(id="available_models")
+
                                     
-                                    div(id="aborted_train_tab")
-                                        br
-                                        br
-                                        br
-                                        h(style="font-weight: bold") #{username}'s
-                                        div(class="header2") Aborted Models
 
-                                        br
-                                        br
+                                div(id="pending_train_tab")
+                                    br
+                                    br
+                                    br
+                                    h(style="font-weight: bold") #{username}'s
+                                    div(class="header2") Pending Models
 
-                                        div(id="aborted_models")
+                                    br
+                                    br
+
+                                    div(id="pending_models")
+                            
+                                
+                                div(id="aborted_train_tab")
+                                    br
+                                    br
+                                    br
+                                    h(style="font-weight: bold") #{username}'s
+                                    div(class="header2") Aborted Models
+
+                                    br
+                                    br
+
+                                    div(id="aborted_models")
 
 
     script.
