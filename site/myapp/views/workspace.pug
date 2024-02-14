@@ -114,21 +114,17 @@ html
 
                                             
                                             hr
-                                            //br
 
                                             button(id="save_button" class="button-green button-green-hover" style="width: 200px; font-size: 16px")
-                                                i(id="save_icon" class="fa-solid fa-floppy-disk" style="padding-right: 8px; color: white")
+                                                i(class="fa-solid fa-floppy-disk" style="padding-right: 8px; color: white")
                                                 |
                                                 | Save All Changes 
                                         
                                             div(id="fake_save_button" hidden)
-                                                button(class="button-green" style="width: 200px; font-size: 16px")
+                                                button(class="button-red" style="width: 200px; font-size: 16px")
                                                     div(class="loader" style="width: 14px; height: 14px; margin: 0px 8px 0px 0px; display: inline-block")
                                                     |
                                                     | Save All Changes
-
-                                            //br
-                                            //br
 
                                             hr
 
@@ -138,6 +134,9 @@ html
                                                     td(style="text-align: left")
                                                         h(class="header2" style="width: 170px") Active Edit Layer
                                                     td(style="width: 100%")
+                                                    td
+                                                        button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="customize_hotkeys()")
+                                                            i(class="fa-regular fa-keyboard") 
                                                     td
                                                         button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="show_customize_overlays_modal()")
                                                             i(class="fa-solid fa-palette") 

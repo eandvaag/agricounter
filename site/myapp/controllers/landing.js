@@ -38,7 +38,16 @@ const USERNAME_FORMAT =           /[\s `!@#$%^&*()+\=\[\]{}.;':"\\|,<>\/?~]/;
 const MIN_CAMERA_HEIGHT = 0.01;
 const MAX_CAMERA_HEIGHT = 1000000000;
 
-
+const allowed_hotkeys = [
+    "Tab", "Caps Lock", "Shift", "Control", "Alt", "Delete", 
+    " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+    "-", "+", "Backspace", "[", "]", "Enter", ";", "'",
+    "\\", ",", ".", "/", "`",
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", 
+    "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", 
+    "a", "s", "d", "f", "g", "h", "j", "k", "l", 
+    "z", "x", "c", "v", "b", "n", "m"
+];
 
 Date.prototype.isValid = function () {
     // An invalid date object returns NaN for getTime() and NaN is the only
@@ -251,6 +260,15 @@ function init_usr(username) {
     let overlay_appearance_path = path.join(USR_DATA_ROOT, username, "overlay_appearance.json");
     try {
         fs.copyFileSync(default_overlay_apperance_path, overlay_appearance_path, fs.constants.COPYFILE_EXCL);
+    }
+    catch (error) {
+        return false;
+    }
+
+    let default_hotkeys_path = path.join(USR_SHARED_ROOT, "default_hotkeys.json");
+    let hotkeys_path = path.join(USR_DATA_ROOT, username, "hotkeys.json");
+    try {
+        fs.copyFileSync(default_hotkeys_path, hotkeys_path, fs.constants.COPYFILE_EXCL);
     }
     catch (error) {
         return false;
@@ -647,6 +665,41 @@ function is_hex_color(hex_color) {
     return true;
 }
 
+exports.post_hotkey_change = function(req, res, next) {
+    let response = {};
+
+    let hotkeys = JSON.parse(req.body.hotkeys);
+    let hotkeys_path = path.join(USR_DATA_ROOT, req.session.user.username, "hotkeys.json");
+
+    let hotkey_vals = Object.values(hotkeys);
+    for (let hotkey_val of hotkey_vals) {
+        if (!(allowed_hotkeys.includes(hotkey_val))) {
+            response.error = true;
+            response.message = "Unrecognized hotkey value: '" + hotkey_val + "'.";
+            return res.json(response);
+        }
+    }
+    let unique_hotkey_vals = [... new Set(hotkey_vals)];
+    if (hotkey_vals.length > unique_hotkey_vals.length) {
+        response.error = true;
+        response.message = "Submitted hotkey values are not unique.";
+        return res.json(response);
+    }
+
+    try {
+        fs.writeFileSync(hotkeys_path, JSON.stringify(hotkeys));
+    }
+    catch (error) {
+        response.error = true;
+        response.message = "Failed to save hotkeys.";
+        return res.json(response);
+    }
+
+    response.error = false;
+    return res.json(response);
+}
+
+
 exports.post_overlay_appearance_change = function(req, res, next) {
 
     let overlay_appearance = JSON.parse(req.body.overlay_appearance);
@@ -790,6 +843,16 @@ exports.get_workspace = function(req, res, next) {
                 return res.redirect(process.env.AC_PATH);
             }
 
+            let hotkeys;
+            let hotkeys_path = path.join(USR_DATA_ROOT, username, "hotkeys.json");
+            try {
+                hotkeys = JSON.parse(fs.readFileSync(hotkeys_path, 'utf8'));
+            }
+            catch (error) {
+                console.log(error);
+                return res.redirect(process.env.AC_PATH);
+            }
+
             console.log("getting annotations");
             let annotations_dir = path.join(image_set_dir, "annotations");
             let annotations_path = path.join(annotations_dir, "annotations.json");
@@ -902,6 +965,7 @@ exports.get_workspace = function(req, res, next) {
                 data["camera_specs"] = camera_specs;
                 data["predictions"] = predictions;
                 data["overlay_appearance"] = overlay_appearance;
+                data["hotkeys"] = hotkeys;
                 data["maintenance_time"] = maintenance_time;
 
                 res.render("workspace", {username: username, data: data});
@@ -1647,7 +1711,7 @@ exports.post_workspace = async function(req, res, next) {
 
 
         console.log("gathering predictions...");
-        glob(path.join(image_set_dir, "model", "prediction", "images", "*"), function(error, image_prediction_dirs) {
+        glob(path.join(image_set_dir, "model", "prediction", "*"), function(error, image_prediction_dirs) {
             if (error) {
                 response.error = true;
                 response.message = "Failed to gather predictions.";
@@ -3627,6 +3691,15 @@ exports.get_viewer = function(req, res, next) {
             return res.redirect(process.env.AC_PATH);
         }
 
+        let hotkeys;
+        let hotkeys_path = path.join(USR_DATA_ROOT, username, "hotkeys.json");
+        try {
+            hotkeys = JSON.parse(fs.readFileSync(hotkeys_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
         let request_path = path.join(sel_results_dir, "request.json");
         let request;
@@ -3747,6 +3820,7 @@ exports.get_viewer = function(req, res, next) {
 
         data["dzi_image_paths"] = nat_orderBy.orderBy(dzi_image_paths);
         data["overlay_appearance"] = overlay_appearance;
+        data["hotkeys"] = hotkeys;
         data["maintenance_time"] = maintenance_time;
 
         res.render("viewer", {username: username, "data": data});

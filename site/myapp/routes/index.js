@@ -39,6 +39,8 @@ router.get('/viewer/:username/:farm_name/:field_name/:mission_date/:result_uuid'
 router.post('/viewer/:username/:farm_name/:field_name/:mission_date/:result_uuid', landing.post_viewer);
 
 router.post('/overlay_appearance_change/:username', landing.post_overlay_appearance_change);
+router.post('/hotkey_change/:username', landing.post_hotkey_change);
+
 
 router.post('/image_set_notification', check_api_key, socket_api.post_image_set_notification);
 router.post('/upload_notification', check_api_key, socket_api.post_upload_notification);

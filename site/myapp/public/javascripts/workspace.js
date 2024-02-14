@@ -6,6 +6,7 @@ let annotations;
 let image_to_dzi;
 let predictions;
 let overlay_appearance;
+let hotkeys;
 let tags;
 
 let viewer;
@@ -58,24 +59,30 @@ let keydown_handler = async function(e) {
 
     if (cur_view === "image") {
 
-        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        if (e.key === hotkeys["Previous Image/Region"]) {
             change_to_prev_image();
         }
-        else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        else if (e.key === hotkeys["Next Image/Region"]) {
             change_to_next_image();
+        }
+        else if (e.key === hotkeys["Save Annotations"]) {
+            $("#save_button").click();
         }
         else {
 
             let valid_keys = [];
-            for (let i = 0; i < metadata["object_classes"].length; i++) {
-                valid_keys.push((i+1).toString());
+            let key_mapping = {};
+            for (let i = 1; i <= metadata["object_classes"].length; i++) {
+                valid_keys.push(hotkeys["Class " + i]);
+                key_mapping[hotkeys["Class " + i]] = i-1;
             }
             if ((cur_panel === "prediction") && (metadata["object_classes"].length > 1)) {
-                valid_keys.push("0");
+                valid_keys.push(hotkeys["All Classes"]);
+                key_mapping[hotkeys["All Classes"]] = -1;
             }
             if (valid_keys.includes(e.key)) {
 
-                let num_val = parseInt(e.key) - 1;
+                let num_val = key_mapping[e.key];
 
                 if (cur_panel === "annotation") {
                     $("#class_select").val(num_val).change();
@@ -91,7 +98,7 @@ let keydown_handler = async function(e) {
 
 let selected_keydown_handler = async function(e) {
 
-    if (e.key === "Delete") {
+    if (e.key === hotkeys["Delete Annotation"]) {
 
         let selected = anno.getSelected();
         if (selected != null) {
@@ -158,25 +165,39 @@ let selected_keydown_handler = async function(e) {
                 create_navigation_table();
             }
 
-            $("#save_icon").css("color", "#ed452b");
+            $("#save_button").removeClass("button-green");
+            $("#save_button").removeClass("button-green-hover");
+            $("#save_button").addClass("button-red");
+            $("#save_button").addClass("button-red-hover");
         }
 
     }
+    else if (e.key === hotkeys["Save Annotations"]) {
+        $("#save_button").click();
+    }
     else {
+
         let valid_keys = [];
-        for (let i = 0; i < metadata["object_classes"].length; i++) {
-            valid_keys.push((i+1).toString());
+        let key_mapping = {};
+        for (let i = 1; i <= metadata["object_classes"].length; i++) {
+            valid_keys.push(hotkeys["Class " + i]);
+            key_mapping[hotkeys["Class " + i]] = i-1;
         }
+
+
         if ((valid_keys.includes(e.key)) && (cur_edit_layer === "annotation")) {
 
             let held_annotation_index = selected_annotation_index;
             await anno.updateSelected(selected_annotation, true);
 
-            let new_cls = parseInt(e.key) - 1;
+            let new_cls = key_mapping[e.key]; //parseInt(e.key) - 1;
 
             annotations[cur_img_name]["classes"][held_annotation_index] = new_cls;
 
-            $("#save_icon").css("color", "#ed452b");
+            $("#save_button").removeClass("button-green");
+            $("#save_button").removeClass("button-green-hover");
+            $("#save_button").addClass("button-red");
+            $("#save_button").addClass("button-red-hover");
             viewer.raiseEvent('update-viewport');
         }
     }
@@ -493,6 +514,7 @@ function create_anno() {
         disableSelect: true,
         readOnly: true,
         formatter: formatter,
+        hotkey: hotkeys["Create Annotation"]
     });
 
     Annotorious.BetterPolygon(anno);
@@ -625,7 +647,10 @@ function create_anno() {
                     create_navigation_table();
                 }
 
-                $("#save_icon").css("color", "#ed452b");
+                $("#save_button").removeClass("button-green");
+                $("#save_button").removeClass("button-green-hover");
+                $("#save_button").addClass("button-red");
+                $("#save_button").addClass("button-red-hover");
             }
         }
 
@@ -756,7 +781,10 @@ function create_anno() {
                 sel_array[selected_annotation_index] = updated_anno_item;
 
                 if (!(arraysEqual(updated_anno_item, prev_anno_item))) {
-                    $("#save_icon").css("color", "#ed452b");
+                    $("#save_button").removeClass("button-green");
+                    $("#save_button").removeClass("button-green-hover");
+                    $("#save_button").addClass("button-red");
+                    $("#save_button").addClass("button-red-hover");
 
 
                     if (cur_edit_layer === "annotation") {
@@ -1073,19 +1101,6 @@ function anno_and_pred_onRedraw() {
             [image_px_height+1e6, 0-1e6]
         ];
 
-        // if (navigation_type === "regions_of_interest") {
-        //     inner_poly = region;
-        // }
-        // else { 
-        //     inner_poly = [
-        //         [region[0], region[1]],
-        //         [region[0], region[3]],
-        //         [region[2], region[3]],
-        //         [region[2], region[1]]
-        //     ];
-        // }
-
-
         overlay.context2d().fillStyle = "#222621";
         overlay.context2d().beginPath();
 
@@ -1221,6 +1236,7 @@ function anno_and_pred_onRedraw() {
 
 
 function create_viewer(viewer_id) {
+
 
     viewer = OpenSeadragon({
         id: viewer_id,
@@ -1602,7 +1618,11 @@ function save_annotations(callback=null) {
         }
         else {
             
-            $("#save_icon").css("color", "white");
+            $("#save_button").removeClass("button-red");
+            $("#save_button").removeClass("button-red-hover");
+            $("#save_button").addClass("button-green");
+            $("#save_button").addClass("button-green-hover");
+
             $("#fake_save_button").hide();
             $("#save_button").show();
 
@@ -1678,7 +1698,10 @@ function confirmed_use_predictions() {
     }
     annotations[cur_img_name]["source"] = "unmodified_model_predictions";
     close_modal();
-    $("#save_icon").css("color", "#ed452b");
+    $("#save_button").removeClass("button-green");
+    $("#save_button").removeClass("button-green-hover");
+    $("#save_button").addClass("button-red");
+    $("#save_button").addClass("button-red-hover");
     show_annotation();
 }
 
@@ -3420,6 +3443,7 @@ $(document).ready(function() {
     excess_green_record = data["excess_green_record"];
     predictions = data["predictions"];
     overlay_appearance = data["overlay_appearance"];
+    hotkeys = data["hotkeys"];
     tags = data["tags"];
 
 
@@ -4078,7 +4102,10 @@ $(document).ready(function() {
             excess_green_record[image_name] = cur_val;
 
             if (prev_val != cur_val) {
-                $("#save_icon").css("color", "#ed452b");
+                $("#save_button").removeClass("button-green");
+                $("#save_button").removeClass("button-green-hover");
+                $("#save_button").addClass("button-red");
+                $("#save_button").addClass("button-red-hover");
             }
         }
     });
@@ -4209,7 +4236,10 @@ $(document).ready(function() {
     });
 
     $("#threshold_slider").change(function() {
-        $("#save_icon").css("color", "#ed452b");
+        $("#save_button").removeClass("button-green");
+        $("#save_button").removeClass("button-green-hover");
+        $("#save_button").addClass("button-red");
+        $("#save_button").addClass("button-red-hover");
         let cur_val = parseFloat($("#threshold_slider").val());
         excess_green_record[cur_img_name] = cur_val;
         $("#threshold_slider_val").html(cur_val.toFixed(2));
@@ -4421,7 +4451,11 @@ $(document).ready(function() {
 
 
     $("body").keydown(function(e) {
-        if (selected_annotation !== null) {
+        let focus_els = $(":focus");
+        if (focus_els.length > 0 && focus_els[0].id.startsWith("hotkey_")) {
+            hotkey_change(focus_els[0].id, e);
+        }
+        else if (selected_annotation !== null) {
             selected_keydown_handler(e);
         }
         else if ($("#engaged_grid_controls").is(":visible")) {
@@ -4975,27 +5009,21 @@ function update_grid_overlap_percent() {
 
 
 function grid_keydown_handler(e) {
-    if ((e.key === "x") || ((e.key === "ArrowRight") || (e.key === " "))) {
+    if (e.key === hotkeys["Next Image/Region"]) {
         $("#next_tile_button").click();
     }
-    if ((e.key === "z") || (e.key == "ArrowLeft")) {
+    else if (e.key === hotkeys["Previous Image/Region"]) {
         $("#prev_tile_button").click();
+    }
+    else if (e.key === hotkeys["Save Annotations"]) {
+        $("#save_button").click();
     }
 }
 
-
-// function resize_window() {
-//     let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
-//     $("#seadragon_viewer").height(new_viewer_height);
-//     $("#chart_container").height(new_viewer_height);
-//     let image_name_table_height = $("#image_name_table").height();
-//     let new_navigation_table_container_height = new_viewer_height - image_name_table_height - 365;
-//     let min_navigation_table_height = 300; //370;
-//     if (new_navigation_table_container_height < min_navigation_table_height) {
-//         new_navigation_table_container_height = min_navigation_table_height;
-//     }
-//     $("#navigation_table_container").height(new_navigation_table_container_height);
-// }
+async function customize_hotkeys() {
+    await unselect_selected_annotation(); 
+    show_customize_hotkeys_modal();
+}
 
 
 $(window).resize(function() {
