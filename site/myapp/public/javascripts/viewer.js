@@ -10,6 +10,7 @@ let dzi_image_paths;
 let excess_green_record;
 let tags;
 let overlay_appearance;
+let hotkeys;
 let dataset_images;
 let image_to_dzi;
 
@@ -870,25 +871,26 @@ let keydown_handler = async function(e) {
 
     if (cur_view === "image") {
 
-        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        if (e.key === hotkeys["Previous Image/Region"]) {
             change_to_prev_image();
         }
-        else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        else if (e.key === hotkeys["Next Image/Region"]) {
             change_to_next_image();
         }
         else {
             let valid_keys = [];
-            for (let i = 0; i < metadata["object_classes"].length; i++) {
-                valid_keys.push((i+1).toString());
+            let key_mapping = {};
+            for (let i = 1; i <= metadata["object_classes"].length; i++) {
+                valid_keys.push(hotkeys["Class " + i]);
+                key_mapping[hotkeys["Class " + i]] = i-1;
             }
             if (metadata["object_classes"].length > 1) {
-                valid_keys.push("0");
+                valid_keys.push(hotkeys["All Classes"]);
+                key_mapping[hotkeys["All Classes"]] = -1;
             }
-
             if (valid_keys.includes(e.key)) {
 
-                let num_val = parseInt(e.key) - 1;
-
+                let num_val = key_mapping[e.key];
                 $("#pred_class_select").val(num_val).change();
             }
         }
@@ -911,6 +913,7 @@ $(document).ready(function() {
     request = data["request"];
     dzi_image_paths = data["dzi_image_paths"];
     overlay_appearance = data["overlay_appearance"];
+    hotkeys = data["hotkeys"];
 
     if (data["maintenance_time"] !== "") {
         $("#maintenance_message").html("Site maintenance is scheduled for " + data["maintenance_time"] + ".");
@@ -1150,7 +1153,13 @@ $(document).ready(function() {
 
 
     $("body").keydown(function(e) {
-        keydown_handler(e);
+        let focus_els = $(":focus");
+        if (focus_els.length > 0 && focus_els[0].id.startsWith("hotkey_")) {
+            hotkey_change(focus_els[0].id, e);
+        }
+        else {
+            keydown_handler(e);
+        }
     });
 
     if (can_calculate_density(metadata, camera_specs)) {

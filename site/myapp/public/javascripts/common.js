@@ -67,6 +67,25 @@ let predictions_format_sample_text =
 '    "image_2": {\n' +
 '        ...';
 
+let hotkey_action_ordering = [
+    "Create Annotation",
+    "Delete Annotation",
+    "Next Image/Region",
+    "Previous Image/Region",
+    "Save Annotations",
+    "All Classes",
+    "Class 1",
+    "Class 2",
+    "Class 3",
+    "Class 4",
+    "Class 5",
+    "Class 6",
+    "Class 7",
+    "Class 8",
+    "Class 9"
+];
+
+
 
 Date.prototype.isValid = function () {
     // An invalid date object returns NaN for getTime() and NaN is the only
@@ -757,7 +776,11 @@ function bookmark() {
 
     annotations[cur_img_name]["bookmarked"] = !(bookmark_status);
 
-    $("#save_icon").css("color", "#ed452b");
+    $("#save_button").removeClass("button-green");
+    $("#save_button").removeClass("button-green-hover");
+    $("#save_button").addClass("button-red");
+    $("#save_button").addClass("button-red-hover");
+
     update_region_name();
     create_navigation_table();
 }
@@ -1071,7 +1094,10 @@ function edit_tags() {
         $("#tag_value").val("");
         disable_green_buttons(["add_tag_button"]);
         autocomplete(document.getElementById("tag_name"), Object.keys(tags));
-        $("#save_icon").css("color", "#ed452b");
+        $("#save_button").removeClass("button-green");
+        $("#save_button").removeClass("button-green-hover");
+        $("#save_button").addClass("button-red");
+        $("#save_button").addClass("button-red-hover");
     });
 
     autocomplete(document.getElementById("tag_name"), Object.keys(tags));
@@ -1147,7 +1173,10 @@ function remove_tag(tag_name) {
     }
     add_tags_to_tag_table(removable=true);
     autocomplete(document.getElementById("tag_name"), Object.keys(tags));
-    $("#save_icon").css("color", "#ed452b");
+    $("#save_button").removeClass("button-green");
+    $("#save_button").removeClass("button-green-hover");
+    $("#save_button").addClass("button-red");
+    $("#save_button").addClass("button-red-hover");
 }
 
 
@@ -1758,6 +1787,172 @@ function show_customize_overlays_modal() {
     show_modal_message(`Change Overlay Appearance`, content, modal_width=750);
     draw_customize_overlays_table(false);
 }
+
+
+function show_customize_hotkeys_modal() {
+
+    // new_hotkeys = JSON.parse(JSON.stringify(hotkeys));
+    let content = 
+    `<div class="scrollable_area" style="margin: 0 auto; width: 520px; height: 300px">` +
+        `<table id="hotkeys_table" style="border-collapse: collapse"></table>` +
+    `</div>` +
+
+    `<hr style="width: 90%; margin: auto"></hr>` +
+    `<div style="height: 10px"></div>` +
+
+    `<table>` +
+        `<tr>` +
+            `<td>` +
+                `<div class="header2" style="width: 300px; text-align: right; font-size: 14px">Save Current Settings As My Defaults</div>` +
+            `</td>` +
+            `<td>` +
+                `<div style="width: 100px; text-align: left; margin-top: -5px">` +
+                    `<label for="make_hotkeys_default" class="container" style="display: inline; margin-left: 12px">` +
+                        `<input type="checkbox" id="make_hotkeys_default" name="make_hotkeys_default">` +
+                        `<span class="checkmark"></span>` +
+                    `</label>` +
+                `</div>` +
+            `</td>` +
+        `</tr>` +
+    `</table>` +
+
+    `<table>` +
+        `<tr>` +
+            `<td>` +
+                `<button class="button-green button-green-hover" onclick="apply_hotkey_change()" style="width: 120px; margin-top: 15px">Apply</button>` +
+            `</td>` +
+        `</tr>` +
+    `</table>`;
+
+
+
+    show_modal_message(`Change Hotkeys`, content, modal_width=750);
+    // let hk_button_id_to_action = {};
+    // let hk_button_ids = [];
+    // let i = 0;
+    // for (let hk_action of Object.keys(hotkeys)) {
+    //     let hk_button_id = "hotkey_" + i
+    //     hk_button_ids.push(hk_button_id);
+    //     // hk_button_id_to_action[hk_button_id]
+    //     i++;
+    // }
+    i = 0;
+    for (let hk_action of hotkey_action_ordering) {
+        let hk_action_id = "hotkey_action_" + i;
+        let hk_button_id = "hotkey_" + i; //hk_button_ids[i];
+        let hk_text = hotkeys[hk_action];
+        if (hk_text === " ") {
+            hk_text = "Space";
+        }
+        i++;
+        $("#hotkeys_table").append(
+            `<tr style="border-bottom: 1px solid #4c6645; height: 50px">` +
+                `<td>` +
+                    `<div style="width: 15px"></div>` +
+                `</td>` +
+                `<td>` + 
+                    `<div id="${hk_action_id}" style="width: 300px">${hk_action}</div>` +
+                `</td>` +
+                `<td style="width: 100%"></td>` +
+                `<td>` +
+                    `<button id="${hk_button_id}" class="hotkey" style="width: 150px">${hk_text}</button>` +
+                `</td>` +
+                `<td>` +
+                    `<div style="width: 15px"></div>` +
+                `</td>` +
+            `</tr>`);
+
+        $("#" + hk_button_id).click(function() {
+            for (let i = 0; i < hotkey_action_ordering.length; i++) {
+            //for (let other_hk_button_id of hk_button_ids) {
+                let other_hk_button_id = "hotkey_" + i;
+                $("#" + other_hk_button_id).removeClass("hotkey_pressed");
+            }
+            $("#" + hk_button_id).addClass("hotkey_pressed");
+        });
+    }
+}
+
+function hotkey_change(button_id, e) {
+    const allowed_hotkeys = [
+        "Tab", "Caps Lock", "Shift", "Control", "Alt", "Delete", 
+        " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+        "-", "+", "Backspace", "[", "]", "Enter", ";", "'",
+        "\\", ",", ".", "/", "`",
+        "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", 
+        "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", 
+        "a", "s", "d", "f", "g", "h", "j", "k", "l", 
+        "z", "x", "c", "v", "b", "n", "m"
+    ];
+    let new_hotkey_val = e.key;
+    if (allowed_hotkeys.includes(new_hotkey_val)) {
+        let hotkey_text = new_hotkey_val;
+        if (hotkey_text === " ") {
+            hotkey_text = "Space";
+        }
+        $("#" + button_id).text(hotkey_text);
+    }
+}
+
+
+
+function apply_hotkey_change() {
+    let make_default = $("#make_hotkeys_default").is(":checked");
+
+    let new_hotkeys = {};
+    for (let i = 0; i < hotkey_action_ordering.length; i++) {
+        let hotkey_id = "hotkey_" + i;
+        let hotkey_action_id = "hotkey_action_" + i;
+        let hotkey_action = $("#" + hotkey_action_id).text();
+        let hotkey = $("#" + hotkey_id).text();
+        if (hotkey === "Space") {
+            hotkey = " ";
+        }
+        new_hotkeys[hotkey_action] = hotkey;
+    }
+    let hotkey_vals = Object.values(new_hotkeys);
+    let unique_hotkey_vals = [... new Set(hotkey_vals)];
+    if (hotkey_vals.length > unique_hotkey_vals.length) {
+        show_modal_message("Error", "Hotkey values must be unique. The requested changes could not be applied.");
+    }
+
+    if (make_default) {
+        
+        $.post(get_AC_PATH() + "/hotkey_change/" + username,
+        {
+            hotkeys: JSON.stringify(new_hotkeys)
+        },
+        
+        function(response, status) {
+            if (response.error) {
+                show_modal_message(`Error`, response.message);
+            }
+            else {
+                apply_front_end_hotkey_change(new_hotkeys);
+            }
+        });
+    }
+    else {
+        apply_front_end_hotkey_change(new_hotkeys);
+    }
+}
+
+
+function apply_front_end_hotkey_change(new_hotkeys) {
+    hotkeys = new_hotkeys;
+    if (data["cur_page"] === "workspace") {
+        if (cur_panel === "annotation") {
+            viewer = null;
+            show_annotation();
+        }
+        else if (cur_panel === "prediction") {
+            viewer = null;
+            show_prediction();
+        }
+    }
+    close_modal();
+}
+
 
 
 function apply_front_end_appearance_change() {

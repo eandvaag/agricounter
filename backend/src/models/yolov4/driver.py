@@ -195,6 +195,8 @@ def update_loss_record(loss_record, cur_loss):
 
 def get_prediction_patches(request, patch_size, overlap_px, config):
 
+    logger = logging.getLogger(__name__)
+
     incr = patch_size - overlap_px
 
     start_time = time.time()
@@ -202,10 +204,10 @@ def get_prediction_patches(request, patch_size, overlap_px, config):
     num_patches = 0
     all_patch_coords = {}
     region_bboxes = {}
-    for i, image_name in enumerate(request["image_names"]):
+    for image_index, image_name in enumerate(request["image_names"]):
         all_patch_coords[image_name] = []
         region_bboxes[image_name] = []
-        for region in request["regions"][i]:
+        for region in request["regions"][image_index]:
 
             region_bbox = poly_utils.get_poly_bbox(region)
 
@@ -218,10 +220,15 @@ def get_prediction_patches(request, patch_size, overlap_px, config):
             h_covered = max(region_height - patch_size, 0)
             num_h_patches = m.ceil(h_covered / incr) + 1
 
-            min_coords = np.array(list(np.ndindex(num_h_patches, num_w_patches))) * incr
+            min_coords = (np.array(list(np.ndindex(num_h_patches, num_w_patches))) * incr) + np.array([[region_bbox[0], region_bbox[1]]])
             patch_coords = np.hstack([min_coords, min_coords + patch_size])
 
-            polys = np.stack([patch_coords[:, 0:2], patch_coords[:, 1:3], patch_coords[:, 2:4], patch_coords[:, [3,0]]], axis=1)
+            polys = np.stack([
+                patch_coords[:, [0, 1]],
+                patch_coords[:, [0, 3]],
+                patch_coords[:, [2, 3]],
+                patch_coords[:, [2, 1]]
+            ], axis=1)
 
             s = STRtree([Polygon(x) for x in polys])
             result = s.query(Polygon(region), predicate="intersects")
@@ -238,7 +245,7 @@ def get_prediction_patches(request, patch_size, overlap_px, config):
 
     end_time = time.time()
     elapsed = end_time - start_time
-    print("Determined there are {} patches and {} batches in {} seconds.".format(
+    logger.info("Determined there are {} patches and {} batches in {} seconds.".format(
         num_patches, num_batches, elapsed))
     
     return all_patch_coords, region_bboxes, num_batches
@@ -338,7 +345,6 @@ def predict(job):
             region_bbox = region_bboxes[image_name][region_index]
             region_patch_coords = all_patch_data[image_name][region_index]
 
-
             batch_patch_arrays = []
             batch_ratios = []
             batch_patch_coords = []
@@ -400,7 +406,6 @@ def predict(job):
 
                 
                 if len(batch_patch_arrays) == config["inference"]["batch_size"] or patch_index == len(region_patch_coords) - 1:
-                    
                     batch_patch_arrays = tf.stack(batch_patch_arrays, axis=0)
                     batch_size = batch_patch_arrays.shape[0]
                     
