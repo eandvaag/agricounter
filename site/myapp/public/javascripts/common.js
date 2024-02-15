@@ -1791,15 +1791,11 @@ function show_customize_overlays_modal() {
 
 function show_customize_hotkeys_modal() {
 
-    // new_hotkeys = JSON.parse(JSON.stringify(hotkeys));
     let content = 
     `<div class="scrollable_area" style="margin: 0 auto; width: 520px; height: 300px">` +
         `<table id="hotkeys_table" style="border-collapse: collapse"></table>` +
     `</div>` +
-
-    `<hr style="width: 90%; margin: auto"></hr>` +
     `<div style="height: 10px"></div>` +
-
     `<table>` +
         `<tr>` +
             `<td>` +
@@ -1815,7 +1811,6 @@ function show_customize_hotkeys_modal() {
             `</td>` +
         `</tr>` +
     `</table>` +
-
     `<table>` +
         `<tr>` +
             `<td>` +
@@ -1827,19 +1822,11 @@ function show_customize_hotkeys_modal() {
 
 
     show_modal_message(`Change Hotkeys`, content, modal_width=750);
-    // let hk_button_id_to_action = {};
-    // let hk_button_ids = [];
-    // let i = 0;
-    // for (let hk_action of Object.keys(hotkeys)) {
-    //     let hk_button_id = "hotkey_" + i
-    //     hk_button_ids.push(hk_button_id);
-    //     // hk_button_id_to_action[hk_button_id]
-    //     i++;
-    // }
-    i = 0;
+
+    let i = 0;
     for (let hk_action of hotkey_action_ordering) {
         let hk_action_id = "hotkey_action_" + i;
-        let hk_button_id = "hotkey_" + i; //hk_button_ids[i];
+        let hk_button_id = "hotkey_" + i;
         let hk_text = hotkeys[hk_action];
         if (hk_text === " ") {
             hk_text = "Space";
@@ -1864,7 +1851,6 @@ function show_customize_hotkeys_modal() {
 
         $("#" + hk_button_id).click(function() {
             for (let i = 0; i < hotkey_action_ordering.length; i++) {
-            //for (let other_hk_button_id of hk_button_ids) {
                 let other_hk_button_id = "hotkey_" + i;
                 $("#" + other_hk_button_id).removeClass("hotkey_pressed");
             }

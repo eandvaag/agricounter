@@ -3972,12 +3972,17 @@ $(document).ready(function() {
     $("#help_button").click(function() {
 
         let head = "Help";
-        let message = `<div style="line-height: 150%; padding: 10px">&#8226; Hold the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>SHIFT</span> key and left mouse button to create a new box annotation or region.` +
+        let create_annotation_text = (hotkeys["Create Annotation"]).toUpperCase();
+        if (create_annotation_text === " ") {
+            create_annotation_text = "SPACE";
+        }
+        let delete_annotation_text = (hotkeys["Delete Annotation"]).toUpperCase();
+        let message = `<div style="line-height: 150%; padding: 10px">&#8226; Hold the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>` + create_annotation_text + `</span> key and left mouse button to create a new box annotation or region.` +
         `<br><br>&#8226; When creating a region, double click the left mouse button to complete the region.` + 
         `<br><br>&#8226; Click on an existing box annotation / region to select it and change its boundaries.` +
-        `<br><br>&#8226; Use the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>DELETE</span> key to remove whichever box annotation / region is currently selected.` + 
+        `<br><br>&#8226; Use the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>` + delete_annotation_text + `</span> key to remove whichever box annotation / region is currently selected.` + 
         // `<br><br>&#8226; If a test region is selected, pressing the <span style='border: 1px solid white; font-size: 16px; padding: 5px 10px; margin: 0px 5px'>m</span> key will change that region into a fine-tuning region.` + 
-        `<br><br>&#8226; Use the number keys to switch between different object classes.` + 
+        // `<br><br>&#8226; Use the number keys to switch between different object classes.` + 
         `<br><br>&#8226; Don't forget to save your work!</div>`;
         show_modal_message(head, message, modal_width=750);
     });
