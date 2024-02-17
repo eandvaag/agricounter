@@ -190,7 +190,7 @@ let selected_keydown_handler = async function(e) {
             let held_annotation_index = selected_annotation_index;
             await anno.updateSelected(selected_annotation, true);
 
-            let new_cls = key_mapping[e.key]; //parseInt(e.key) - 1;
+            let new_cls = key_mapping[e.key];
 
             annotations[cur_img_name]["classes"][held_annotation_index] = new_cls;
 
@@ -1676,7 +1676,7 @@ function confirmed_use_predictions() {
     }
 
     /* Add new boxes */
-    let slider_val = Number.parseFloat($("#confidence_slider").val()); //.toFixed(2);
+    let slider_val = Number.parseFloat($("#confidence_slider").val());
     for (let i = 0; i < predictions[cur_img_name]["scores"].length; i++) {
         if (predictions[cur_img_name]["scores"][i] > slider_val) {
             let box = predictions[cur_img_name]["boxes"][i];
@@ -3981,8 +3981,6 @@ $(document).ready(function() {
         `<br><br>&#8226; When creating a region, double click the left mouse button to complete the region.` + 
         `<br><br>&#8226; Click on an existing box annotation / region to select it and change its boundaries.` +
         `<br><br>&#8226; Use the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>` + delete_annotation_text + `</span> key to remove whichever box annotation / region is currently selected.` + 
-        // `<br><br>&#8226; If a test region is selected, pressing the <span style='border: 1px solid white; font-size: 16px; padding: 5px 10px; margin: 0px 5px'>m</span> key will change that region into a fine-tuning region.` + 
-        // `<br><br>&#8226; Use the number keys to switch between different object classes.` + 
         `<br><br>&#8226; Don't forget to save your work!</div>`;
         show_modal_message(head, message, modal_width=750);
     });

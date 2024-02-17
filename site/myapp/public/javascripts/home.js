@@ -632,16 +632,22 @@ function show_overview() {
             let value_width = "200px";
         
             $("#tab_details").empty();
-            $("#tab_details").append(`<div style="height: 70px"></div>`);
-        
-            $("#tab_details").append(`<table style="height: 500px; border: 1px solid white; border-radius: 25px;" id="image_set_table"></table>`);
-        
-            $("#image_set_table").append(`<tr>`+
+            $("#tab_details").append(`<div style="height: 45px"></div>`);
+
+
+            $("#tab_details").append(`<table style="margin: 0px auto; border: 1px solid white; border-radius: 25px;" id="image_set_table"></table>`);
+            const min_height = 650;
+            let cur_height = Math.max(min_height, window.innerHeight - $("#header_table").height() - 55);
+            $("#image_set_table").height(cur_height - 215);
+            $("#image_set_table").append(`<tr>` +
                 `<td>` +
-                    `<div style="width: 550px;" id="left_section"></div>` +
+                    `<div style="width: 350px" id="left_section"></div>` +
                 `</td>` +
                 `<td>` +
-                    `<div style="width: 550px;" id="right_section">` +
+                    `<div style="width: 50px"></div>` +
+                `</td>` +
+                `<td>` +
+                    `<div style="width: 550px" id="right_section">` +
                         `<table id="right_table" style="font-size: 14px"></table>` +
                     `</div>` +
                 `</td>` +
@@ -689,7 +695,7 @@ function show_overview() {
                 `<td><div style="text-align: left; width: ${value_width}; margin-left: 10px">${annotation_info["num_test_regions"]}</div></td>` +
                 `</tr>`);
 
-            $("#right_table").append(`<tr><td><div style="height: 25px"></div></td></tr>`);
+            $("#right_table").append(`<tr><td><div style="height: 5px"></div></td></tr>`);
             $("#right_table").append(`<tr><td id="image_set_metadata_entry"></td></tr>`);
             $("#image_set_metadata_entry").append(`<table>` +
                     `<tr>` +
@@ -724,7 +730,7 @@ function show_overview() {
                     `</tr>`);
 
 
-            $("#right_table").append(`<tr><td><div style="height: 25px"></div></td></tr>`);
+            $("#right_table").append(`<tr><td><div style="height: 5px"></div></td></tr>`);
             $("#right_table").append(`<tr><td id="camera_metadata_entry"></td></tr>`);
             $("#camera_metadata_entry").append(`<table>` +
                 `<tr>` +
@@ -818,7 +824,7 @@ function show_overview() {
                         `<table id="left_table">` +
                             `<tr>` +
                                 `<td>` +
-                                `<button class="button-green button-green-hover" style="width: 220px; height: 80px; border-radius: 100px" onclick="workspace_request()">`+
+                                `<button class="button-green button-green-hover" style="width: 200px; height: 80px; border-radius: 100px" onclick="workspace_request()">`+
                                     `<span><i class="fa-regular fa-pen-to-square" style="margin-right: 12px"></i>Workspace</span></button>` +
                                 `</td>` +
                             `</tr>` +
@@ -937,7 +943,7 @@ function view_comment(comment) {
 function create_result_entry(result) {
 
     let result_name = result["results_name"];
-    if (get_text_width(result_name, "normal 12px arial") > 600) {
+    if (get_text_width(result_name, "normal 14px arial") > 600) {
         result_name = result_name.substring(0, 24) + " ... " + result_name.substring(result_name.length - 24);
     }
 
@@ -992,7 +998,7 @@ function create_result_entry(result) {
         `<tr style="border-bottom: 1px solid #4c6645; height: 70px">` +
             `<td><div style="width: 25px"></div></td>` +   
             `<td>` +
-                `<div class="object_entry" style="text-align: left; font-size: 12px; width: 610px; height: 50px; border-radius: 10px;">` +
+                `<div class="object_entry" style="text-align: left; font-size: 14px; width: 350px; height: 50px; border-radius: 10px;">` +
                     `<div style="padding-left: 10px; padding-top: 10px">${result_name}</div>` +
                 `</div>` +
             `</td>` +
@@ -1001,7 +1007,6 @@ function create_result_entry(result) {
                 `<div class="table_entry" style="text-align: left;">${result_overview_info}</div>` +
             `</td>` +
             `<td id="${main_result_container_id}">` +
-
             `</td>` +
             `<td>` +
                 `<div style="width: 60px"></div>` +
@@ -1104,7 +1109,6 @@ function show_results(results) {
         return b["end_time"] - a["end_time"];
     });
 
-    let completed_results_container_height = "400px";
 
     $("#tab_details").empty();
 
@@ -1122,12 +1126,14 @@ function show_results(results) {
 
         `<div id="completed_results" hidden>` +
 
-            `<div style="height: 90px"></div>` +
+            `<div style="height: 100px">` +
+                `<div style="height: 75px"></div>` +
 
-            `<div style="width: 1450px; margin: 0 auto;">` +
                 `<table>` +
                     `<tr>` +
-
+                        `<td>` +
+                            `<div style="width: 10px"</div>` +
+                        `</td>` +
                         `<td>` +
                             `<div style="width: 75px" class="header2">Sort By:</div>` +
                         `</td>` +
@@ -1144,22 +1150,27 @@ function show_results(results) {
 
                     `</tr>` +
                 `</table>` +
-            `</div>`+
+            `</div>` +
 
-            `<div class="scrollable_area" style="border-radius: 10px; height: ${completed_results_container_height}; width: 1450px; margin: 0 auto; overflow-y: scroll">` +
+            `<div id="completed_results_scrollable_area" class="scrollable_area" style="border-radius: 10px; margin: 10px; overflow-y: scroll">` +
                 `<table id="completed_results_table" style="border-collapse: collapse"></table>` +
             `</div>` +
         `</div>` +
 
 
         `<div id="aborted_results" hidden>` +
-            `<div style="height: 90px"></div>` +
-            `<div class="scrollable_area" style="border-radius: 10px; height: ${completed_results_container_height}; width: 1450px; margin: 0 auto; overflow-y: scroll">` +
+            `<div style="height: 100px"></div>` +
+            `<div id="aborted_results_scrollable_area" class="scrollable_area" style="border-radius: 10px; margin: 10px; overflow-y: scroll">` +
                 `<table id="aborted_results_table" style="border-collapse: collapse"></table>` +
             `</div>` +
         `</div>`
 
     );
+
+    const min_height = 650;
+    let cur_height = Math.max(min_height, window.innerHeight - $("#header_table").height() - 55);
+    $("#completed_results_scrollable_area").height(cur_height - 320);
+    $("#aborted_results_scrollable_area").height(cur_height - 320);
 
     if (completed_results.length > 0) {
         for (let result of completed_results) {
@@ -1411,7 +1422,41 @@ $(document).ready(function() {
         show_image_set_details();
     });
 
+    resize_home_window();
+
 });
+
+
+function resize_home_window() {
+
+    const min_height = 650;
+    let cur_height = Math.max(min_height, window.innerHeight - $("#header_table").height() - 55);
+
+    $("#home_content_panel").height(cur_height);
+
+
+    let dropzone_height = cur_height - 500;
+    $("#orthomosaic_dropzone").height(dropzone_height);
+    $("#image_set_dropzone").height(dropzone_height);
+
+    $("#image_set_table").height(cur_height - 215);
+
+    $("#completed_results_scrollable_area").height(cur_height - 320);
+    $("#aborted_results_scrollable_area").height(cur_height - 320);
+
+    $("#model_submission_table").height(cur_height - 100);
+
+    $("#available_models_scrollable_area").height(cur_height - 220);
+    $("#pending_models_scrollable_area").height(cur_height - 220);
+    $("#aborted_models_scrollable_area").height(cur_height - 220);
+    
+}
+
+$(window).resize(function() {
+    resize_home_window();
+});
+
+
 
 
 window.onoffline = (event) => {

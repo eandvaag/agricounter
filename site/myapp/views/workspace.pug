@@ -300,7 +300,7 @@ html
                                             
                                                 div(id="annotation_panel")
                         
-                                                    div(style="height: 40px")
+                                                    div(style="height: 30px")
 
 
                                                     table
@@ -313,8 +313,6 @@ html
                                                                     i(class="fa-solid fa-cube" style="margin-right: 4px") 
                                                                     |
                                                                     | Select 
-
-
 
                                                     
                                                     div(style="height: 30px; border: 1px solid white; border-radius: 10px")
@@ -346,7 +344,7 @@ html
 
                                                     hr
 
-                                                    table
+                                                    table(style="margin-top: -8px")
                                                         tr
                                                             td(style="text-align: left")
                                                                 h(class="header2" style="width: 170px") Fine-Tune
@@ -355,17 +353,13 @@ html
                                                     button(class="button-green button-green-hover" id="fine_tune_model_button" style="font-size: 16px; width: 260px") Request Fine-Tuning
                                                     
 
-                                                    //div(style="height: 5px")
-
                                                     hr
 
-                                                    table
+                                                    table(style="margin-top: -8px")
                                                         tr
                                                             td(style="text-align: left")
                                                                 h(class="header2" style="width: 170px") Predict
                                                             td(style="width: 100%")
-
-                                                    //div(style="height: 5px")
                                                     
                                                     div
                                                         button(id="predict_single_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px")
@@ -379,7 +373,7 @@ html
 
                                                     hr
 
-                                                    table
+                                                    table(style="margin-top: -8px")
                                                         tr
                                                             td(style="text-align: left")
                                                                 h(class="header2" style="width: 170px") Annotations
@@ -395,9 +389,7 @@ html
                                                         | 
                                                         | Download
 
-                                                    //div(style="height: 5px")
                                                     hr
-                                                    //div(style="height: 5px")
 
                                                     button(id="gridview_button" class="button-green button-green-hover" style="font-size: 16px; width: 260px; border-radius: 30px")
                                                         i(class="fa-solid fa-table-cells" style="padding-right: 5px")
@@ -405,8 +397,6 @@ html
                                                         | Grid View
 
 
-
-                                                    //div(style="height: 5px")
                                                     hr
 
 
@@ -459,7 +449,6 @@ html
                                                         table(id="overlays_table" style="margin-top: -22px;")
 
                                                         hr
-                                                        //(style="margin: 0px")
 
                                                         div(id="score_area")
 
@@ -475,8 +464,6 @@ html
                                                                 span(id="quality_score" style="color: white; text-align: left")
                                                             div(id="score_chart" style="height: 175px; width: 275px; border:none")
                                                             hr
-
-                                                            //div(style="height: 3px")
 
                                                         table
                                                             tr
@@ -516,7 +503,6 @@ html
                                                                 td
                                                                     div(id="confidence_slider_val" style="margin-left: 2px; padding: 4px 2px; margin-top: -4px; border-radius: 5px; border: 1px solid white; width: 55px") > 0.50
 
-                                                        //div(style="height: 5px")
                                                         hr(style="margin-top: 2px")
                                             
                                                 div(id="segmentation_panel" hidden)

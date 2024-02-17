@@ -1929,11 +1929,11 @@ function apply_front_end_hotkey_change(new_hotkeys) {
     if (data["cur_page"] === "workspace") {
         if (cur_panel === "annotation") {
             viewer = null;
-            show_annotation();
+            show_annotation(true);
         }
         else if (cur_panel === "prediction") {
             viewer = null;
-            show_prediction();
+            show_prediction(true);
         }
     }
     close_modal();

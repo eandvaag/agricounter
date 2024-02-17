@@ -453,8 +453,6 @@ def process_predict(job):
 
         model_dir = os.path.join(image_set_dir, "model")
 
-
-
         status_path = os.path.join(model_dir, "status.json")
         status = json_io.load_json(status_path)
 

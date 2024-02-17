@@ -2,32 +2,34 @@ doctype html
 
 html
 
-    table(id="header_table" style="background-color: #2a3829; margin: -8px; padding: 6px 0px;")
-        tr
-            td
-                div(style="width: 320px")
-                    a(id="site_home_button" href=process.env.AC_PATH + "/home/" + username style="font-size: 20px; margin: 0px 5px" class="button-black button-black-hover")
-                        i(class="fa-solid fa-house-user" style="padding-right: 8px; font-size: 14px; vertical-align: text-top; margin-top: 4px")
-                        div(style="display: inline") AgriCounter
-            
-            td(style="width: 50%")
 
-            td
-                div(id="maintenance_message" style="width: 600px; text-align: center; padding: 4px; margin: -4px; background-color: #222621; border: 1px solid white" hidden) 
+    div(style="min-width: 1000px")
+        table(id="header_table" style="background-color: #2a3829; margin: -8px; padding: 6px 0px;")
+            tr
+                td
+                    div(style="width: 320px")
+                        a(id="site_home_button" href=process.env.AC_PATH + "/home/" + username style="font-size: 20px; margin: 0px 5px" class="button-black button-black-hover")
+                            i(class="fa-solid fa-house-user" style="padding-right: 8px; font-size: 14px; vertical-align: text-top; margin-top: 4px")
+                            div(style="display: inline") AgriCounter
+                
+                td(style="width: 50%")
 
-            td(style="width: 50%")
+                td
+                    div(id="maintenance_message" style="width: 600px; text-align: center; padding: 4px; margin: -4px; background-color: #222621; border: 1px solid white" hidden) 
 
-            td
-                table
-                    tr 
-                        td
-                            div(style="width: 225px; text-align: right; font-weight: bold;") #{username} 
+                td(style="width: 50%")
 
-                        td 
-                            div(style="width: 25px;")
+                td
+                    table
+                        tr 
+                            td
+                                div(style="width: 225px; text-align: right; font-weight: bold;") #{username} 
 
-                        td
-                            div(style="width: 80px")
-                            a(href=process.env.AC_PATH + "/logout" class="button-black button-black-hover") Log Out
+                            td 
+                                div(style="width: 25px;")
 
-    hr
+                            td
+                                div(style="width: 80px")
+                                a(href=process.env.AC_PATH + "/logout" class="button-black button-black-hover") Log Out
+
+        hr
