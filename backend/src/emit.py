@@ -101,6 +101,10 @@ def emit_upload_change(data):
 def emit(url, data):
     logger = logging.getLogger(__name__)
 
+
+    if "RUNNING_ON_CLUSTER" in os.environ and os.environ["RUNNING_ON_CLUSTER"] == "yes":
+        return True
+
     logger.info("Emitting {} to {}".format(data, url))
     headers = {'API-Key': os.environ["AC_API_KEY"]}
 

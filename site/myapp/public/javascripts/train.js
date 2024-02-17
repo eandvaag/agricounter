@@ -231,14 +231,11 @@ function add_filter_cls_row(cls_name) {
 
     $("#added_filter_classes").append(
         `<tr style="border-bottom: 1px solid #4c6645; height: 40px" id="${row_id}">` + 
-            `<td style="width: 100%">` +
-            `</td>` +
+            `<td><div style="width: 15px"></div></td>` +
             `<td>` +
                 `<div style="width: 200px" class="object_entry">${cls_name}</div>` +
             `</td>` +
-            `<td>` +
-                `<div style="width: 75px"></div>` +
-            `</td>` +
+            `<td style="width: 100%"></td>` +
             `<td>` +
                 `<button onclick="remove_filter_object_class('${cls_ind}')"  style="width: 25px; height: 25px; border-radius: 5px; font-size: 12px;" class="button-red button-red-hover">` +
                     `<i class="fa-solid fa-circle-minus"></i>` + 
@@ -541,7 +538,6 @@ function create_viewer(id_prefix, dzi_image_paths) {
                                     (viewer_point_2.x - viewer_point.x),
                                     (viewer_point_2.y - viewer_point.y)
                                 );
-                                //}
                                 if (overlay_appearance["style"][key] == "fillRect") {
                                     overlays[id_prefix].context2d().fillRect(
                                         viewer_point.x,
@@ -683,9 +679,7 @@ function inspect_image_set(image_set_text_id, for_target) {
             regions[id_prefix] = cur_regions;
             annotations[id_prefix] = response.annotations;
 
-            // let class_counts = get_num_useable_boxes(response.annotations);
             let object_classes = response.object_classes.split(",").sort();
-
 
             cur_inspected_set = {
                 "username": username,
@@ -707,9 +701,6 @@ function inspect_image_set(image_set_text_id, for_target) {
             viewers[id_prefix].goToPage(0);
 
             $("#image_set_class_list").empty();
-            // let class_indices = Object.keys(class_counts).sort();
-            // for (let class_idx of class_indices) {
-                // let class_name = object_classes[class_idx];
 
             for (let class_idx = 0; class_idx < object_classes.length; class_idx++) {
                 let class_name = object_classes[class_idx];
@@ -721,9 +712,6 @@ function inspect_image_set(image_set_text_id, for_target) {
                         `</td>` +
                         `<td>` +
                             `<div style="width: 180px" class="object_entry">${class_name}</div>` +
-                        `</td>` +
-                        `<td>` +
-                            `<div style="width: 5px"></div>` +
                         `</td>` +
                         `<td>` +
                             `<label for="${image_set_class_id}" class="container" style="display: inline; margin-botton: 20px; margin-left: 12px">` +
@@ -795,10 +783,14 @@ function show_pending_train() {
                 });
 
                 $("#pending_models").append(
-                    `<div class="scrollable_area" style="border-radius: 10px; height: 550px; width: 1200px; margin: 0 auto; overflow-y: scroll">` +
+                    `<div id="pending_models_scrollable_area" class="scrollable_area" style="border-radius: 10px; margin: 10px; overflow-y: scroll">` +
                         `<table id="pending_models_table" style="border-collapse: collapse"></table>` +
                     `</div>`
                 );
+
+                const min_height = 650;
+                let cur_height = Math.max(min_height, window.innerHeight - $("#header_table").height() - 55);
+                $("#pending_models_scrollable_area").height(cur_height - 220);
 
                 for (let model of models) {
                     create_model_entry(model["log"], "pending");
@@ -845,10 +837,14 @@ function show_aborted_train() {
                 });
 
                 $("#aborted_models").append(
-                    `<div class="scrollable_area" style="border-radius: 10px; height: 550px; width: 1200px; margin: 0 auto; overflow-y: scroll">` +
+                    `<div id="aborted_models_scrollable_area" class="scrollable_area" style="border-radius: 10px; margin: 10px; overflow-y: scroll">` +
                         `<table id="aborted_models_table" style="border-collapse: collapse"></table>` +
                     `</div>`
                 );
+
+                const min_height = 650;
+                let cur_height = Math.max(min_height, window.innerHeight - $("#header_table").height() - 55);
+                $("#aborted_models_scrollable_area").height(cur_height - 220);
 
                 for (let model of models) {
                     create_model_entry(model["log"], "aborted");
@@ -1037,7 +1033,7 @@ function create_model_entry(model_log, model_status) {
 
         $("#" + destroy_button_container_id).append(
             `<button class="button-red button-red-hover"` +
-                `onclick="destroy_model_request('aborted', '${model_name}')"  style="width: 180px; font-size: 14px; padding: 3px;">` +//<i class="fa-regular fa-circle-xmark"></i></button>`
+                `onclick="destroy_model_request('aborted', '${model_name}')"  style="width: 180px; font-size: 14px; padding: 3px;">` +
 
 
                 `<i class="fa-regular fa-circle-xmark" style="margin-right: 14px"></i><div style="display: inline-block; text-align: left; width: 130px">Destroy Model</div>` +
@@ -1097,10 +1093,14 @@ function show_available_train() {
             else {
 
                 $("#available_models").append(
-                    `<div class="scrollable_area" style="border-radius: 10px; height: 550px; width: 1200px; margin: 0 auto; overflow-y: scroll">` +
+                    `<div id="available_models_scrollable_area" class="scrollable_area" style="border-radius: 10px; margin: 10px; overflow-y: scroll">` +
                         `<table id="available_models_table" style="border-collapse: collapse"></table>` +
                     `</div>`
                 );
+
+                const min_height = 650;
+                let cur_height = Math.max(min_height, window.innerHeight - $("#header_table").height() - 55);
+                $("#available_models_scrollable_area").height(cur_height - 220);
 
                 let models = response.models.sort(function(a, b) {
                     return b["log"]["model_name"] - a["log"]["model_name"];
