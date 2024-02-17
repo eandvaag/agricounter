@@ -25,9 +25,6 @@ function clear_form() {
     for (let key of Object.keys(dropzone_handlers)) {
         dropzone_handlers[key].removeAllFiles();
     }
-    disable_red_buttons(["remove_image_set_files"]);
-    disable_red_buttons(["remove_orthomosaic_files"]);
-    disable_green_buttons(["upload_button"]);
 }
 
 
@@ -115,6 +112,8 @@ function enable_input() {
     let handler_name;
     if ($("#image_set_tab").is(":visible")) {
         handler_name = "image_set";
+        enable_red_buttons(["remove_image_set_files"]);
+        enable_red_buttons(["remove_orthomosaic_files"]);
     }
     else {
         handler_name = "orthomosaic";
@@ -231,32 +230,6 @@ function test_camera_height() {
 }
 
 
-function update_submit() {
-    let handler_name;
-    let remove_all_id;
-    if ($("#image_set_tab").is(":visible")) {
-        handler_name = "image_set";
-        remove_all_id = "remove_image_set_files";
-    }
-    else {
-        handler_name = "orthomosaic";
-        remove_all_id = "remove_orthomosaic_files";
-    }
-
-
-    if (dropzone_handlers[handler_name].files.length > 0) {
-        enable_red_buttons([remove_all_id]);
-        enable_green_buttons(["upload_button"]);
-
-    }
-    else {
-        disable_red_buttons([remove_all_id]);
-        disable_green_buttons(["upload_button"]);
-    }
-}
-
-
-
 
 function create_orthomosaic_dropzone() {
 
@@ -286,7 +259,6 @@ function create_orthomosaic_dropzone() {
             `<div id="orthomosaic_upload_loader" class="loader" hidden></div>` +
         `</div>`
     );
-    disable_red_buttons(["remove_orthomosaic_files"]);
 
     dropzone_handlers["orthomosaic"] = new Dropzone("#orthomosaic_dropzone", { 
         url: get_AC_PATH() + "/orthomosaic_upload",
@@ -349,7 +321,6 @@ function create_image_set_dropzone() {
             `<div id="image_set_upload_loader" class="loader" hidden></div>` +
         `</div>`
     );
-    disable_red_buttons(["remove_image_set_files"]);
 
     dropzone_handlers["image_set"] = new Dropzone("#image_set_dropzone", { 
         url: get_AC_PATH() + "/image_set_upload",
@@ -402,7 +373,6 @@ function add_dropzone_listeners() {
                 initialize_browse();
                 clear_form();
                 enable_input();
-                update_submit();
                 global_disabled = false;
 
                 $("#" + key + "_upload_loader").hide();
@@ -426,16 +396,9 @@ function add_dropzone_listeners() {
         
             show_modal_message(`Error`, upload_error);
             enable_input();
-            update_submit();
             global_disabled = false;
             $("#" + key + "_upload_loader").hide();
 
-        });
-
-        dropzone_handlers[key].on("removedfile", function(file) {
-            if (!(global_disabled)) {
-                update_submit();
-            }
         });
 
         dropzone_handlers[key].on("addedfile", function() {
@@ -465,19 +428,8 @@ function add_dropzone_listeners() {
                 $("#modal_close").hide();
                 clear_form();
                 enable_input();
-                update_submit();
                 global_disabled = false;
                 $("#" + key + "_upload_loader").hide();
-            }
-            else {
-                if ($("#image_set_tab").is(":visible")) {
-                    enable_red_buttons(["remove_image_set_files"]);
-                }
-                else {
-                    enable_red_buttons(["remove_orthomosaic_files"]);
-                }
-
-                $("form").change();
             }
         });
 
@@ -532,13 +484,11 @@ function show_upload_tab(active_tab_btn) {
     if (active_tab_btn === "image_set_tab_btn") {
         if (!global_disabled) {
             $("#image_set_tab").show();
-            update_submit();
         }
     }
     else {
         if (!global_disabled) {
             $("#orthomosaic_tab").show();
-            update_submit();
         }
     }
 
@@ -626,10 +576,8 @@ function initialize_upload() {
     add_dropzone_listeners();
 
     global_disabled = false;
-    disable_green_buttons(["upload_button"]);
 
     populate_object_classes();
-
 
 
     $("#object_input").change(function() {
@@ -663,10 +611,9 @@ function initialize_upload() {
 
         queued_filenames = [];
 
-        if (handler_name === "orthomosaic" && dropzone_handlers[handler_name].getQueuedFiles().length != 1) {
+        if (handler_name === "orthomosaic" && dropzone_handlers[handler_name].getQueuedFiles().length > 1) {
             show_modal_message(`Error`, `Only one orthomosaic can be uploaded at a time.`);
             enable_input();
-            update_submit();
             global_disabled = false;
             $("#" + handler_name + "_upload_loader").hide();
             return;
@@ -684,6 +631,11 @@ function initialize_upload() {
         }
         if (res[0]) {
             res = test_camera_height();
+        }
+        if (res[0]) {
+            if (dropzone_handlers[handler_name].getQueuedFiles().length == 0) {
+                res = [false, "At least one image must be provided."];
+            }
         }
         if (res[0]) {
             for (let f of dropzone_handlers[handler_name].getQueuedFiles()) {
@@ -705,7 +657,6 @@ function initialize_upload() {
             queued_filenames = [];
             show_modal_message(`Error`, res[1]);
             enable_input();
-            update_submit();
             global_disabled = false;
             $("#" + handler_name + "_upload_loader").hide();
             return;
@@ -716,11 +667,6 @@ function initialize_upload() {
         dropzone_handlers[handler_name].processQueue();
 
     });
-
-    $("#upload_form").change(function() {
-        update_submit();
-    });
-
 
     $("#image_set_tab_btn").click(function() {
         show_upload_tab("image_set_tab_btn");
