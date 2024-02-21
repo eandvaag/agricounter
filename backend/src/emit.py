@@ -4,7 +4,11 @@ import logging
 
 from io_utils import json_io
 
-base_url = "https://" + os.environ.get("AC_IP") + ":" + os.environ.get("AC_PORT") + os.environ.get("AC_PATH")
+RUNNING_ON_CLUSTER = "RUNNING_ON_CLUSTER" in os.environ and os.environ["RUNNING_ON_CLUSTER"] == "yes"
+if RUNNING_ON_CLUSTER:
+    base_url = ""
+else:
+    base_url = "https://" + os.environ.get("AC_IP") + ":" + os.environ.get("AC_PORT") + os.environ.get("AC_PATH")
 image_set_notification_url = base_url + "/image_set_notification"
 results_notification_url = base_url + "/results_notification"
 model_notification_url = base_url + "/model_notification"
@@ -102,7 +106,7 @@ def emit(url, data):
     logger = logging.getLogger(__name__)
 
 
-    if "RUNNING_ON_CLUSTER" in os.environ and os.environ["RUNNING_ON_CLUSTER"] == "yes":
+    if RUNNING_ON_CLUSTER:
         return True
 
     logger.info("Emitting {} to {}".format(data, url))

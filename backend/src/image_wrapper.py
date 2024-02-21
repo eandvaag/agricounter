@@ -1,7 +1,6 @@
 import os
-import imagesize
-# import cv2
 import numpy as np
+import imagesize
 from PIL import Image as PILImage
 
 from io_utils import exif_io
@@ -17,9 +16,6 @@ class ImageWrapper(object):
 
     def load_image_array(self):
         image_array = (np.array(PILImage.open(self.image_path))).astype(np.uint8)
-        # image_array = cv2.imread(self.image_path, cv2.IMREAD_UNCHANGED)
-        # if image_array.ndim == 3:
-        #     image_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
         return image_array
 
         

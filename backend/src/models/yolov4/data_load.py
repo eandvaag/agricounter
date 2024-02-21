@@ -2,7 +2,6 @@ from abc import ABC
 import math as m
 import numpy as np
 import tensorflow as tf
-# import cv2
 from PIL import Image as PILImage
 import psutil
 import tqdm
@@ -101,7 +100,6 @@ class InferenceDataLoader:
             patch = sample_record["patch"]
         else:
             patch = (np.array(PILImage.open(sample_record["patch_path"]))).astype(np.uint8)
-            # patch = cv2.cvtColor(cv2.imread(sample_record["patch_path"]), cv2.COLOR_BGR2RGB)
 
         image = tf.cast(patch, dtype=tf.float32)
 
@@ -176,7 +174,6 @@ class TrainDataLoader(DataLoader):
     def _preprocess(self, sample):
         image_path = bytes.decode((sample["patch_path"]).numpy())
         patch = (np.array(PILImage.open(image_path))).astype(np.uint8)
-        # image = (cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)).astype(np.uint8)
         #image = tf.io.read_file(filename=image_path)
         #image = tf.image.decode_image(contents=image, channels=3, dtype=tf.dtypes.float32)
 
