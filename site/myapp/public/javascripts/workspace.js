@@ -4454,18 +4454,23 @@ $(document).ready(function() {
 
 
     $("body").keydown(function(e) {
-        let focus_els = $(":focus");
-        if (focus_els.length > 0 && focus_els[0].id.startsWith("hotkey_")) {
-            hotkey_change(focus_els[0].id, e);
-        }
-        else if (selected_annotation !== null) {
-            selected_keydown_handler(e);
-        }
-        else if ($("#engaged_grid_controls").is(":visible")) {
-            grid_keydown_handler(e);
+    
+        if ($("#modal").is(":visible")) {
+            let focus_els = $(":focus");
+            if (focus_els.length > 0 && focus_els[0].id.startsWith("hotkey_")) {
+                hotkey_change(focus_els[0].id, e);
+            }
         }
         else {
-            keydown_handler(e);
+            if (selected_annotation !== null) {
+                selected_keydown_handler(e);
+            }
+            else if ($("#engaged_grid_controls").is(":visible")) {
+                grid_keydown_handler(e);
+            }
+            else {
+                keydown_handler(e);
+            }
         }
     });
 

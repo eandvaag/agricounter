@@ -4,16 +4,13 @@ import math as m
 import numpy as np
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
-import cv2
+# import cv2
 from osgeo import gdal
 
 
 from models.common import box_utils, annotation_utils, poly_utils
 from io_utils import json_io
 from image_wrapper import ImageWrapper
-
-DEFAULT_PATCH_SIZE = 300
-
 
 
 def update_model_patch_size(image_set_dir, annotations, region_keys):
@@ -169,9 +166,9 @@ def extract_patch_records_from_image_tiled(image,
                     patch_data["patch_coords"] = [patch_min_y, patch_min_x, patch_max_y, patch_max_x]
                     patch_data["patch_path"] = os.path.join(out_dir, patch_data["patch_name"])
 
-
-                    cv2.imwrite(patch_data["patch_path"], 
-                                cv2.cvtColor(patch_array, cv2.COLOR_RGB2BGR))
+                    (PILImage.fromarray(patch_array.astype(np.uint8))).save(patch_data["patch_path"])
+                    # cv2.imwrite(patch_data["patch_path"], 
+                    #             cv2.cvtColor(patch_array, cv2.COLOR_RGB2BGR))
                     
 
                     annotate_patch(patch_data, image_annotations, patch_coords, region)

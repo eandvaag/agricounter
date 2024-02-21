@@ -1,6 +1,6 @@
 import albumentations as A
 import numpy as np
-import cv2
+# import cv2
 import tensorflow as tf
 
 
@@ -176,35 +176,35 @@ def apply_inference_transform(batch_images, aug_type):
     return transformed_images
 
 
-def undo_inference_transform(image_path, pred_boxes, pred_classes, pred_scores, aug_type):
+# def undo_inference_transform(image_path, pred_boxes, pred_classes, pred_scores, aug_type):
 
-    if aug_type == "nop" or aug_type == "CLAHE":
-        return pred_boxes, pred_classes, pred_scores
+#     if aug_type == "nop" or aug_type == "CLAHE":
+#         return pred_boxes, pred_classes, pred_scores
 
-    augmentations = []
-    if aug_type == "flip_horizontal":
-        augmentations.append(A.HorizontalFlip(always_apply=True))
-    elif aug_type == "flip_vertical":
-        augmentations.append(A.VerticalFlip(always_apply=True))
-    elif aug_type == "rotate_90":
-        augmentations.append(A.Rotate(limit=(-90, -90), always_apply=True))
-    elif aug_type == "rotate_180":
-        augmentations.append(A.Rotate(limit=(-180, -180), always_apply=True))
-    elif aug_type == "rotate_270":
-        augmentations.append(A.Rotate(limit=(-270, -270), always_apply=True))
+#     augmentations = []
+#     if aug_type == "flip_horizontal":
+#         augmentations.append(A.HorizontalFlip(always_apply=True))
+#     elif aug_type == "flip_vertical":
+#         augmentations.append(A.VerticalFlip(always_apply=True))
+#     elif aug_type == "rotate_90":
+#         augmentations.append(A.Rotate(limit=(-90, -90), always_apply=True))
+#     elif aug_type == "rotate_180":
+#         augmentations.append(A.Rotate(limit=(-180, -180), always_apply=True))
+#     elif aug_type == "rotate_270":
+#         augmentations.append(A.Rotate(limit=(-270, -270), always_apply=True))
 
-    image = (cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)).astype(np.uint8)
+#     image = (cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)).astype(np.uint8)
 
-    pred_boxes = box_utils.swap_xy_np(pred_boxes)
+#     pred_boxes = box_utils.swap_xy_np(pred_boxes)
 
-    transform = A.Compose(augmentations, bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'scores']))
-    transformed = transform(image=image, bboxes=pred_boxes, class_labels=pred_classes, scores=pred_scores)
-    transformed_boxes = np.array(transformed["bboxes"]).reshape(-1, 4)
-    transformed_classes = np.array(transformed["class_labels"])
-    transformed_scores = np.array(transformed["scores"])
-    transformed_boxes = box_utils.swap_xy_np(transformed_boxes)
+#     transform = A.Compose(augmentations, bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels', 'scores']))
+#     transformed = transform(image=image, bboxes=pred_boxes, class_labels=pred_classes, scores=pred_scores)
+#     transformed_boxes = np.array(transformed["bboxes"]).reshape(-1, 4)
+#     transformed_classes = np.array(transformed["class_labels"])
+#     transformed_scores = np.array(transformed["scores"])
+#     transformed_boxes = box_utils.swap_xy_np(transformed_boxes)
 
-    return transformed_boxes, transformed_classes, transformed_scores
+#     return transformed_boxes, transformed_classes, transformed_scores
 
 
 def apply_augmentations_custom(augmentations, image, boxes):
