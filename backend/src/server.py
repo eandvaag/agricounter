@@ -104,7 +104,6 @@ def add_request():
         except RuntimeError:
             return {"message": "Job is malformed."}
         
-
         occupied = False
         with cv:
             if job["key"] in occupied_sets:
@@ -465,7 +464,14 @@ def process_predict(job):
         emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                    {"state_name": emit.PREDICTING, "progress": "0% Complete"})
 
+
+        import datetime
+        start_time = time.time()
         yolov4_driver.predict(job)
+        end_time = time.time()
+        elapsed = round(end_time - start_time)
+        h_elapsed = str(datetime.timedelta(seconds=elapsed))
+        logger.info("'Slurm job' took {} seconds to complete.".format(h_elapsed))
 
         if job["save_result"]:
             

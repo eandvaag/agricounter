@@ -1900,6 +1900,7 @@ function apply_hotkey_change() {
     let unique_hotkey_vals = [... new Set(hotkey_vals)];
     if (hotkey_vals.length > unique_hotkey_vals.length) {
         show_modal_message("Error", "Hotkey values must be unique. The requested changes could not be applied.");
+        return;
     }
 
     if (make_default) {

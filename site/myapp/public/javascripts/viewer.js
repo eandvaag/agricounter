@@ -1153,9 +1153,11 @@ $(document).ready(function() {
 
 
     $("body").keydown(function(e) {
-        let focus_els = $(":focus");
-        if (focus_els.length > 0 && focus_els[0].id.startsWith("hotkey_")) {
-            hotkey_change(focus_els[0].id, e);
+        if ($("#modal").is(":visible")) {
+            let focus_els = $(":focus");
+            if (focus_els.length > 0 && focus_els[0].id.startsWith("hotkey_")) {
+                hotkey_change(focus_els[0].id, e);
+            }
         }
         else {
             keydown_handler(e);
