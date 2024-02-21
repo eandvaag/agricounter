@@ -4,7 +4,6 @@ import math as m
 import numpy as np
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
-# import cv2
 from osgeo import gdal
 
 
@@ -167,12 +166,8 @@ def extract_patch_records_from_image_tiled(image,
                     patch_data["patch_path"] = os.path.join(out_dir, patch_data["patch_name"])
 
                     (PILImage.fromarray(patch_array.astype(np.uint8))).save(patch_data["patch_path"])
-                    # cv2.imwrite(patch_data["patch_path"], 
-                    #             cv2.cvtColor(patch_array, cv2.COLOR_RGB2BGR))
                     
-
                     annotate_patch(patch_data, image_annotations, patch_coords, region)
-
 
                     image_patches.append(patch_data)
                     patch_num += 1
