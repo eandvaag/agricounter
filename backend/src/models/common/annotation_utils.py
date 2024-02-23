@@ -1,3 +1,5 @@
+import os
+import glob
 import math as m
 import numpy as np
 
@@ -47,6 +49,19 @@ def load_predictions(predictions_path):
         predictions[image_name]["scores"] = np.array(predictions[image_name]["scores"])
         predictions[image_name]["classes"] = np.array(predictions[image_name]["classes"])
 
+    return predictions
+
+def load_predictions_from_dir(predictions_dir):
+    predictions = {}
+    image_prediction_paths = glob.glob(os.path.join(predictions_dir, "*"))
+    for image_prediction_path in image_prediction_paths:
+        image_predictions = json_io.load_json(image_prediction_path)
+        image_name = os.path.basename(image_prediction_path)[:-len(".json")]
+        predictions[image_name] = {
+            "boxes": np.array(image_predictions["boxes"]),
+            "scores": np.array(image_predictions["scores"]),
+            "classes": np.array(image_predictions["classes"])
+        }
     return predictions
 
 

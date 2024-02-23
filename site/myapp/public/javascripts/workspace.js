@@ -1521,7 +1521,6 @@ async function show_map() {
     viewer = null;
     $("#seadragon_viewer").empty();
 
-
     cur_view = "map";
 
     $("#view_button_text").empty();
@@ -1530,18 +1529,6 @@ async function show_map() {
 
     $("#image_view_container").hide();
     $("#map_view_container").show();
-
-    let map_can_be_built = (Object.keys(predictions).length == Object.keys(annotations).length);
-
-
-    if (map_can_be_built) {
-        $("#insufficient_annotation_container").hide();
-        $("#map_builder_controls_container").show();
-    }
-    else {
-        $("#map_builder_controls_container").hide();
-        $("#insufficient_annotation_container").show();
-    }
 
     draw_map_chart();
 }
@@ -1556,8 +1543,6 @@ function show_image(image_name) {
     
     $("#map_view_container").hide();
     $("#image_view_container").show();
-
-
 
     change_image(image_name + "/" + cur_region_index);
 }
@@ -1808,36 +1793,66 @@ async function show_prediction(change_image=false) {
     $("#predictions_unavailable").hide();
     $("#predictions_available").hide();
     
-    update_count_combo(false);
-    set_count_chart_data();
-    set_score_chart_data();
-    update_score_chart();
-    update_count_chart();
-    
+
+    let pred_callback = function(predictions_available) {
+
+        if (predictions_available) {
+            update_count_combo(false);
+            set_count_chart_data();
+            set_score_chart_data();
+            update_score_chart();
+            update_count_chart();
+            $("#predictions_available").show();
+        }
+        else {
+            $("#predictions_unavailable").show();
+        }
+
+        viewer.zoomPerScroll = 1.2;
+        anno.readOnly = true;
+        
+        if (change_image || prev_panel == "segmentation") {
+            let dzi_image_path = image_to_dzi[cur_img_name];
+            viewer.open(dzi_image_path);      
+        } 
+        else {
+            viewer.world.resetItems();
+        }
+
+        // potentially remove some elements, depending on the zoom level
+        resize_window();
+    };
 
 
     if (cur_img_name in predictions) {
-        $("#predictions_available").show();
+        pred_callback(true);
     }
     else {
-        $("#predictions_unavailable").show();
-    }
-
-    viewer.zoomPerScroll = 1.2;
-    anno.readOnly = true;
+        $.post($(location).attr('href'),
+        {
+            action: "retrieve_image_predictions",
+            image_name: cur_img_name
+        },
     
-    if (change_image || prev_panel == "segmentation") {
-        let dzi_image_path = image_to_dzi[cur_img_name];
-        viewer.open(dzi_image_path);      
-    } 
-    else {
-        viewer.world.resetItems();
-    }
-
-    // potentially remove some elements, depending on the zoom level
-    resize_window();
-
+        function(response, status) {
     
+            let predictions_available = false;
+            if (response.error) {
+                show_modal_message("Error", response.message);
+            }
+            else if (response.predictions_exist) {
+                if (cur_img_name in voronoi_data) {
+                    delete voronoi_data[cur_img_name]["prediction"];
+                }
+                predictions[cur_img_name] = response.predictions;
+                predictions_available = true;
+            }
+            else {
+                predictions_available = false;
+            }
+            pred_callback(predictions_available);
+        });
+    }
 }
 
 
@@ -3441,7 +3456,8 @@ $(document).ready(function() {
     metadata = data["metadata"];
     camera_specs = data["camera_specs"];
     excess_green_record = data["excess_green_record"];
-    predictions = data["predictions"];
+    // predictions = data["predictions"];
+    predictions = {};
     overlay_appearance = data["overlay_appearance"];
     hotkeys = data["hotkeys"];
     tags = data["tags"];
@@ -3582,40 +3598,17 @@ $(document).ready(function() {
 
         }
         if (prediction_image_names !== "") {
-            
-            $.post($(location).attr('href'),
-            {
-                action: "retrieve_predictions",
-                image_names: prediction_image_names
-            },
-        
-            function(response, status) {
-        
-                if (response.error) {
-                    show_modal_message("Error", response.message);
-        
+
+            let prediction_image_name_lst = prediction_image_names.split(",");
+            for (let prediction_image_name of prediction_image_name_lst) {
+                if (prediction_image_name in predictions) {
+                    delete predictions[prediction_image_name];
                 }
-                else {
-
-                    let prediction_image_name_lst = prediction_image_names.split(",");
-
-                    for (let prediction_image_name of prediction_image_name_lst) {
-                        predictions[prediction_image_name] = response.predictions[prediction_image_name];
-
-                        if (prediction_image_name in voronoi_data && "prediction" in voronoi_data[prediction_image_name]) {
-                            delete voronoi_data[prediction_image_name]["prediction"];
-                        }
-                    }
-
-                    if ((cur_panel === "prediction") && (prediction_image_names.includes(cur_img_name))) {
-                        show_prediction();
-                    }
-                }
-            });
-            
+            }
+            if ((cur_panel === "prediction") && (prediction_image_names.includes(cur_img_name))) {
+                show_prediction();
+            }
         }
-
-
     });
 
 

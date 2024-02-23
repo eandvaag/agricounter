@@ -81,11 +81,39 @@ function change_image(cur_nav_item) {
     let dzi_image_path = image_to_dzi[cur_img_name];
     viewer.open(dzi_image_path);
 
-    update_count_combo(true);
-    set_count_chart_data();
-    set_score_chart_data();
-    update_score_chart();
-    update_count_chart();
+
+
+    let pred_callback = function() {
+        update_count_combo(true);
+        set_count_chart_data();
+        set_score_chart_data();
+        update_score_chart();
+        update_count_chart();
+    };
+
+
+
+    if (cur_img_name in predictions) {
+        pred_callback();
+    }
+    else {
+        $.post($(location).attr('href'),
+        {
+            action: "retrieve_image_predictions",
+            image_name: cur_img_name
+        },
+    
+        function(response, status) {
+    
+            if (response.error) {
+                show_modal_message("Error", response.message);
+            }
+            else if (response.predictions_exist) {
+                predictions[cur_img_name] = response.predictions;
+            }
+            pred_callback();
+        });
+    }
 }
 
 
@@ -906,7 +934,7 @@ $(document).ready(function() {
     excess_green_record = data["excess_green_record"];
     tags = data["tags"];
     annotations = data["annotations"];
-    predictions = data["predictions"];
+    predictions = {}; //data["predictions"];
     metadata = data["metadata"];
     camera_specs = data["camera_specs"];
     metrics = data["metrics"];

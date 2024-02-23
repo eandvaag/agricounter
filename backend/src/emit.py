@@ -4,8 +4,8 @@ import logging
 
 from io_utils import json_io
 
-RUNNING_ON_CLUSTER = "RUNNING_ON_CLUSTER" in os.environ and os.environ["RUNNING_ON_CLUSTER"] == "yes"
-if RUNNING_ON_CLUSTER:
+RUNNING_IN_APPTAINER = "RUNNING_IN_APPTAINER" in os.environ and os.environ["RUNNING_IN_APPTAINER"] == "yes"
+if RUNNING_IN_APPTAINER:
     base_url = ""
 else:
     base_url = "https://" + os.environ.get("AC_IP") + ":" + os.environ.get("AC_PORT") + os.environ.get("AC_PATH")
@@ -105,8 +105,7 @@ def emit_upload_change(data):
 def emit(url, data):
     logger = logging.getLogger(__name__)
 
-
-    if RUNNING_ON_CLUSTER:
+    if RUNNING_IN_APPTAINER:
         return True
 
     logger.info("Emitting {} to {}".format(data, url))

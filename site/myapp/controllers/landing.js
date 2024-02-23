@@ -71,8 +71,6 @@ if (process.env.NODE_ENV === "docker") {
     });
 
     scheduler.stderr.on('data', (data) => {
-        // for some reason listening on stderr is required for files to be 
-        //   output correctly by the subprocess ?? 
         console.error(`Scheduler stderr: ${data}`);
     });
     scheduler.stdout.on('data', (data) => {
@@ -920,57 +918,29 @@ exports.get_workspace = function(req, res, next) {
                 dzi_image_paths.push(dzi_image_path);
             }
 
-            let prediction_dir = path.join(image_set_dir, "model", "prediction");
-            let predictions = {};
-            glob(path.join(prediction_dir, "*"), function(error, image_prediction_dirs) {
+            let image_set_info = {
+                "farm_name": farm_name,
+                "field_name": field_name,
+                "mission_date": mission_date,
+                "image_ext": image_ext,
+            }
+    
+            let data = {};
 
-                if (error) {
-                    console.log(error);
-                    return res.redirect(process.env.AC_PATH);
-                }
+            data["cur_page"] = "workspace";
+            data["image_set_info"] = image_set_info;
+            data["metadata"] = metadata;
+            data["dzi_image_paths"] = nat_orderBy.orderBy(dzi_image_paths);
+            data["annotations"] = annotations;
+            data["excess_green_record"] = excess_green_record;
+            data["tags"] = tags;
+            data["camera_specs"] = camera_specs;
+            data["overlay_appearance"] = overlay_appearance;
+            data["hotkeys"] = hotkeys;
+            data["maintenance_time"] = maintenance_time;
 
-                for (let image_prediction_dir of image_prediction_dirs) {
-                    let image_name = path.basename(image_prediction_dir);
+            res.render("workspace", {username: username, data: data});
 
-                    let predictions_path = path.join(image_prediction_dir, "predictions.json");
-                    if (fs.existsSync(predictions_path)) {
-                        let image_predictions;
-                        try {
-                            image_predictions = JSON.parse(fs.readFileSync(predictions_path, 'utf8'));
-                        }
-                        catch {
-                            console.log(error);
-                            return res.redirect(process.env.AC_PATH);
-                        }
-                        predictions[image_name] = image_predictions[image_name];
-                    }
-                }
-        
-                let image_set_info = {
-                    "farm_name": farm_name,
-                    "field_name": field_name,
-                    "mission_date": mission_date,
-                    "image_ext": image_ext,
-                }
-        
-                let data = {};
-
-                data["cur_page"] = "workspace";
-                data["image_set_info"] = image_set_info;
-                data["metadata"] = metadata;
-                data["dzi_image_paths"] = nat_orderBy.orderBy(dzi_image_paths);
-                data["annotations"] = annotations;
-                data["excess_green_record"] = excess_green_record;
-                data["tags"] = tags;
-                data["camera_specs"] = camera_specs;
-                data["predictions"] = predictions;
-                data["overlay_appearance"] = overlay_appearance;
-                data["hotkeys"] = hotkeys;
-                data["maintenance_time"] = maintenance_time;
-
-                res.render("workspace", {username: username, data: data});
-
-            });
         });
     }
     else {
@@ -1709,83 +1679,31 @@ exports.post_workspace = async function(req, res, next) {
     }
     else if (action === "build_map") {
 
+        let prediction_dir = path.join(image_set_dir, "model", "prediction");
+        let maps_dir = path.join(image_set_dir, "maps");
+        let rebuild_command = "python ../../backend/src/interpolate.py " + username + " " +
+            farm_name + " " + field_name + " " + mission_date + " " + prediction_dir + 
+            " " + maps_dir + " " + req.body.class_index + " obj_density";
 
-        console.log("gathering predictions...");
-        glob(path.join(image_set_dir, "model", "prediction", "*"), function(error, image_prediction_dirs) {
+        if (req.body.interpolation === "nearest") {
+            rebuild_command = rebuild_command + " -nearest";
+        }
+        if (req.body.tile_size !== "") {
+            rebuild_command = rebuild_command + " -tile_size " + req.body.tile_size;
+        }
+        console.log(rebuild_command);
+        let result = exec(rebuild_command, {shell: "/bin/bash"}, function (error, stdout, stderr) {
             if (error) {
+                console.log(error.stack);
+                console.log('Error code: '+error.code);
+                console.log('Signal received: '+error.signal);
                 response.error = true;
-                response.message = "Failed to gather predictions.";
-                return res.json(response);
             }
-            let predictions = {};
-            for (let image_prediction_dir of image_prediction_dirs) {
-                let image_predictions_path = path.join(image_prediction_dir, "predictions.json");
-                let image_predictions;
-                try {
-                    image_predictions = JSON.parse(fs.readFileSync(image_predictions_path, 'utf8'));
-                }
-                catch(error) {
-                    response.error = true;
-                    response.message = "Failed to read predictions file.";
-                    return res.json(response);
-                }
-
-                let image_name = path.basename(image_prediction_dir);
-                predictions[image_name] = image_predictions[image_name];
+            else {
+                response.error = false;
             }
-
-            let maps_dir = path.join(image_set_dir, "maps");
-            if (!(fs.existsSync(maps_dir))) {
-                try {
-                    fs.mkdirSync(maps_dir, { recursive: true });
-                }
-                catch(error) {
-                    response.error = true;
-                    response.message = "Failed to create maps directory.";
-                    return res.json(response);
-                }
-            }
-
-            let predictions_out_path = path.join(maps_dir, "predictions.json");
-            try {
-                fs.writeFileSync(predictions_out_path, JSON.stringify(predictions));
-            }
-            catch (error) {
-                console.log(error);
-                response.message = "Failed to write predictions.";
-                response.error = true;
-                return res.json(response);
-            }
-
-            console.log("finished gathering predictions. building map...")
-            let rebuild_command = "python ../../backend/src/interpolate.py " + username + " " +
-                farm_name + " " + field_name + " " + mission_date + " " + predictions_out_path + 
-                " " + maps_dir + " " + req.body.class_index + " obj_density";
-
-            if (req.body.interpolation === "nearest") {
-                rebuild_command = rebuild_command + " -nearest";
-            }
-            if (req.body.tile_size !== "") {
-                rebuild_command = rebuild_command + " -tile_size " + req.body.tile_size;
-            }
-            console.log(rebuild_command);
-            let result = exec(rebuild_command, {shell: "/bin/bash"}, function (error, stdout, stderr) {
-                if (error) {
-                    console.log(error.stack);
-                    console.log('Error code: '+error.code);
-                    console.log('Signal received: '+error.signal);
-                    response.error = true;
-                }
-                else {
-                    response.error = false;
-                }
-                return res.json(response);
-            });
-
-
+            return res.json(response);
         });
-
-
     }
     else if (action === "fetch_models") {
         let object_classes = req.body.object_classes.split(",");
@@ -2004,21 +1922,20 @@ exports.post_workspace = async function(req, res, next) {
         response = await notify_scheduler(request);
         return res.json(response);
     }
-    else if (action === "retrieve_predictions") {
+    else if (action === "retrieve_image_predictions") {
 
-        let image_names = req.body.image_names.split(",");
-        response.predictions = {};
+        let image_name = req.body.image_name;
 
-        for (let image_name of image_names) {
+        let prediction_path = path.join(
+            image_set_dir, 
+            "model", 
+            "prediction",
+            image_name + ".json"
+        );
 
-            let prediction_path = path.join(
-                image_set_dir, 
-                "model", 
-                "prediction",
-                image_name, 
-                "predictions.json"
-            );
 
+        if (fs.existsSync(prediction_path)) {
+            response.predictions_exist = true;
 
             let image_predictions;
             try {
@@ -2030,32 +1947,14 @@ exports.post_workspace = async function(req, res, next) {
                 response.message = "Failed to retrieve predictions.";
                 return res.json(response);
             }
-            response.predictions[image_name] = image_predictions[image_name];
+            response.predictions = image_predictions;
+        }
+        else {
+            response.predictions_exist = false;
         }
         response.error = false;
         return res.json(response);
 
-    }
-    else if (action === "segment") {
-
-        let image_name = req.body.image_name;
-        let threshold = req.body.threshold;
-
-
-        let segment_command = "python ../../backend/src/segment.py " + farm_name + " " + field_name + " " + mission_date + 
-                              " " + image_name + " " + threshold;
-        let result = exec(segment_command, {shell: "/bin/bash"}, function (error, stdout, stderr) {
-            if (error) {
-                console.log(error.stack);
-                console.log('Error code: '+error.code);
-                console.log('Signal received: '+error.signal);
-                response.error = true;
-            }
-            else {
-                response.error = false;
-            }
-            return res.json(response);
-        });
     }
     else if (action === "switch_model") {
 
@@ -3738,15 +3637,6 @@ exports.get_viewer = function(req, res, next) {
             console.log(error);
             return res.redirect(process.env.AC_PATH);
         }
-        let predictions_path = path.join(sel_results_dir, "predictions.json")
-        let predictions;
-        try {
-            predictions = JSON.parse(fs.readFileSync(predictions_path, 'utf8'));
-        }
-        catch (error) {
-            console.log(error);
-            return res.redirect(process.env.AC_PATH);
-        }
         let metrics_path = path.join(sel_results_dir, "metrics.json");
         let metrics;
         try {
@@ -3809,7 +3699,6 @@ exports.get_viewer = function(req, res, next) {
         data["cur_page"] = "viewer";
         data["image_set_info"] = image_set_info;
         data["annotations"] = annotations;
-        data["predictions"] = predictions;
         data["metadata"] = metadata;
         data["camera_specs"] = camera_specs;
         data["excess_green_record"] = excess_green_record;
@@ -3842,19 +3731,18 @@ exports.post_viewer = function(req, res, next) {
     let result_uuid = req.params.result_uuid;
     let action = req.body.action;
 
+    let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name, field_name, mission_date);
+    let results_dir = path.join(image_set_dir, "model", "results", "available", result_uuid);
 
     if (action === "build_map") {
 
         let interpolated_value = req.body.interpolated_value;
         
-        let image_set_dir = path.join(USR_DATA_ROOT, username, "image_sets", farm_name, field_name, mission_date);
-        let results_dir = path.join(image_set_dir, "model", "results", result_uuid);
-
-        let predictions_path = path.join(results_dir, "predictions.json");
+        let prediction_dir = path.join(results_dir, "prediction");
         let maps_dir = path.join(results_dir, "maps");
 
         let rebuild_command = "python ../../backend/src/interpolate.py " + username + " " +
-            farm_name + " " + field_name + " " + mission_date + " " + predictions_path + 
+            farm_name + " " + field_name + " " + mission_date + " " + prediction_dir + 
             " " + maps_dir + " " + req.body.class_index + " " + interpolated_value;
         
 
@@ -3883,6 +3771,39 @@ exports.post_viewer = function(req, res, next) {
             return res.json(response);
         });
     }
+    else if (action === "retrieve_image_predictions") {
+
+        let image_name = req.body.image_name;
+
+        let prediction_path = path.join(
+            results_dir, 
+            "prediction",
+            image_name + ".json"
+        );
+
+        if (fs.existsSync(prediction_path)) {
+            response.predictions_exist = true;
+
+            let image_predictions;
+            try {
+                image_predictions = JSON.parse(fs.readFileSync(prediction_path, 'utf8'));
+            }
+            catch (error) {
+                console.log(error);
+                response.error = true;
+                response.message = "Failed to retrieve predictions.";
+                return res.json(response);
+            }
+            response.predictions = image_predictions;
+        }
+        else {
+            response.predictions_exist = false;
+        }
+        response.error = false;
+        return res.json(response);
+
+    }
+
 }
 
 
