@@ -99,17 +99,17 @@ function change_image(cur_nav_item) {
     else {
         $.post($(location).attr('href'),
         {
-            action: "retrieve_image_predictions",
-            image_name: cur_img_name
+            action: "retrieve_predictions",
+            image_names: cur_img_name
         },
     
         function(response, status) {
-    
+
             if (response.error) {
                 show_modal_message("Error", response.message);
             }
-            else if (response.predictions_exist) {
-                predictions[cur_img_name] = response.predictions;
+            else if (cur_img_name in response.predictions) {
+                predictions[cur_img_name] = response.predictions[cur_img_name];
             }
             pred_callback();
         });

@@ -27,18 +27,45 @@ function show_ridgeline_modal() {
      `</table>` +
  
      `<div style="width: 850px; text-align: center">` +
- 
-         `<div style="width: 800px; height: 500px" class="scrollable_area">` +
+        `<div id="ridgeline_loading"><div style="height: 30px"></div><div class="loader"></div></div>` +
+         `<div style="width: 800px; height: 500px" class="scrollable_area" id="ridgeline_content" hidden>` +
              `<div id="ridgeline_chart" style="margin: 0 auto; border: none; width: 775px; height: 450px"></div>` +
          `</div>` +
      `</div>` 
-     , modal_width=850, display=true);
- 
-     $("#ridgeline_sort_combo").change(function() {
-         draw_ridgeline_chart();
-     });
+    , modal_width=850, display=true);
 
-     draw_ridgeline_chart();
+    $("#ridgeline_sort_combo").change(function() {
+        draw_ridgeline_chart();
+    });
+
+    let image_list = [];
+    for (let image_name of Object.keys(annotations)) {
+        if (!(image_name in predictions)) {
+            image_list.push(image_name);
+        }
+    }
+    $.post($(location).attr('href'),
+    {
+        action: "retrieve_predictions",
+        image_names: image_list.join(",")
+    },
+    function(response, status) {
+
+        if (response.error) {
+            show_modal_message("Error", response.message);
+        }
+        else {
+            for (let image_name of image_list) {
+                if (image_name in response.predictions) {
+                    predictions[image_name] = response.predictions[image_name];
+                }
+            }
+            $("#ridgeline_loading").hide();
+            $("#ridgeline_content").show();
+            draw_ridgeline_chart();
+        }
+    });
+    //  draw_ridgeline_chart();
  }
 
 
