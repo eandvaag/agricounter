@@ -1,0 +1,39 @@
+Bootstrap: docker
+From: nvidia/cuda:11.5.2-cudnn8-devel-ubuntu20.04
+
+
+%files
+    ./requirements.txt
+
+%environment
+    export RUNNING_IN_APPTAINER=yes
+
+%post
+    apt update -y
+    apt update && DEBIAN_FRONTEND=noninteractive apt install -y tzdata
+
+    apt update && apt install -y libgl1
+    apt update && apt install -y libglib2.0-0
+    #apt update && apt install -y linux-libc-dev
+    apt update && apt install -y python3
+    apt update && apt install -y python3-pip
+
+    apt update && apt install -y libgdal-dev gdal-bin
+    pip3 install --upgrade pip
+    pip3 install pygdal==`gdalinfo --version | perl -a -e 'if ($_ =~ /.*\s+(\d+\.\d+\.\d+)/) { print "$1.*"; }'`
+    # pip3 install --no-cache-dir libclang
+    pip3 install -r ./requirements.txt
+
+    ln -s /usr/bin/python3 /usr/bin/python
+
+%runscript
+    if [ "$#" -ne 1 ]; then
+       echo "usage: apptainer run --nv ac_hpc.sif <slurm_job_path>"
+       exit 1
+    fi
+
+    exec python slurm_runner.py $1
+
+
+%help
+    This is a container for running AgriCounter SLURM jobs in an isolated environment.

@@ -127,9 +127,9 @@ def get_vegetation_percentages_for_chunk(excess_green_record, metadata, annotati
 
         pred_mask = np.full((chunk_array.shape[0], chunk_array.shape[1]), True)
 
-        image_boxes = np.array(predictions[image_name]["boxes"])
-        image_scores = np.array(predictions[image_name]["scores"])
-        image_classes = np.array(predictions[image_name]["classes"])
+        image_boxes = predictions[image_name]["boxes"]
+        image_scores = predictions[image_name]["scores"]
+        image_classes = predictions[image_name]["classes"]
 
 
 
@@ -252,9 +252,9 @@ def get_vegetation_percentages_for_image(image_set_dir, excess_green_record, met
         pred_mask = np.full((image_array.shape[0], image_array.shape[1]), True)
         if image_name in predictions:
 
-            image_boxes = np.array(predictions[image_name]["boxes"])
-            image_scores = np.array(predictions[image_name]["scores"])
-            image_classes = np.array(predictions[image_name]["classes"])
+            image_boxes = predictions[image_name]["boxes"]
+            image_scores = predictions[image_name]["scores"]
+            image_classes = predictions[image_name]["classes"]
 
             if cls_name == "All Classes":
                 cls_mask = np.full(image_classes.size, True)

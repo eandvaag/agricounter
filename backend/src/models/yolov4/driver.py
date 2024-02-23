@@ -5,6 +5,7 @@ import glob
 
 import logging
 import time
+import datetime
 import math as m
 import numpy as np
 import tensorflow as tf
@@ -244,7 +245,7 @@ def get_prediction_patches(request, patch_size, overlap_px, config):
             
 
     end_time = time.time()
-    elapsed = end_time - start_time
+    elapsed = round(end_time - start_time)
     logger.info("Determined there are {} patches and {} batches in {} seconds.".format(
         num_patches, num_batches, elapsed))
     
@@ -482,9 +483,6 @@ def predict(job):
 
     end_time = time.time()
 
-    elapsed_prediction_time = end_time - start_time
-    logger.info("Ran predictions in {} seconds".format(elapsed_prediction_time))
-
     emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                               {"state_name": emit.PREDICTING, 
                                "progress": "Saving Predictions"}) 
@@ -492,11 +490,10 @@ def predict(job):
     start_nms_time = time.time()
     driver_utils.apply_nms_to_image_boxes(predictions, 
                                           iou_thresh=config["inference"]["image_nms_iou_thresh"])
-    
     end_nms_time = time.time()
-    elapsed_nms_time = end_nms_time - start_nms_time
-    logger.info("Ran NMS in {} seconds.".format(elapsed_nms_time))
-
+    elapsed_nms = str(datetime.timedelta(seconds=round(end_nms_time - start_nms_time)))
+    logger.info("Finished running NMS. Time elapsed: {}".format(elapsed_nms))
+    
     thresholded_predictions = {}
     for image_name in predictions.keys():
         scores_array = np.array(predictions[image_name]["scores"])
@@ -512,63 +509,78 @@ def predict(job):
 
     predictions_dir = os.path.join(model_dir, "prediction")
     for image_index, image_name in enumerate(job["image_names"]):
-        image_predictions_dir = os.path.join(predictions_dir, image_name)
-        os.makedirs(image_predictions_dir, exist_ok=True)
+        image_predictions_path = os.path.join(predictions_dir, image_name + ".json")
+        json_io.save_json(image_predictions_path, thresholded_predictions[image_name])
 
-        predictions_path = os.path.join(image_predictions_dir, "predictions.json")
-        new_predictions = {
-            image_name: {
-                "boxes": [],
-                "scores": [],
-                "classes": []
-            }
-        }
-        if os.path.exists(predictions_path):
-            existing_predictions = json_io.load_json(predictions_path)
 
-            existing_boxes = np.array(existing_predictions[image_name]["boxes"])
-            existing_box_centres = (existing_boxes[..., :2] + existing_boxes[..., 2:]) / 2.0
-            existing_scores = np.array(existing_predictions[image_name]["scores"])
-            existing_classes = np.array(existing_predictions[image_name]["classes"])
-            mask = np.full(existing_boxes.shape[0], True)
-            for region in job["regions"][image_index]:
-                inds = poly_utils.get_contained_inds_for_points(existing_box_centres, [region])
-                mask[inds] = False
-            existing_boxes = existing_boxes[mask]
-            existing_scores = existing_scores[mask]
-            existing_classes = existing_classes[mask]
-            new_predictions[image_name]["boxes"] = existing_boxes.tolist()
-            new_predictions[image_name]["scores"] = existing_scores.tolist()
-            new_predictions[image_name]["classes"] = existing_classes.tolist()
+        # image_predictions_dir = os.path.join(predictions_dir, image_name)
+        # os.makedirs(image_predictions_dir, exist_ok=True)
 
-        new_predictions[image_name]["boxes"].extend(thresholded_predictions[image_name]["boxes"])
-        new_predictions[image_name]["scores"].extend(thresholded_predictions[image_name]["scores"])
-        new_predictions[image_name]["classes"].extend(thresholded_predictions[image_name]["classes"])
+        # predictions_path = os.path.join(image_predictions_dir, "predictions.json")
+        # new_predictions = {
+        #     image_name: {
+        #         "boxes": [],
+        #         "scores": [],
+        #         "classes": []
+        #     }
+        # }
+        # if os.path.exists(predictions_path):
+        #     existing_predictions = json_io.load_json(predictions_path)
 
-        json_io.save_json(predictions_path, new_predictions)
+        #     existing_boxes = np.array(existing_predictions[image_name]["boxes"])
+        #     existing_box_centres = (existing_boxes[..., :2] + existing_boxes[..., 2:]) / 2.0
+        #     existing_scores = np.array(existing_predictions[image_name]["scores"])
+        #     existing_classes = np.array(existing_predictions[image_name]["classes"])
+        #     mask = np.full(existing_boxes.shape[0], True)
+        #     for region in job["regions"][image_index]:
+        #         inds = poly_utils.get_contained_inds_for_points(existing_box_centres, [region])
+        #         mask[inds] = False
+        #     existing_boxes = existing_boxes[mask]
+        #     existing_scores = existing_scores[mask]
+        #     existing_classes = existing_classes[mask]
+        #     new_predictions[image_name]["boxes"] = existing_boxes.tolist()
+        #     new_predictions[image_name]["scores"] = existing_scores.tolist()
+        #     new_predictions[image_name]["classes"] = existing_classes.tolist()
+
+        # new_predictions[image_name]["boxes"].extend(thresholded_predictions[image_name]["boxes"])
+        # new_predictions[image_name]["scores"].extend(thresholded_predictions[image_name]["scores"])
+        # new_predictions[image_name]["classes"].extend(thresholded_predictions[image_name]["classes"])
+
+        # json_io.save_json(predictions_path, new_predictions)
 
     if job["save_result"]:
-        results_dir = os.path.join(model_dir, "results", "available", job["result_uuid"])
-        if not os.path.exists(results_dir):
-            os.makedirs(results_dir)
+        result_dir = os.path.join(model_dir, "results", "available", job["result_uuid"])
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
         
-        full_predictions_path = os.path.join(results_dir, "full_predictions.json")
+        full_predictions_path = os.path.join(result_dir, "full_predictions.json")
         json_io.save_json(full_predictions_path, predictions)
 
+        image_set_predictions_dir = os.path.join(model_dir, "prediction")
+        result_predictions_dir = os.path.join(result_dir, "prediction")
+        os.makedirs(result_predictions_dir)
+        for image_index, image_name in enumerate(job["image_names"]):
+            image_set_image_predictions_path = os.path.join(image_set_predictions_dir, image_name + ".json")
+            result_image_predictions_path = os.path.join(result_predictions_dir, image_name + ".json")
+            shutil.copyfile(image_set_image_predictions_path, result_image_predictions_path)
 
-        predictions_path = os.path.join(results_dir, "predictions.json")
-        json_io.save_json(predictions_path, thresholded_predictions)
+        
+        # predictions_path = os.path.join(results_dir, "predictions.json")
+        # json_io.save_json(predictions_path, thresholded_predictions)
 
 
 
 
 
     if store_patch_predictions:
-        patch_predictions_path = os.path.join(results_dir, "patch_predictions.json")
+        patch_predictions_path = os.path.join(result_dir, "patch_predictions.json")
         json_io.save_json(patch_predictions_path, patch_predictions)
 
 
-    return False
+    elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
+    logger.info("Finished predicting. Time elapsed: {}".format(elapsed))
+
+    return
 
 
 
@@ -788,6 +800,8 @@ def fine_tune(job):
     
     logger = logging.getLogger(__name__)
 
+    start_time = time.time()
+
     username = job["username"]
     farm_name = job["farm_name"]
     field_name = job["field_name"]
@@ -907,7 +921,9 @@ def fine_tune(job):
                                        "progress": str(num_epochs_trained) + " / "  + str(job["num_epochs"]) + " Epochs Completed"})
 
             if num_epochs_trained >= job["num_epochs"]:
-                logger.info("Finished training!")
+                end_time = time.time()
+                elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
+                logger.info("Finished fine-tuning. Time elapsed: {}".format(elapsed))
                 shutil.copyfile(best_weights_path, cur_weights_path)
                 return
             
@@ -922,8 +938,12 @@ def fine_tune(job):
                                          "progress": "Epochs Since Improvement: " + str(epochs_since_improvement)})
 
             if epochs_since_improvement >= job["improvement_tolerance"]:
+                end_time = time.time()
+                elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
                 num_epochs_trained = len(loss_record["train"]) - 1
-                logger.info("Finished training! Trained for {} epochs in total.".format(num_epochs_trained))
+                logger.info("Finished fine-tuning. Trained for {} epochs in total. Time elapsed: {}".format(
+                    num_epochs_trained, elapsed)
+                )
                 shutil.copyfile(best_weights_path, cur_weights_path)
                 return
 

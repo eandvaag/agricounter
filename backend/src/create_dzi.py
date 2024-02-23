@@ -5,6 +5,7 @@ import subprocess
 import time
 import traceback
 import threading
+import pyvips
 
 from io_utils import json_io
 from lock_queue import LockQueue
@@ -51,7 +52,9 @@ def dzi_worker(image_set_dir, is_ortho, index):
         conv_path = image_path
 
         try:
-            subprocess.run(["vips", "dzsave", conv_path, dzi_path])
+            x = pyvips.Image.new_from_file(conv_path)
+            x.dzsave(dzi_path)
+            # subprocess.run(["vips", "dzsave", conv_path, dzi_path])
         except Exception as e:
             trace = traceback.format_exc()
             logger.error("Error from thread {}: {}".format(index, trace))

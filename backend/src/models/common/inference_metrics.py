@@ -2,6 +2,7 @@ import logging
 import tqdm
 import os
 import time
+import datetime
 import math as m
 import numpy as np
 import tensorflow as tf
@@ -145,9 +146,9 @@ def collect_image_set_metrics(predictions, annotations, metadata):
 
             anno_boxes = annotations[image_name]["boxes"]
             anno_classes = annotations[image_name]["classes"]
-            pred_boxes = np.array(predictions[image_name]["boxes"])
-            pred_scores = np.array(predictions[image_name]["scores"])
-            pred_classes = np.array(predictions[image_name]["classes"])
+            pred_boxes = predictions[image_name]["boxes"]
+            pred_scores = predictions[image_name]["scores"]
+            pred_classes = predictions[image_name]["classes"]
 
             if obj_class != "All Classes":
                 anno_class_mask = anno_classes == obj_ind
@@ -335,10 +336,11 @@ def create_spreadsheet(job, regions_only=False):
     camera_specs_path = os.path.join("usr", "data", username, "cameras", "cameras.json")
     camera_specs = json_io.load_json(camera_specs_path)
     
+    # predictions_path = os.path.join(result_dir, "predictions.json")
+    # predictions = annotation_utils.load_predictions(predictions_path)
 
-
-    predictions_path = os.path.join(result_dir, "predictions.json")
-    predictions = annotation_utils.load_predictions(predictions_path)
+    predictions_dir = os.path.join(result_dir, "predictions")
+    predictions = annotation_utils.load_predictions_from_dir(predictions_dir)
 
     full_predictions_path = os.path.join(result_dir, "full_predictions.json")
     full_predictions = annotation_utils.load_predictions(full_predictions_path)
@@ -421,7 +423,7 @@ def create_spreadsheet(job, regions_only=False):
             worksheet.set_column(idx, idx, max_len)  # set column width
 
 
-    writer.save()
+    writer.close()
 
 
 
@@ -778,10 +780,12 @@ def create_areas_spreadsheet(job, regions_only=False):
 
     camera_specs_path = os.path.join("usr", "data", username, "cameras", "cameras.json")
     camera_specs = json_io.load_json(camera_specs_path)
-    
 
-    predictions_path = os.path.join(result_dir, "predictions.json")
-    predictions = annotation_utils.load_predictions(predictions_path)
+    # predictions_path = os.path.join(result_dir, "predictions.json")
+    # predictions = annotation_utils.load_predictions(predictions_path)
+
+    predictions_dir = os.path.join(result_dir, "predictions")
+    predictions = annotation_utils.load_predictions_from_dir(predictions_dir)
 
     annotations_path = os.path.join(result_dir, "annotations.json")
     annotations = annotation_utils.load_annotations(annotations_path) 
@@ -1032,12 +1036,12 @@ def create_areas_spreadsheet(job, regions_only=False):
                 )) + 1  # adding a little extra space
             worksheet.set_column(idx, idx, max_len)  # set column width
 
-    writer.save()
+    writer.close()
 
     end_time = time.time()
-    elapsed_time = round(end_time - start_time, 2)
+    elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
 
-    logger.info("Calculated Voronoi areas in {} seconds.".format(elapsed_time))
+    logger.info("Calculated Voronoi areas. Time elapsed: {}.".format(elapsed))
 
 
     

@@ -1,10 +1,7 @@
 from abc import ABC
-import math as m
 import numpy as np
 import tensorflow as tf
 from PIL import Image as PILImage
-import psutil
-import tqdm
 
 import models.common.box_utils as box_utils
 import models.common.data_augment as data_augment
@@ -169,11 +166,11 @@ class TrainDataLoader(DataLoader):
         #batch_classes = tf.stack(batch_classes, axis=0)
 
         return self.label_encoder.encode_batch(batch_images, batch_boxes, batch_classes)
-
+        
 
     def _preprocess(self, sample):
         image_path = bytes.decode((sample["patch_path"]).numpy())
-        patch = (np.array(PILImage.open(image_path))).astype(np.uint8)
+        image = (np.array(PILImage.open(image_path))).astype(np.uint8)
         #image = tf.io.read_file(filename=image_path)
         #image = tf.image.decode_image(contents=image, channels=3, dtype=tf.dtypes.float32)
 

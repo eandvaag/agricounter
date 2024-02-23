@@ -1,8 +1,10 @@
 import logging
+import argparse
 import os
 import glob
 import shutil
 import time
+import datetime
 import traceback
 import threading
 import numpy as np
@@ -19,6 +21,7 @@ import extract_patches as ep
 from models.common import annotation_utils, inference_metrics
 import excess_green
 import models.yolov4.driver as yolov4_driver
+import slurm_runner
 import emit
 from image_wrapper import ImageWrapper
 
@@ -29,6 +32,8 @@ occupied_sets = {}
 
 waiting_workers = 0
 TOTAL_WORKERS = 2
+
+RUNNING_ON_CLUSTER = False
 
 app = Flask(__name__)
 
@@ -162,8 +167,8 @@ def create_vegetation_record(image_set_dir, excess_green_record, annotations, pr
         vegetation_record = excess_green.create_vegetation_record_for_image_set(image_set_dir, excess_green_record, metadata, annotations, predictions)
 
     end_time = time.time()
-    elapsed = round(end_time - start_time, 2)
-    logger.info("Finished calculating vegetation percentages. Took {} seconds.".format(elapsed))
+    elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
+    logger.info("Finished calculating vegetation percentages. Time elapsed: {}".format(elapsed))
 
     return vegetation_record
 
@@ -183,13 +188,14 @@ def collect_results(job):
     model_dir = os.path.join(image_set_dir, "model")
     result_dir = os.path.join(model_dir, "results", "available", job["result_uuid"])
 
-
     full_predictions_path = os.path.join(result_dir, "full_predictions.json")
     full_predictions = json_io.load_json(full_predictions_path)
 
-    predictions_path = os.path.join(result_dir, "predictions.json")
-    predictions = json_io.load_json(predictions_path)
+    prediction_dir = os.path.join(result_dir, "prediction")
+    predictions = annotation_utils.load_predictions_from_dir(prediction_dir)
 
+    # predictions_path = os.path.join(result_dir, "predictions.json")
+    # predictions = json_io.load_json(predictions_path)
 
     annotations_src_path = os.path.join(image_set_dir, "annotations", "annotations.json")
     annotations = annotation_utils.load_annotations(annotations_src_path)
@@ -354,8 +360,6 @@ def process_switch(job):
 
         logger.info("Switching to model {}".format(model_name))
 
-
-
         weights_dir = os.path.join(model_dir, "weights")
         best_weights_path = os.path.join(weights_dir, "best_weights.h5")
         cur_weights_path = os.path.join(weights_dir, "cur_weights.h5")
@@ -459,19 +463,15 @@ def process_predict(job):
             raise RuntimeError("Cannot run prediction due to illegal initial image set state.")
 
 
-
-        logger.info("Starting to predict for {}".format(job["key"]))
-        emit.set_image_set_status(username, farm_name, field_name, mission_date, 
-                                   {"state_name": emit.PREDICTING, "progress": "0% Complete"})
-
-
-        import datetime
-        start_time = time.time()
-        yolov4_driver.predict(job)
-        end_time = time.time()
-        elapsed = round(end_time - start_time)
-        h_elapsed = str(datetime.timedelta(seconds=elapsed))
-        logger.info("'Slurm job' took {} seconds to complete.".format(h_elapsed))
+        if RUNNING_ON_CLUSTER:
+            emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                                     {"state_name": emit.PREDICTING, "progress": "In Progress"})
+            slurm_dir = os.path.join(model_dir, "slurm")
+            slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate="00-01:00:00")
+        else:
+            emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                                     {"state_name": emit.PREDICTING, "progress": "0% Complete"})
+            yolov4_driver.predict(job)
 
         if job["save_result"]:
             
@@ -654,7 +654,14 @@ def process_fine_tune(job):
 
             ret = update_training_tf_records(job, patch_data)
             if ret == 0:
-                yolov4_driver.fine_tune(job)
+
+                if RUNNING_ON_CLUSTER:
+                    emit.set_image_set_status(username, farm_name, field_name, mission_date, 
+                                             {"state_name": emit.FINE_TUNING, "progress": "In Progress"})
+                    slurm_dir = os.path.join(model_dir, "slurm")
+                    slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate="00-01:00:00")
+                else:
+                    yolov4_driver.fine_tune(job)
 
 
         with cv:
@@ -911,7 +918,11 @@ def process_train(job):
             json_io.save_json(log_path, log)
 
 
-        yolov4_driver.train(job)
+        if RUNNING_ON_CLUSTER:
+            slurm_dir = os.path.join(model_dir, "slurm")
+            slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate="00-01:00:00")
+        else:
+            yolov4_driver.train(job)
 
 
         log["training_end_time"] = int(time.time())
@@ -1040,10 +1051,22 @@ if __name__ == "__main__":
     # # gpus = None
 
 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--cluster", action="store_true",
+                        help="Indicates that the server should submit SLURM jobs.")
+
+    args = parser.parse_args()
+    
+    RUNNING_ON_CLUSTER = args.cluster
+
+
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-
     logging.basicConfig(level=logging.INFO)
+
+    logger = logging.getLogger(__name__)
+    logger.info("Running on cluster? {}".format(RUNNING_ON_CLUSTER))
 
     for _ in range(TOTAL_WORKERS):
         worker = threading.Thread(target=work)

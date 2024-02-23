@@ -1,15 +1,12 @@
 import os
-import glob
 import math as m
 import numpy as np
 from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import argparse
-import time
 
-
-RESULT_LIFETIME = 2 * 60
+from models.common import annotation_utils
 
 
 MAX_NUM_TILES = 75000
@@ -38,7 +35,7 @@ def create_plot(grid_z0, extent, vmin, vmax, cmap, out_path):
 
 
 def create_interpolation_map_for_ortho(username, farm_name, field_name, mission_date, 
-                    predictions_path, out_dir, class_index, interpolation, tile_size):
+                    prediction_dir, out_dir, class_index, interpolation, tile_size):
 
     metadata_path = os.path.join("usr", "data", username, "image_sets",
                         farm_name, field_name, mission_date,
@@ -73,7 +70,7 @@ def create_interpolation_map_for_ortho(username, farm_name, field_name, mission_
 
     camera_height = metadata["camera_height"]
 
-    predictions = json_io.load_json(predictions_path)
+    predictions = annotation_utils.load_predictions_from_dir(prediction_dir)
     image_name = list(metadata["images"].keys())[0]
 
     image_height_px = metadata["images"][image_name]["height_px"]
@@ -93,10 +90,10 @@ def create_interpolation_map_for_ortho(username, farm_name, field_name, mission_
         if class_index == -1:
             class_mask = np.full(predictions[image_name]["classes"].size, True)
         else:
-            class_mask = np.array(predictions[image_name]["classes"]) == class_index
-        score_mask = np.array(predictions[image_name]["scores"]) > 0.50
+            class_mask = predictions[image_name]["classes"] == class_index
+        score_mask = predictions[image_name]["scores"] > 0.50
         mask = np.logical_and(class_mask, score_mask)
-        pred_boxes = np.array(predictions[image_name]["boxes"])[mask]
+        pred_boxes = predictions[image_name]["boxes"][mask]
     else:
         pred_boxes = np.array([])
 
@@ -217,7 +214,7 @@ def create_interpolation_map_for_ortho(username, farm_name, field_name, mission_
 
 
 def create_interpolation_map(username, farm_name, field_name, mission_date, 
-                             predictions_path, out_dir, class_index, interpolated_value, interpolation, 
+                             prediction_dir, out_dir, class_index, interpolated_value, interpolation, 
                              tile_size, vegetation_record_path):
 
     metadata_path = os.path.join("usr", "data", username, "image_sets",
@@ -227,16 +224,16 @@ def create_interpolation_map(username, farm_name, field_name, mission_date,
 
     if metadata["is_ortho"]:
         create_interpolation_map_for_ortho(username, farm_name, field_name, mission_date, 
-                    predictions_path, out_dir, class_index, interpolation, tile_size)
+                    prediction_dir, out_dir, class_index, interpolation, tile_size)
     else:
         create_interpolation_map_for_image_set(username, farm_name, field_name, mission_date, 
-                    predictions_path, out_dir, class_index, interpolated_value, interpolation, vegetation_record_path)
+                    prediction_dir, out_dir, class_index, interpolated_value, interpolation, vegetation_record_path)
 
 
 def create_interpolation_map_for_image_set(username, farm_name, field_name, mission_date, 
-                                           predictions_path, out_dir, class_index, interpolated_value, interpolation, vegetation_record_path):
+                                           prediction_dir, out_dir, class_index, interpolated_value, interpolation, vegetation_record_path):
 
-    predictions = json_io.load_json(predictions_path)
+    predictions = annotation_utils.load_predictions_from_dir(prediction_dir)
 
     metadata_path = os.path.join("usr", "data", username, "image_sets",
                         farm_name, field_name, mission_date,
@@ -247,7 +244,7 @@ def create_interpolation_map_for_image_set(username, farm_name, field_name, miss
         vegetation_record = json_io.load_json(vegetation_record_path)
 
 
-    if (metadata["missing"]["latitude"] or metadata["missing"]["longitude"]) or metadata["camera_height"] == "":# or metadata["missing"]["area_m2"]:
+    if (metadata["missing"]["latitude"] or metadata["missing"]["longitude"]) or metadata["camera_height"] == "":
         raise RuntimeError("Cannot compute map due to missing metadata.")
 
     camera_specs_path = os.path.join("usr", "data", username, "cameras", "cameras.json")
@@ -295,10 +292,10 @@ def create_interpolation_map_for_image_set(username, farm_name, field_name, miss
         if interpolated_value == "obj_density":
             if image_name in predictions:
                 if class_index == -1:
-                    scores = np.array(predictions[image_name]["scores"])
+                    scores = predictions[image_name]["scores"]
                 else:
-                    class_mask = np.array(predictions[image_name]["classes"]) == class_index
-                    scores = np.array(predictions[image_name]["scores"])[class_mask]
+                    class_mask = predictions[image_name]["classes"] == class_index
+                    scores = predictions[image_name]["scores"][class_mask]
                 predicted_value = np.sum(scores > 0.50) / area_m2
             else:
                 predicted_value = 0
@@ -370,22 +367,13 @@ def create_interpolation_map_for_image_set(username, farm_name, field_name, miss
     json_io.save_json(min_max_rec_path, min_max_rec)
 
 
-
-def remove_old_maps(out_dir):
-    if os.path.exists(out_dir):
-        for f_path in glob.glob(os.path.join(out_dir, "*")):
-            alive_time = time.time() - os.path.getmtime(f_path)
-            if alive_time > RESULT_LIFETIME:
-                os.remove(f_path)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("username", type=str)
     parser.add_argument("farm_name", type=str)
     parser.add_argument("field_name", type=str)
     parser.add_argument("mission_date", type=str)
-    parser.add_argument("predictions_path", type=str)
+    parser.add_argument("prediction_dir", type=str)
     parser.add_argument("out_dir", type=str)
     parser.add_argument("class_index", type=int)    
     parser.add_argument("interpolated_value", type=str)
@@ -409,16 +397,11 @@ if __name__ == "__main__":
     if args.interpolated_value not in valid_values:
         raise RuntimeError("Invalid interpolated value: {}".format(args.interpolated_value))
 
-
-
-    remove_old_maps(args.out_dir)
-
-
     create_interpolation_map(args.username,
                             args.farm_name,
                             args.field_name,
                             args.mission_date,
-                            args.predictions_path,
+                            args.prediction_dir,
                             args.out_dir, 
                             args.class_index, 
                             args.interpolated_value,
