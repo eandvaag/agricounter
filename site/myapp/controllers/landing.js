@@ -1922,35 +1922,32 @@ exports.post_workspace = async function(req, res, next) {
         response = await notify_scheduler(request);
         return res.json(response);
     }
-    else if (action === "retrieve_image_predictions") {
+    else if (action === "retrieve_predictions") {
 
-        let image_name = req.body.image_name;
+        let image_names = req.body.image_names.split(",");
+        response.predictions = {};
+        for (let image_name of image_names) {
+            let prediction_path = path.join(
+                image_set_dir, 
+                "model", 
+                "prediction",
+                image_name + ".json"
+            );
 
-        let prediction_path = path.join(
-            image_set_dir, 
-            "model", 
-            "prediction",
-            image_name + ".json"
-        );
+            if (fs.existsSync(prediction_path)) {
 
-
-        if (fs.existsSync(prediction_path)) {
-            response.predictions_exist = true;
-
-            let image_predictions;
-            try {
-                image_predictions = JSON.parse(fs.readFileSync(prediction_path, 'utf8'));
+                let image_predictions;
+                try {
+                    image_predictions = JSON.parse(fs.readFileSync(prediction_path, 'utf8'));
+                }
+                catch (error) {
+                    console.log(error);
+                    response.error = true;
+                    response.message = "Failed to retrieve predictions.";
+                    return res.json(response);
+                }
+                response.predictions[image_name] = image_predictions;
             }
-            catch (error) {
-                console.log(error);
-                response.error = true;
-                response.message = "Failed to retrieve predictions.";
-                return res.json(response);
-            }
-            response.predictions = image_predictions;
-        }
-        else {
-            response.predictions_exist = false;
         }
         response.error = false;
         return res.json(response);
@@ -3771,39 +3768,37 @@ exports.post_viewer = function(req, res, next) {
             return res.json(response);
         });
     }
-    else if (action === "retrieve_image_predictions") {
+    else if (action === "retrieve_predictions") {
 
-        let image_name = req.body.image_name;
 
-        let prediction_path = path.join(
-            results_dir, 
-            "prediction",
-            image_name + ".json"
-        );
+        let image_names = req.body.image_names.split(",");
+        response.predictions = {};
+        for (let image_name of image_names) {
+            let prediction_path = path.join(
+                results_dir, 
+                "prediction",
+                image_name + ".json"
+            );
 
-        if (fs.existsSync(prediction_path)) {
-            response.predictions_exist = true;
+            if (fs.existsSync(prediction_path)) {
 
-            let image_predictions;
-            try {
-                image_predictions = JSON.parse(fs.readFileSync(prediction_path, 'utf8'));
+                let image_predictions;
+                try {
+                    image_predictions = JSON.parse(fs.readFileSync(prediction_path, 'utf8'));
+                }
+                catch (error) {
+                    console.log(error);
+                    response.error = true;
+                    response.message = "Failed to retrieve predictions.";
+                    return res.json(response);
+                }
+                response.predictions[image_name] = image_predictions;
             }
-            catch (error) {
-                console.log(error);
-                response.error = true;
-                response.message = "Failed to retrieve predictions.";
-                return res.json(response);
-            }
-            response.predictions = image_predictions;
-        }
-        else {
-            response.predictions_exist = false;
         }
         response.error = false;
         return res.json(response);
 
     }
-
 }
 
 

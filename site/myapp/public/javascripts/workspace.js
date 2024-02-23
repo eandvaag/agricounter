@@ -1830,21 +1830,20 @@ async function show_prediction(change_image=false) {
     else {
         $.post($(location).attr('href'),
         {
-            action: "retrieve_image_predictions",
-            image_name: cur_img_name
+            action: "retrieve_predictions",
+            image_names: cur_img_name
         },
-    
         function(response, status) {
     
             let predictions_available = false;
             if (response.error) {
                 show_modal_message("Error", response.message);
             }
-            else if (response.predictions_exist) {
+            else if (cur_img_name in response.predictions) {
                 if (cur_img_name in voronoi_data) {
                     delete voronoi_data[cur_img_name]["prediction"];
                 }
-                predictions[cur_img_name] = response.predictions;
+                predictions[cur_img_name] = response.predictions[cur_img_name];
                 predictions_available = true;
             }
             else {

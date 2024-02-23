@@ -70,7 +70,7 @@ def create_and_run_slurm_job(job, slurm_dir, time_estimate):
 
 
     slurm_job_config = {
-        "job_name": str(uuid.uuid4()),
+        "job_name": "agricounter_" + str(uuid.uuid4()),
         "job_out_path": slurm_job_out_path,
         "time_estimate": time_estimate,
         "memory_estimate": "10GB",
@@ -80,9 +80,11 @@ def create_and_run_slurm_job(job, slurm_dir, time_estimate):
     write_slurm_job(slurm_job_path, slurm_job_config)
 
 
-    test_cmd = "apptainer run --nv ac_hpc.sif " + slurm_job_config["slurm_dir"]
+    #test_cmd = "apptainer run --nv ac_hpc.sif " + slurm_job_config["slurm_dir"]
+    return
+    slurm_cmd = "sbatch " + slurm_job_path
     start_time = time.time()
-    subprocess.run(test_cmd.split(" "))
+    subprocess.run(slurm_cmd.split(" "))
     end_time = time.time()
     elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
     logger.info("Slurm job completed. Elapsed time: {}".format(elapsed))

@@ -31,6 +31,7 @@ from models.yolov4.yolov4 import YOLOv4, YOLOv4Tiny
 import models.yolov4.data_load as data_load
 from models.yolov4.encode import Decoder
 
+MAX_EPOCHS_LIMIT = 400
 
 
 def post_process_sample(detections, resize_ratio, patch_coords, config, region_bbox, apply_nms=True, score_threshold=0.5): #, round_scores=True):
@@ -245,7 +246,7 @@ def get_prediction_patches(request, patch_size, overlap_px, config):
             
 
     end_time = time.time()
-    elapsed = round(end_time - start_time)
+    elapsed = round(end_time - start_time, 4)
     logger.info("Determined there are {} patches and {} batches in {} seconds.".format(
         num_patches, num_batches, elapsed))
     
@@ -481,7 +482,6 @@ def predict(job):
                                                     {"state_name": emit.PREDICTING, 
                                                     "progress": str(percent_complete) + "% Complete"}) 
 
-    end_time = time.time()
 
     emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                               {"state_name": emit.PREDICTING, 
@@ -577,6 +577,8 @@ def predict(job):
         json_io.save_json(patch_predictions_path, patch_predictions)
 
 
+
+    end_time = time.time()
     elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
     logger.info("Finished predicting. Time elapsed: {}".format(elapsed))
 
@@ -702,11 +704,10 @@ def train(job):
         else:
 
             epochs_since_improvement = get_epochs_since_val_loss_improvement(loss_record)
-
             logger.info("Epochs since validation loss improvement: {}".format(epochs_since_improvement))
 
-            if epochs_since_improvement >= job["improvement_tolerance"]:
-                num_epochs_trained = len(loss_record["train"]) - 1
+            num_epochs_trained = len(loss_record["train"]) - 1
+            if epochs_since_improvement >= job["improvement_tolerance"] or num_epochs_trained == MAX_EPOCHS_LIMIT:
                 logger.info("Finished training! Trained for {} epochs in total.".format(num_epochs_trained))
                 shutil.copyfile(best_weights_path, cur_weights_path)
                 return
@@ -936,11 +937,12 @@ def fine_tune(job):
             emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                         {"state_name": emit.FINE_TUNING, 
                                          "progress": "Epochs Since Improvement: " + str(epochs_since_improvement)})
-
-            if epochs_since_improvement >= job["improvement_tolerance"]:
+            
+            num_epochs_trained = len(loss_record["train"]) - 1
+            if epochs_since_improvement >= job["improvement_tolerance"] or num_epochs_trained == MAX_EPOCHS_LIMIT:
                 end_time = time.time()
                 elapsed = str(datetime.timedelta(seconds=round(end_time - start_time)))
-                num_epochs_trained = len(loss_record["train"]) - 1
+                
                 logger.info("Finished fine-tuning. Trained for {} epochs in total. Time elapsed: {}".format(
                     num_epochs_trained, elapsed)
                 )
@@ -1028,3 +1030,96 @@ def model_info(model_type):
     yolov4.summary()
 
 
+def estimate_time_for_training(job, num_training_patches):
+
+    config = create_default_config()
+    batch_size = config["training"]["batch_size"]
+
+    if job["training_regime"] == "fixed_num_epochs":
+        num_epochs = job["num_epochs"]
+    else:
+        num_epochs = MAX_EPOCHS_LIMIT
+
+    max_num_batches = m.ceil(num_training_patches / batch_size) + 1
+
+    seconds_per_batch = 1.1
+    seconds_per_batch_first_epoch = 2.8
+
+    first_epoch_time = max_num_batches * seconds_per_batch_first_epoch
+    remaining_epochs_time = max_num_batches * seconds_per_batch * (num_epochs-1)
+    extra_time = 60
+
+    estimate = first_epoch_time + remaining_epochs_time + extra_time
+
+    return convert_time_estimate_to_slurm_fmt(estimate)
+
+
+def convert_time_estimate_to_slurm_fmt(estimate):
+
+
+    td = datetime.timedelta(seconds=estimate)
+    days = td.days
+    hours = td.seconds // 3600
+    minutes = (td.seconds // 60) % 60
+    seconds = td.seconds - (hours * 3600) - (minutes * 60)
+    
+    est_str = str(days).zfill(2) + "-" + str(hours).zfill(2) + ":" + str(minutes).zfill(2) + ":" + str(seconds).zfill(2)
+
+    return est_str
+
+def estimate_time_for_inference(job):
+
+
+    username = job["username"]
+    farm_name =job["farm_name"]
+    field_name = job["field_name"]
+    mission_date = job["mission_date"]
+
+    image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
+
+    model_dir = os.path.join(image_set_dir, "model")
+
+    status_path = os.path.join(model_dir, "status.json")
+    status = json_io.load_json(status_path)
+
+
+    patch_overlap_percent = 50
+    patch_size = status["patch_size"]
+    overlap_px = int(m.floor(patch_size * (patch_overlap_percent / 100)))
+    incr = patch_size - overlap_px
+    max_patches = 0
+    for image_index in range(len(job["image_names"])):
+        for region in job["regions"][image_index]:
+
+            region_bbox = poly_utils.get_poly_bbox(region)
+
+            region_height = region_bbox[2] - region_bbox[0]
+            region_width = region_bbox[3] - region_bbox[1]
+
+            w_covered = max(region_width - patch_size, 0)
+            num_w_patches = m.ceil(w_covered / incr) + 1
+
+            h_covered = max(region_height - patch_size, 0)
+            num_h_patches = m.ceil(h_covered / incr) + 1
+
+            max_patches_for_region = num_w_patches * num_h_patches
+
+
+            max_patches += max_patches_for_region
+
+    
+    config = create_default_config()
+    batch_size = config["inference"]["batch_size"]
+    num_batches = m.ceil(max_patches / batch_size)
+
+    extra_time = 60
+    prediction_time_per_batch = 1.4
+    prediction_time = prediction_time_per_batch * num_batches
+
+    estimate = extra_time + prediction_time
+
+    return convert_time_estimate_to_slurm_fmt(estimate)
+
+
+
+    

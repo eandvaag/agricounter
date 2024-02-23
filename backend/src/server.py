@@ -33,7 +33,7 @@ occupied_sets = {}
 waiting_workers = 0
 TOTAL_WORKERS = 2
 
-RUNNING_ON_CLUSTER = False
+USE_SLURM = False
 
 app = Flask(__name__)
 
@@ -463,11 +463,12 @@ def process_predict(job):
             raise RuntimeError("Cannot run prediction due to illegal initial image set state.")
 
 
-        if RUNNING_ON_CLUSTER:
+        if USE_SLURM:
             emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                      {"state_name": emit.PREDICTING, "progress": "In Progress"})
             slurm_dir = os.path.join(model_dir, "slurm")
-            slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate="00-01:00:00")
+            time_est = yolov4_driver.estimate_time_for_inference(job)
+            slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate=time_est)
         else:
             emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                      {"state_name": emit.PREDICTING, "progress": "0% Complete"})
@@ -655,11 +656,15 @@ def process_fine_tune(job):
             ret = update_training_tf_records(job, patch_data)
             if ret == 0:
 
-                if RUNNING_ON_CLUSTER:
+                if USE_SLURM:
                     emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                                              {"state_name": emit.FINE_TUNING, "progress": "In Progress"})
                     slurm_dir = os.path.join(model_dir, "slurm")
-                    slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate="00-01:00:00")
+                    num_patch_records = 0
+                    for image_name in patch_data.keys():
+                        num_patch_records += len(patch_data[image_name])
+                    time_est = yolov4_driver.get_training_time_estimate(job, num_patch_records)
+                    slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate=time_est)
                 else:
                     yolov4_driver.fine_tune(job)
 
@@ -738,189 +743,189 @@ def process_train(job):
         if len(log["object_classes"]) == 0:
             raise RuntimeError("Class list in model log file is empty.")
 
-        if "training_start_time" not in log:
-            os.makedirs(patches_dir)
-            os.makedirs(annotations_dir)
-            os.makedirs(model_dir)
-            os.makedirs(training_dir)
-            os.makedirs(weights_dir)
+        os.makedirs(patches_dir)
+        os.makedirs(annotations_dir)
+        os.makedirs(model_dir)
+        os.makedirs(training_dir)
+        os.makedirs(weights_dir)
 
 
-            all_records = []
-            for image_set_index, image_set in enumerate(log["image_sets"]):
-                print("now_processing", image_set)
+        all_records = []
+        for image_set_index, image_set in enumerate(log["image_sets"]):
+            print("now_processing", image_set)
 
-                username = image_set["username"]
-                farm_name = image_set["farm_name"]
-                field_name = image_set["field_name"]
-                mission_date = image_set["mission_date"]
-                logger.info("Baseline: Preparing patches from {} {} {} {}".format(
-                    username, farm_name, field_name, mission_date))
+            username = image_set["username"]
+            farm_name = image_set["farm_name"]
+            field_name = image_set["field_name"]
+            mission_date = image_set["mission_date"]
+            logger.info("Baseline: Preparing patches from {} {} {} {}".format(
+                username, farm_name, field_name, mission_date))
+            
+            image_set_dir = os.path.join("usr", "data", username, "image_sets", 
+                                        farm_name, field_name, mission_date)
+            images_dir = os.path.join(image_set_dir, "images")
+
+            metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
+            metadata = json_io.load_json(metadata_path)
+            is_ortho = metadata["is_ortho"]
+
+            annotations_path = os.path.join(image_set_dir, "annotations", "annotations.json")
+            annotations = annotation_utils.load_annotations(annotations_path)
+
+
+            num_annotations = annotation_utils.get_num_annotations(annotations, ["fine_tuning_regions", "test_regions"])
+
+            if num_annotations > 0:
+                average_box_area = annotation_utils.get_average_box_area(annotations, region_keys=["fine_tuning_regions", "test_regions"], measure="mean")
+                average_box_height = annotation_utils.get_average_box_height(annotations, region_keys=["fine_tuning_regions", "test_regions"], measure="mean")
+                average_box_width = annotation_utils.get_average_box_width(annotations, region_keys=["fine_tuning_regions", "test_regions"], measure="mean")
+                patch_size = annotation_utils.average_box_area_to_patch_size(average_box_area)
+            else:
+                average_box_area = "NA"
+                average_box_height = "NA"
+                average_box_width = "NA"
+                patch_size = 416
+
+            if "patch_size" in image_set:
+                patch_size = image_set["patch_size"]
+
+            log["image_sets"][image_set_index]["num_annotations"] = num_annotations
+            log["image_sets"][image_set_index]["average_box_area"] = average_box_area
+            log["image_sets"][image_set_index]["average_box_height"] = average_box_height
+            log["image_sets"][image_set_index]["average_box_width"] = average_box_width
+            log["image_sets"][image_set_index]["patch_size"] = patch_size
+
+            
+            logger.info("Patch size: {} px".format(patch_size))
+
+            for image_name in annotations.keys():
                 
-                image_set_dir = os.path.join("usr", "data", username, "image_sets", 
-                                            farm_name, field_name, mission_date)
-                images_dir = os.path.join(image_set_dir, "images")
-
-                metadata_path = os.path.join(image_set_dir, "metadata", "metadata.json")
-                metadata = json_io.load_json(metadata_path)
-                is_ortho = metadata["is_ortho"]
-
-                annotations_path = os.path.join(image_set_dir, "annotations", "annotations.json")
-                annotations = annotation_utils.load_annotations(annotations_path)
-
-
-                num_annotations = annotation_utils.get_num_annotations(annotations, ["fine_tuning_regions", "test_regions"])
-
-                if num_annotations > 0:
-                    average_box_area = annotation_utils.get_average_box_area(annotations, region_keys=["fine_tuning_regions", "test_regions"], measure="mean")
-                    average_box_height = annotation_utils.get_average_box_height(annotations, region_keys=["fine_tuning_regions", "test_regions"], measure="mean")
-                    average_box_width = annotation_utils.get_average_box_width(annotations, region_keys=["fine_tuning_regions", "test_regions"], measure="mean")
-                    patch_size = annotation_utils.average_box_area_to_patch_size(average_box_area)
-                else:
-                    average_box_area = "NA"
-                    average_box_height = "NA"
-                    average_box_width = "NA"
-                    patch_size = 416
-
-                if "patch_size" in image_set:
-                    patch_size = image_set["patch_size"]
-
-                log["image_sets"][image_set_index]["num_annotations"] = num_annotations
-                log["image_sets"][image_set_index]["average_box_area"] = average_box_area
-                log["image_sets"][image_set_index]["average_box_height"] = average_box_height
-                log["image_sets"][image_set_index]["average_box_width"] = average_box_width
-                log["image_sets"][image_set_index]["patch_size"] = patch_size
-
-                
-                logger.info("Patch size: {} px".format(patch_size))
-
-                for image_name in annotations.keys():
-                    
-                    if "taken_regions" in image_set:
-                        if image_name in image_set["taken_regions"]:
-                            regions = image_set["taken_regions"][image_name]
-                        else:
-                            regions = []
+                if "taken_regions" in image_set:
+                    if image_name in image_set["taken_regions"]:
+                        regions = image_set["taken_regions"][image_name]
                     else:
-                        regions = annotations[image_name]["fine_tuning_regions"] + annotations[image_name]["test_regions"]
+                        regions = []
+                else:
+                    regions = annotations[image_name]["fine_tuning_regions"] + annotations[image_name]["test_regions"]
 
-                    if "class_mapping" in image_set:
+                if "class_mapping" in image_set:
 
-                        class_mapping = {int(k): v for k, v in image_set["class_mapping"].items()}
-                        mask = np.isin(annotations[image_name]["classes"], list(class_mapping.keys()))
-                        annotations[image_name]["boxes"] = annotations[image_name]["boxes"][mask]
-                        annotations[image_name]["classes"] = annotations[image_name]["classes"][mask]
-                        
-                        for i in range(len(annotations[image_name]["classes"])):
-                            annotations[image_name]["classes"][i] = class_mapping[annotations[image_name]["classes"][i]]
-                        
+                    class_mapping = {int(k): v for k, v in image_set["class_mapping"].items()}
+                    mask = np.isin(annotations[image_name]["classes"], list(class_mapping.keys()))
+                    annotations[image_name]["boxes"] = annotations[image_name]["boxes"][mask]
+                    annotations[image_name]["classes"] = annotations[image_name]["classes"][mask]
+                    
+                    for i in range(len(annotations[image_name]["classes"])):
+                        annotations[image_name]["classes"][i] = class_mapping[annotations[image_name]["classes"][i]]
+                    
 
-                    if len(regions) > 0:
+                if len(regions) > 0:
 
-                        image_path = glob.glob(os.path.join(images_dir, image_name + ".*"))[0]
-                        image = ImageWrapper(image_path)
-                        patch_records = ep.extract_patch_records_from_image_tiled(
-                            image,
-                            patch_size,
-                            image_annotations=annotations[image_name],
-                            patch_overlap_percent=0,
-                            regions=regions,
-                            is_ortho=is_ortho,
-                            out_dir=patches_dir)
+                    image_path = glob.glob(os.path.join(images_dir, image_name + ".*"))[0]
+                    image = ImageWrapper(image_path)
+                    patch_records = ep.extract_patch_records_from_image_tiled(
+                        image,
+                        patch_size,
+                        image_annotations=annotations[image_name],
+                        patch_overlap_percent=0,
+                        regions=regions,
+                        is_ortho=is_ortho,
+                        out_dir=patches_dir)
 
-                        all_records.extend(patch_records)
+                    all_records.extend(patch_records)
 
-                image_set_annotations_dir = os.path.join(annotations_dir, 
-                                                username, 
-                                                farm_name,
-                                                field_name,
-                                                mission_date)
-                os.makedirs(image_set_annotations_dir, exist_ok=True)
-                image_set_annotations_path = os.path.join(image_set_annotations_dir, "annotations.json")
-                annotation_utils.save_annotations(image_set_annotations_path, annotations)
+            image_set_annotations_dir = os.path.join(annotations_dir, 
+                                            username, 
+                                            farm_name,
+                                            field_name,
+                                            mission_date)
+            os.makedirs(image_set_annotations_dir, exist_ok=True)
+            image_set_annotations_path = os.path.join(image_set_annotations_dir, "annotations.json")
+            annotation_utils.save_annotations(image_set_annotations_path, annotations)
 
-            average_box_areas = []
-            average_box_heights = []
-            average_box_widths = []
-            patch_sizes = []
-            for i in range(len(log["image_sets"])):
-                average_box_area = log["image_sets"][i]["average_box_area"]
-                average_box_height = log["image_sets"][i]["average_box_height"]
-                average_box_width = log["image_sets"][i]["average_box_width"]
-                patch_size = log["image_sets"][i]["patch_size"]
-                if not isinstance(average_box_area, str):
-                    average_box_areas.append(average_box_area)
-                    average_box_heights.append(average_box_height)
-                    average_box_widths.append(average_box_width)
-                patch_sizes.append(patch_size)
+        average_box_areas = []
+        average_box_heights = []
+        average_box_widths = []
+        patch_sizes = []
+        for i in range(len(log["image_sets"])):
+            average_box_area = log["image_sets"][i]["average_box_area"]
+            average_box_height = log["image_sets"][i]["average_box_height"]
+            average_box_width = log["image_sets"][i]["average_box_width"]
+            patch_size = log["image_sets"][i]["patch_size"]
+            if not isinstance(average_box_area, str):
+                average_box_areas.append(average_box_area)
+                average_box_heights.append(average_box_height)
+                average_box_widths.append(average_box_width)
+            patch_sizes.append(patch_size)
 
-            if len(average_box_areas) > 0:
-                log["average_box_area"] = np.mean(average_box_areas)
-                log["average_box_height"] = np.mean(average_box_heights)
-                log["average_box_width"] = np.mean(average_box_widths)
-            else:
-                log["average_box_area"] = "NA"
-                log["average_box_height"] = "NA"
-                log["average_box_width"] = "NA"
-            log["average_patch_size"] = np.mean(patch_sizes)
+        if len(average_box_areas) > 0:
+            log["average_box_area"] = np.mean(average_box_areas)
+            log["average_box_height"] = np.mean(average_box_heights)
+            log["average_box_width"] = np.mean(average_box_widths)
+        else:
+            log["average_box_area"] = "NA"
+            log["average_box_height"] = "NA"
+            log["average_box_width"] = "NA"
+        log["average_patch_size"] = np.mean(patch_sizes)
 
-            patch_records = np.array(all_records)
-
-
-            if job["training_regime"] == "fixed_num_epochs":
-
-                logger.info("Writing training records for image {} (from: {})".format(image_name, image_set_dir))
-
-                if patch_records.size == 0:
-                    raise RuntimeError("Cannot train model due to insufficient data.")
-
-                training_tf_records = tf_record_io.create_patch_tf_records(patch_records, patches_dir, is_annotated=True)
-                training_tf_record_path = os.path.join(training_dir, "training-patches-record.tfrec")
-                tf_record_io.output_patch_tf_records(training_tf_record_path, training_tf_records)
+        patch_records = np.array(all_records)
 
 
-            else:
+        if job["training_regime"] == "fixed_num_epochs":
 
-                num_patch_records = patch_records.size
-                inds = np.arange(num_patch_records)
+            logger.info("Writing training records for image {} (from: {})".format(image_name, image_set_dir))
 
-                num_train_records = m.floor((job["training_percent"] / 100) * num_patch_records)
-                num_val_records = num_patch_records - num_train_records
+            if patch_records.size == 0:
+                raise RuntimeError("Cannot train model due to insufficient data.")
 
-                if num_train_records == 0 or num_val_records == 0:
-                    raise RuntimeError("Cannot train model due to insufficient data.")
-                
-                train_inds = np.array(random.sample(list(inds), num_train_records))
-                train_mask = np.full(num_patch_records, False)
-                train_mask[train_inds] = True
-                val_mask = np.logical_not(train_mask)
-
-                training_patch_records = patch_records[train_mask]
-                training_tf_records = tf_record_io.create_patch_tf_records(training_patch_records, patches_dir, is_annotated=True)
-                training_tf_record_path = os.path.join(training_dir, "training-patches-record.tfrec")
-                tf_record_io.output_patch_tf_records(training_tf_record_path, training_tf_records)
-
-                val_patch_records = patch_records[val_mask]
-                val_tf_records = tf_record_io.create_patch_tf_records(val_patch_records, patches_dir, is_annotated=True)
-                val_tf_record_path = os.path.join(training_dir, "validation-patches-record.tfrec")
-                tf_record_io.output_patch_tf_records(val_tf_record_path, val_tf_records)
+            training_tf_records = tf_record_io.create_patch_tf_records(patch_records, patches_dir, is_annotated=True)
+            training_tf_record_path = os.path.join(training_dir, "training-patches-record.tfrec")
+            tf_record_io.output_patch_tf_records(training_tf_record_path, training_tf_records)
 
 
-            loss_record_path = os.path.join(baseline_pending_dir, "model", "training", "loss_record.json")
-            loss_record = {
-                "train": [1e8]
-            }
-            if job["training_regime"] == "train_val_split":
-                loss_record["val"] = [1e8]
-            json_io.save_json(loss_record_path, loss_record)
+        else:
 
-            log["training_start_time"] = int(time.time())
-            json_io.save_json(log_path, log)
+            num_patch_records = patch_records.size
+            inds = np.arange(num_patch_records)
+
+            num_train_records = m.floor((job["training_percent"] / 100) * num_patch_records)
+            num_val_records = num_patch_records - num_train_records
+
+            if num_train_records == 0 or num_val_records == 0:
+                raise RuntimeError("Cannot train model due to insufficient data.")
+            
+            train_inds = np.array(random.sample(list(inds), num_train_records))
+            train_mask = np.full(num_patch_records, False)
+            train_mask[train_inds] = True
+            val_mask = np.logical_not(train_mask)
+
+            training_patch_records = patch_records[train_mask]
+            training_tf_records = tf_record_io.create_patch_tf_records(training_patch_records, patches_dir, is_annotated=True)
+            training_tf_record_path = os.path.join(training_dir, "training-patches-record.tfrec")
+            tf_record_io.output_patch_tf_records(training_tf_record_path, training_tf_records)
+
+            val_patch_records = patch_records[val_mask]
+            val_tf_records = tf_record_io.create_patch_tf_records(val_patch_records, patches_dir, is_annotated=True)
+            val_tf_record_path = os.path.join(training_dir, "validation-patches-record.tfrec")
+            tf_record_io.output_patch_tf_records(val_tf_record_path, val_tf_records)
 
 
-        if RUNNING_ON_CLUSTER:
+        loss_record_path = os.path.join(baseline_pending_dir, "model", "training", "loss_record.json")
+        loss_record = {
+            "train": [1e8]
+        }
+        if job["training_regime"] == "train_val_split":
+            loss_record["val"] = [1e8]
+        json_io.save_json(loss_record_path, loss_record)
+
+        log["training_start_time"] = int(time.time())
+        json_io.save_json(log_path, log)
+
+
+        if USE_SLURM:
             slurm_dir = os.path.join(model_dir, "slurm")
-            slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate="00-01:00:00")
+            time_est = yolov4_driver.get_training_time_estimate(job, patch_records.size)
+            slurm_runner.create_and_run_slurm_job(job, slurm_dir, time_estimate=time_est)
         else:
             yolov4_driver.train(job)
 
@@ -1051,22 +1056,22 @@ if __name__ == "__main__":
     # # gpus = None
 
 
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--cluster", action="store_true",
-                        help="Indicates that the server should submit SLURM jobs.")
-
-    args = parser.parse_args()
-    
-    RUNNING_ON_CLUSTER = args.cluster
-
-
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     logging.basicConfig(level=logging.INFO)
 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--slurm", action="store_true",
+                        help="Indicates that the server should submit Slurm jobs.")
+
+    args = parser.parse_args()
+    USE_SLURM = args.slurm
+
+
     logger = logging.getLogger(__name__)
-    logger.info("Running on cluster? {}".format(RUNNING_ON_CLUSTER))
+    logger.info("Using Slurm? {}".format(USE_SLURM))
+
 
     for _ in range(TOTAL_WORKERS):
         worker = threading.Thread(target=work)
