@@ -385,9 +385,13 @@ function create_viewer(id_prefix, dzi_image_paths) {
         showNavigator: false,
         maxZoomLevel: 1000,
         zoomPerClick: 1,
+        animationTime: 0.0,
+        zoomPerScroll: 1.2,
+        pixelsPerArrowPress: 0,
         nextButton: id_prefix + "_next",
         previousButton: id_prefix + "_prev",
         showNavigationControl: false,
+        imageSmoothingEnabled: false,
     });
 
 

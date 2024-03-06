@@ -1212,7 +1212,7 @@ function create_navigation_table() {
                         `<table>` +
                             `<tr>` +
                                 `<td>` +
-                                    `<div style="width: 120px; text-align: left; margin-left: 10px">${image_name}</div>` +
+                                    `<div style="font-size: 13px; width: 120px; text-align: left; margin-left: 10px">${image_name}</div>` +
                                 `</td>` +
                                 `<td>` +
                                     regions_summary_element +
@@ -1255,7 +1255,7 @@ function create_navigation_table() {
                             `<table>` +
                                 `<tr>` +
                                     `<td>` +
-                                        `<div style="width: 120px; text-align: left; margin-left: 10px">${image_name}</div>` +
+                                        `<div style="font-size: 13px; width: 120px; text-align: left; margin-left: 10px">${image_name}</div>` +
                                     `</td>` +
                                     `<td>` +
                                         region_element + 
@@ -1861,7 +1861,7 @@ function show_customize_hotkeys_modal() {
 
 function hotkey_change(button_id, e) {
     const allowed_hotkeys = [
-        "Tab", "Caps Lock", "Shift", "Control", "Alt", "Delete", 
+        "Tab", "Shift", "Control", "Alt", "Delete", 
         " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
         "-", "+", "Backspace", "[", "]", "Enter", ";", "'",
         "\\", ",", ".", "/", "`",
@@ -1948,6 +1948,7 @@ function apply_front_end_appearance_change() {
 
     if (data["cur_page"] === "workspace") {
         update_overlay_color_css_rules();
+        update_cls_breakdown_chart();
     }
     if (viewer) {
         viewer.raiseEvent('update-viewport');

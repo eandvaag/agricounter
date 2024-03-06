@@ -83,7 +83,7 @@ hr {
   display: fixed;
   top: 0; 
   left: 0;
-  transform: translate(calc(50vw - 50%), calc(50vh - 50%));
+  transform: translate(calc(50vw - 50%), calc(50vh - 60%));
   background-color: #2a3829;
   border-radius: 30px;
   width: 400px;

@@ -154,6 +154,8 @@ let selected_keydown_handler = async function(e) {
             selected_annotation_index = -1;
 
             update_navigation_dropdown();
+            change_anno_count(-1);
+            update_cls_breakdown_chart();
 
             if (cur_edit_layer === "annotation") {
                 if (sel_box_array.length == 0) {
@@ -193,6 +195,8 @@ let selected_keydown_handler = async function(e) {
             let new_cls = key_mapping[e.key];
 
             annotations[cur_img_name]["classes"][held_annotation_index] = new_cls;
+
+            update_cls_breakdown_chart();
 
             $("#save_button").removeClass("button-green");
             $("#save_button").removeClass("button-green-hover");
@@ -627,6 +631,8 @@ function create_anno() {
                     annotations[cur_img_name]["classes"].push(parseInt($("#class_select").val()));
                 }
                 update_navigation_dropdown();
+                change_anno_count(1);
+                update_cls_breakdown_chart();
 
                 if (cur_edit_layer === "annotation") {
                     if (annotations[cur_img_name]["source"] === "NA") {
@@ -1246,10 +1252,13 @@ function create_viewer(viewer_id) {
         showNavigator: false,
         maxZoomLevel: 1000,
         zoomPerClick: 1,
+        animationTime: 0.0,
+        zoomPerScroll: 1.2,
+        pixelsPerArrowPress: 0,
         nextButton: "next-btn",
         previousButton: "prev-btn",
         showNavigationControl: false,
-        imageSmoothingEnabled: true,
+        imageSmoothingEnabled: false,
     });
 
     viewer.innerTracker.keyDownHandler = null;
@@ -1550,6 +1559,10 @@ function show_image(image_name) {
 
 function save_annotations(callback=null) {
 
+    if ($("#save_button").is(":hidden")) {
+        return;
+    }
+
 
     $("#save_button").hide();
     $("#fake_save_button").show();
@@ -1629,6 +1642,7 @@ function confirmed_use_predictions() {
     let cur_class_ind = parseInt($("#pred_class_select").val());
 
     /* Delete old boxes */
+    let anno_delta = 0;
     let region;
     if (navigation_type === "images") {
 
@@ -1637,6 +1651,7 @@ function confirmed_use_predictions() {
             if (annotations[cur_img_name]["classes"][i] == cur_class_ind) {
                 annotations[cur_img_name]["boxes"].splice(i, 1);
                 annotations[cur_img_name]["classes"].splice(i, 1);
+                anno_delta--;
             }
         }
         region = null;
@@ -1655,6 +1670,7 @@ function confirmed_use_predictions() {
                 ) {
                     annotations[cur_img_name]["boxes"].splice(i, 1);
                     annotations[cur_img_name]["classes"].splice(i, 1);
+                    anno_delta--;
                 }
             }
         }
@@ -1668,6 +1684,7 @@ function confirmed_use_predictions() {
             if (navigation_type === "images") {
                 annotations[cur_img_name]["boxes"].push(box);
                 annotations[cur_img_name]["classes"].push(cur_class_ind);
+                anno_delta++;
             }
             else {
                 if (point_is_inside_polygon([box[0], box[1]], region) ||
@@ -1677,10 +1694,13 @@ function confirmed_use_predictions() {
                 ) {
                     annotations[cur_img_name]["boxes"].push(box);
                     annotations[cur_img_name]["classes"].push(cur_class_ind);
+                    anno_delta++;
                 }
             }
         }
     }
+    change_anno_count(anno_delta);
+    update_cls_breakdown_chart();
     annotations[cur_img_name]["source"] = "unmodified_model_predictions";
     close_modal();
     $("#save_button").removeClass("button-green");
@@ -2473,9 +2493,13 @@ function show_model_details(model_creator, model_name) {
                 showNavigator: false,
                 maxZoomLevel: 1000,
                 zoomPerClick: 1,
+                animationTime: 0.0,
+                zoomPerScroll: 1.2,
+                pixelsPerArrowPress: 0,
                 nextButton: "next_cs_button",
                 previousButton: "prev_cs_button",
                 showNavigationControl: false,
+                imageSmoothingEnabled: false,
             });
 
 
@@ -2636,9 +2660,13 @@ function init_model_viewer() {
         showNavigator: false,
         maxZoomLevel: 1000,
         zoomPerClick: 1,
+        animationTime: 0.0,
+        zoomPerScroll: 1.2,
+        pixelsPerArrowPress: 0,
         nextButton: "next_ims_button",
         previousButton: "prev_ims_button",
         showNavigationControl: false,
+        imageSmoothingEnabled: false,
     });
 
 
@@ -3410,7 +3438,7 @@ function create_navigator_viewer() {
         nextButton: "next-btn",
         previousButton: "prev-btn",
         showNavigationControl: false,
-        imageSmoothingEnabled: true,
+        imageSmoothingEnabled: false,
         zoomPerScroll: 1,
         panHorizontal: false,
         panVertical: false
@@ -3434,6 +3462,20 @@ function enable_model_actions() {
     enable_green_buttons(buttons);
 }
 
+function initialize_anno_count() {
+    let cur_count = 0;
+    for (let image_name of Object.keys(annotations)) {
+        cur_count += annotations[image_name]["boxes"].length;
+    }
+    $("#anno_count").html(cur_count);
+}
+
+function change_anno_count(delta) {
+    let prev_count = parseInt($("#anno_count").html());
+    let cur_count = prev_count + delta;
+    $("#anno_count").html(cur_count);
+}
+
 
 function disable_model_actions() {
     let buttons = [
@@ -3455,7 +3497,6 @@ $(document).ready(function() {
     metadata = data["metadata"];
     camera_specs = data["camera_specs"];
     excess_green_record = data["excess_green_record"];
-    // predictions = data["predictions"];
     predictions = {};
     overlay_appearance = data["overlay_appearance"];
     hotkeys = data["hotkeys"];
@@ -3466,9 +3507,6 @@ $(document).ready(function() {
         $("#maintenance_message").html("Site maintenance is scheduled for " + data["maintenance_time"] + ".");
         $("#maintenance_message").show();
     }
-
-    set_heights();
-    resize_window();
 
     initialize_class_select("class_select");
     initialize_class_select("map_builder_class_select", add_all_objects_option=true);
@@ -3570,7 +3608,6 @@ $(document).ready(function() {
             $("#model_name").html(model_name);
             $("#image_set_state").html(state_name);
         }
-
         
         if (error_message === "") {
             $("#image_set_state_progress").html(progress);
@@ -3585,10 +3622,6 @@ $(document).ready(function() {
         else {
             disable_model_actions();
         }
-
-
-
-
 
         if (error_message !== "") {
             let error_message = `An error has occurred: <br><br>` + update["error_message"] +
@@ -3629,7 +3662,7 @@ $(document).ready(function() {
         set_score_chart_data();
         update_score_chart();
 
-    })
+    });
 
 
     set_count_chart_data();
@@ -3637,6 +3670,9 @@ $(document).ready(function() {
     
     draw_count_chart();
     draw_score_chart();
+
+    initialize_anno_count();
+    draw_cls_breakdown_chart();
 
 
     $("#tile_size_slider").change(function() {
@@ -3688,6 +3724,10 @@ $(document).ready(function() {
         }
     }
     
+
+    set_heights();
+    resize_window();
+
     show_image(cur_img_name);
     
     $("#save_button").click(async function() {
@@ -3964,11 +4004,11 @@ $(document).ready(function() {
     $("#help_button").click(function() {
 
         let head = "Help";
-        let create_annotation_text = (hotkeys["Create Annotation"]).toUpperCase();
+        let create_annotation_text = (hotkeys["Create Annotation"]);
         if (create_annotation_text === " ") {
-            create_annotation_text = "SPACE";
+            create_annotation_text = "Space";
         }
-        let delete_annotation_text = (hotkeys["Delete Annotation"]).toUpperCase();
+        let delete_annotation_text = (hotkeys["Delete Annotation"]);
         let message = `<div style="line-height: 150%; padding: 10px">&#8226; Hold the <span style='border: 1px solid white; font-size: 14px; padding: 5px 10px; margin: 0px 5px'>` + create_annotation_text + `</span> key and left mouse button to create a new box annotation or region.` +
         `<br><br>&#8226; When creating a region, double click the left mouse button to complete the region.` + 
         `<br><br>&#8226; Click on an existing box annotation / region to select it and change its boundaries.` +
@@ -4358,7 +4398,14 @@ $(document).ready(function() {
                 annotations_dropzone.options.autoProcessQueue = false;
                 annotations = response.annotations;
 
+                $("#save_button").removeClass("button-red");
+                $("#save_button").removeClass("button-red-hover");
+                $("#save_button").addClass("button-green");
+                $("#save_button").addClass("button-green-hover");
+
+                initialize_anno_count();
                 update_navigation_dropdown();
+                update_cls_breakdown_chart();
                 $("#navigation_dropdown").val("images").change();
                 show_modal_message(`Success!`, `The annotation file you uploaded has been successfully processed.`);
 
@@ -4442,6 +4489,27 @@ $(document).ready(function() {
             , 950
         );
 
+    });
+
+
+    $("input[type='radio']").keydown(function(e)
+    {
+        let arrow_keys = [37, 38, 39, 40];
+        if (arrow_keys.indexOf(e.which) !== -1)
+        {
+            $(this).blur();
+            return false;
+        }
+    });
+
+    $("select").keydown(function(e)
+    {
+        let arrow_keys = [37, 38, 39, 40];
+        if (arrow_keys.indexOf(e.which) !== -1)
+        {
+            $(this).blur();
+            return false;
+        }
     });
 
 
@@ -4967,7 +5035,13 @@ function gridview_onRedraw() {
     if ((cur_mouse_x != null) && (cur_mouse_y != null)) {
 
         overlay.context2d().lineWidth = 2;
-        overlay.context2d().strokeStyle = overlay_appearance["colors"][cur_edit_layer];
+        if (cur_edit_layer === "annotation") {
+            let cur_cls_idx = $("#class_select").val();
+            overlay.context2d().strokeStyle = overlay_appearance["colors"][cur_edit_layer][cur_cls_idx];
+        }
+        else {
+            overlay.context2d().strokeStyle = overlay_appearance["colors"][cur_edit_layer];
+        }
         overlay.context2d().beginPath();
         overlay.context2d().moveTo(0, cur_mouse_y);
         overlay.context2d().lineTo(overlay._containerWidth, cur_mouse_y);

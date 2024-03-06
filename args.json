@@ -8,5 +8,6 @@
     "postgres_db_port": "8120",
     "api_key": "protectedpyproc39",
     "admin_username": "admin",
-    "admin_password": "undi$closed37"
+    "admin_password": "undi$closed37",
+    "use_slurm": false
 }

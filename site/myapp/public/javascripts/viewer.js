@@ -75,7 +75,7 @@ function change_image(cur_nav_item) {
     update_region_name();
 
     if (viewer == null) {
-        create_viewer("seadragon_viewer");
+        create_viewer();
     }
 
     let dzi_image_path = image_to_dzi[cur_img_name];
@@ -224,9 +224,13 @@ function create_viewer() {
         showNavigator: false,
         maxZoomLevel: 1000,
         zoomPerClick: 1,
+        animationTime: 0.0,
+        zoomPerScroll: 1.2,
+        pixelsPerArrowPress: 0,
         nextButton: "next-button",
         previousButton: "prev-button",
-        showNavigationControl: false
+        showNavigationControl: false,
+        imageSmoothingEnabled: false,
     });
 
 
@@ -635,7 +639,7 @@ function show_download_metrics() {
                                 image_set_info["farm_name"] + "/" + 
                                 image_set_info["field_name"] + "/" + 
                                 image_set_info["mission_date"] + 
-                                "/model/results/" + 
+                                "/model/results/available/" + 
                                 image_set_info["result_uuid"] + 
                                 "/metrics.xlsx";
 
@@ -709,7 +713,7 @@ function show_download_areas() {
                                 image_set_info["farm_name"] + "/" + 
                                 image_set_info["field_name"] + "/" + 
                                 image_set_info["mission_date"] + 
-                                "/model/results/" + 
+                                "/model/results/available/" + 
                                 image_set_info["result_uuid"] + 
                                 "/areas.xlsx";
 
@@ -809,7 +813,7 @@ function show_download_raw_outputs() {
                                 image_set_info["farm_name"] + "/" + 
                                 image_set_info["field_name"] + "/" + 
                                 image_set_info["mission_date"] + 
-                                "/model/results/" + 
+                                "/model/results/available/" + 
                                 image_set_info["result_uuid"] + 
                                 "/raw_outputs.zip";
 
@@ -934,7 +938,7 @@ $(document).ready(function() {
     excess_green_record = data["excess_green_record"];
     tags = data["tags"];
     annotations = data["annotations"];
-    predictions = {}; //data["predictions"];
+    predictions = {};
     metadata = data["metadata"];
     camera_specs = data["camera_specs"];
     metrics = data["metrics"];
@@ -942,6 +946,7 @@ $(document).ready(function() {
     dzi_image_paths = data["dzi_image_paths"];
     overlay_appearance = data["overlay_appearance"];
     hotkeys = data["hotkeys"];
+
 
     if (data["maintenance_time"] !== "") {
         $("#maintenance_message").html("Site maintenance is scheduled for " + data["maintenance_time"] + ".");
@@ -953,11 +958,7 @@ $(document).ready(function() {
     let result_text_width = get_text_width(request["results_name"], "normal 20px arial");
 
     if (result_text_width > (270*2)) {
-        $("#result_name").css("height", "40px");
         disp_result_name = disp_result_name.substring(0, 10) + " ... " + disp_result_name.substring(disp_result_name.length-10);
-    }
-    else if (result_text_width > 270) {
-        $("#result_name").css("height", "40px");
     }
 
     $("#result_name").text(disp_result_name);
@@ -976,7 +977,6 @@ $(document).ready(function() {
         }
     }
     $("#result_type").text(result_type);
-
 
     if (("calculate_vegetation_record" in request) && (!(request["calculate_vegetation_record"]))) {
         $("#map_perc_veg_row").hide();
@@ -999,7 +999,7 @@ $(document).ready(function() {
             image_set_info["farm_name"] + "/" + 
             image_set_info["field_name"] + "/" + 
             image_set_info["mission_date"] + 
-            "/model/results/" + 
+            "/model/results/available/" + 
             image_set_info["result_uuid"] + 
             "/raw_outputs.zip";
 
@@ -1104,7 +1104,7 @@ $(document).ready(function() {
             image_set_info["farm_name"] + "/" + 
             image_set_info["field_name"] + "/" + 
             image_set_info["mission_date"] + 
-            "/model/results/" + 
+            "/model/results/available/" + 
             image_set_info["result_uuid"] + 
             "/metrics.xlsx";
 
@@ -1127,10 +1127,6 @@ $(document).ready(function() {
 
         , 750);
     });
-
-    let farm_name = image_set_info["farm_name"];
-    let field_name = image_set_info["field_name"];
-    let mission_date = image_set_info["mission_date"];
 
     image_to_dzi = {};
     for (let dzi_image_path of dzi_image_paths) {
@@ -1180,6 +1176,17 @@ $(document).ready(function() {
     });
 
 
+    $("select").keydown(function(e)
+    {
+        var arrow_keys = [37, 38, 39, 40];
+        if (arrow_keys.indexOf(e.which) !== -1)
+        {
+            $(this).blur();
+            return false;
+        }
+    });
+
+
     $("body").keydown(function(e) {
         if ($("#modal").is(":visible")) {
             let focus_els = $(":focus");
@@ -1223,7 +1230,6 @@ $(document).ready(function() {
         }
     }
 
-
     create_navigation_table();
     update_navigation_dropdown();
     
@@ -1231,10 +1237,14 @@ $(document).ready(function() {
     initialize_class_select("map_builder_class_select", add_all_objects_option=true);
 
     create_overlays_table();
+
     set_count_chart_data();
     set_score_chart_data();
     draw_count_chart();
     draw_score_chart();
+
+    set_heights();
+    resize_window();
 
     show_image(cur_img_name);
 
@@ -1325,9 +1335,6 @@ $(document).ready(function() {
         viewer.raiseEvent('update-viewport');
     });
 
-
-    set_heights();
-    resize_window();
 });
 
 $(window).resize(function() {

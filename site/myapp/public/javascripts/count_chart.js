@@ -282,9 +282,6 @@ function set_count_chart_data() {
 }
 
 
-
-
-
 function draw_count_chart() {
 
     let cur_pred_cls_idx = $("#pred_class_select").val();
@@ -345,14 +342,20 @@ function draw_count_chart() {
     }
 
     let tip_mousemove = function(d) {
-        tooltip.style("left", (d3.event.pageX) + "px")
-               .style("top", (d3.event.pageY-25) + "px");
+        let h = $("#count_chart_tooltip").height();
+        let w = $("#count_chart_tooltip").width();
+
+        tooltip.style("left", (d3.event.pageX - w) + "px")
+                .style("top", (d3.event.pageY- h - 10) + "px");
+
         d3.select(this).style("cursor", "default"); 
 
     }
 
     let tip_mouseleave = function(d) {
-        tooltip.style("opacity", 0);
+        tooltip.style("opacity", 0)
+               .style("left", (-1000) + "px")
+               .style("top", (-1000) + "px");
     }
 
     chart.selectAll("text")

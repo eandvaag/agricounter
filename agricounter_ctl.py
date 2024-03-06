@@ -48,6 +48,7 @@ def create():
     timezone_command = "timedatectl | grep 'Time zone' | awk '{ print $3 }'"
     timezone = (subprocess.check_output(timezone_command, shell=True)).decode("utf-8").strip()
     site_env["AC_TIMEZONE"] = timezone
+    site_env["AC_USE_SLURM"] = "yes" if args["use_slurm"] else "no"
 
 
     conf["services"]["myapp"]["ports"] = [str(args["site_port"]) + ":" + str(args["site_port"])]

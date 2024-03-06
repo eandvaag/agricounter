@@ -28,6 +28,7 @@ html
         script(src=process.env.AC_PATH + '/external_javascripts/voronoi.js')
 
         script(src=process.env.AC_PATH + '/javascripts/workspace.js')
+        script(src=process.env.AC_PATH + '/javascripts/anno_cls_breakdown_chart.js')
         script(src=process.env.AC_PATH + '/javascripts/count_chart.js')
         script(src=process.env.AC_PATH + '/javascripts/score_chart.js')
         script(src=process.env.AC_PATH + '/javascripts/ridgeline_chart.js')
@@ -135,11 +136,11 @@ html
                                                         h(class="header2" style="width: 170px") Active Edit Layer
                                                     td(style="width: 100%")
                                                     td
-                                                        button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="customize_hotkeys()")
-                                                            i(class="fa-regular fa-keyboard") 
-                                                    td
                                                         button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="show_customize_overlays_modal()")
                                                             i(class="fa-solid fa-palette") 
+                                                    td
+                                                        button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="customize_hotkeys()")
+                                                            i(class="fa-regular fa-keyboard") 
 
                                             table(style="border: 1px solid white; border-radius: 10px; width: 100%" id="active_layer_table")
                                                 tr
@@ -181,7 +182,7 @@ html
                                                             option(value="images") Images 
 
 
-                                        div(id="navigation_table_container" class="scrollable_area" style="height: 365px; width: 280px; border: none; overflow-y: scroll")
+                                        div(id="navigation_table_container" class="scrollable_area" style="height: 365px; width: 280px; border: none; overflow-y: scroll;")
                                             table(id="navigation_table")
 
 
@@ -275,7 +276,7 @@ html
 
                                     div(id="control_panel")
                                 
-                                        div(style="width: 100%;")
+                                        div(style="width: 100%")
 
                                             div
                                                 ul.nav
@@ -376,8 +377,12 @@ html
                                                     table(style="margin-top: -8px")
                                                         tr
                                                             td(style="text-align: left")
-                                                                h(class="header2" style="width: 170px") Annotations
+                                                                h(class="header2" style="width: 110px") Annotations
+                                                            td
+                                                                div(id="anno_cls_breakdown_container" style="margin-top: 1px")
+                                                                    div(id="anno_cls_breakdown_chart" style="width: 110px; height: 10px; display: grid")
                                                             td(style="width: 100%")
+                                                                div(id="anno_count" style="margin-top: 3px; font-size: 13px; text-align: right")
 
                                                     button(id="upload_annotations_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px")
                                                         i(class="fa-solid fa-file-arrow-up" style="padding-right: 5px")
@@ -440,11 +445,11 @@ html
                                                                     td(style="width: 100%")
                                                                         select(id="chart_combo" class="nonfixed_dropdown")
                                                                             
-                                                            div(id="count_chart" style="height: 90px; width: 270px; border:none")
+                                                            div(id="count_chart" style="height: 90px; width: 270px; border: none")
 
                                                             hr
                                                         
-                                                        h(class="header2" style="text-align:left") Overlays
+                                                        h(class="header2" style="text-align: left") Overlays
 
                                                         table(id="overlays_table" style="margin-top: -22px;")
 
@@ -462,7 +467,7 @@ html
 
                                                             h(class="header2" style="text-align: left; font-size: 14px; margin-top: 2px; margin-left: 1px") Quality Score: 
                                                                 span(id="quality_score" style="color: white; text-align: left")
-                                                            div(id="score_chart" style="height: 175px; width: 275px; border:none")
+                                                            div(id="score_chart" style="height: 175px; width: 275px; border: none")
                                                             hr
 
                                                         table
