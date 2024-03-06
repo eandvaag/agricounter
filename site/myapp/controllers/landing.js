@@ -39,7 +39,7 @@ const MIN_CAMERA_HEIGHT = 0.01;
 const MAX_CAMERA_HEIGHT = 1000000000;
 
 const allowed_hotkeys = [
-    "Tab", "Caps Lock", "Shift", "Control", "Alt", "Delete", 
+    "Tab", "Shift", "Control", "Alt", "Delete", 
     " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
     "-", "+", "Backspace", "[", "]", "Enter", ";", "'",
     "\\", ",", ".", "/", "`",
@@ -59,7 +59,11 @@ Date.prototype.isValid = function () {
 if (process.env.NODE_ENV === "docker") {
     console.log("Starting the python server...");
 
-    let scheduler = spawn("python3", ["../../backend/src/server.py"]);
+    let scheduler_args = ["../../backend/src/server.py"];
+    if (process.env.AC_USE_SLURM === "yes") {
+        scheduler_args.push("--slurm");
+    }
+    let scheduler = spawn("python3", scheduler_args);
 
 
     scheduler.on('close', (code) => {
@@ -1178,7 +1182,7 @@ exports.post_annotations_upload = function(req, res, next) {
             "source": "uploaded"
         };
 
-        for (let key of ["regions_of_interest", "fine_tuning_regions", "test_regions"])
+        for (let key of ["regions_of_interest", "fine_tuning_regions", "test_regions"]) {
             if (key in annotations[entry_name]) {
                 if (!(Array.isArray(annotations[entry_name][key]))) {
                     return res.status(422).json({
@@ -1246,6 +1250,7 @@ exports.post_annotations_upload = function(req, res, next) {
                     );
                 }
             }
+        }
 
         let annotation_lst_length = 0;
         let class_lst_length = 0;

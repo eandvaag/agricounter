@@ -88,6 +88,21 @@ def health_request():
     return {"message": "alive"}
 
 
+@app.route(os.environ.get("AC_PATH") + '/is_occupied', methods=['POST'])
+def is_occupied():
+
+    logger = logging.getLogger(__name__)
+    logger.info("POST to add_request")
+
+    content_type = request.headers.get('Content-Type')
+    if (content_type == 'application/json'):
+        job = request.json
+        key = job["key"]
+
+        return {"is_occupied": key in occupied_sets}
+    else:
+        return {"message": 'Content-Type not supported!'}
+    
 
 @app.route(os.environ.get("AC_PATH") + '/get_num_workers', methods=['POST'])
 def get_num_workers():
@@ -98,6 +113,7 @@ def add_request():
     
     logger = logging.getLogger(__name__)
     logger.info("POST to add_request")
+
     content_type = request.headers.get('Content-Type')
 
     if (content_type == 'application/json'):
@@ -432,6 +448,10 @@ def process_switch(job):
         logger.error("Exception occurred in process_switch")
         logger.error(e)
         logger.error(trace)
+
+        with cv:
+            if job["key"] in occupied_sets:
+                del occupied_sets[job["key"]]
 
         emit.set_image_set_status(username, farm_name, field_name, mission_date, 
                             {"state_name": emit.SWITCHING_MODELS, "error_message": str(e)})
@@ -957,10 +977,6 @@ def process_train(job):
         logger.error(e)
         logger.error(trace)
 
-        with cv:
-            if job["key"] in occupied_sets:
-                del occupied_sets[job["key"]]
-
         if isinstance(baseline_pending_dir, str) and isinstance(baseline_aborted_dir, str) and isinstance(log, dict):
 
             log["aborted_time"] = int(time.time())
@@ -976,6 +992,10 @@ def process_train(job):
             if os.path.exists(baseline_available_dir):
                 saved_available_dir = os.path.join(baseline_aborted_dir, "saved_available")
                 shutil.move(baseline_available_dir, saved_available_dir)
+
+        with cv:
+            if job["key"] in occupied_sets:
+                del occupied_sets[job["key"]]
 
         emit.emit_model_change(job["model_creator"])
 

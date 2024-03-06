@@ -30,6 +30,7 @@ html
         script(src=process.env.AC_PATH + '/javascripts/modal.js')
         script(src=process.env.AC_PATH + '/javascripts/canvas_overlay.js')
         script(src=process.env.AC_PATH + '/javascripts/poly.js')
+        script(src=process.env.AC_PATH + '/javascripts/perf_summary.js')
 
 
         script(type='text/javascript' src=process.env.AC_PATH + '/external_javascripts/voronoi.js')
@@ -74,7 +75,7 @@ html
                                                             |
                                                             | Map View
 
-                    div(id="image_view_container")
+                    div(id="image_view_container" hidden)
                         table
 
                             tr
@@ -84,7 +85,7 @@ html
 
                                             div(id="non_nav_container")
 
-                                                div(style="font-size: 20px; height: 20px; word-wrap: break-word;" id="result_name")
+                                                div(style="font-size: 20px; height: 40px; word-wrap: break-word;" id="result_name")
                                                 div(style="height: 10px")
                                                 div(style="height: 30px; border: 1px solid white; border-radius: 25px")
                                                     div(id="result_type" style="color: #ddccbb; margin: 5px")
@@ -111,11 +112,11 @@ html
                                                     tr
                                                         td(style="width: 100%")
                                                         td
+                                                            button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="show_customize_overlays_modal()")
+                                                                i(class="fa-solid fa-palette")
+                                                        td
                                                             button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="show_customize_hotkeys_modal()")
                                                                 i(class="fa-regular fa-keyboard") 
-                                                        td
-                                                            button(class="button-green button-green-hover" style="padding: 2px; font-size: 14px; width: 40px" onclick="show_customize_overlays_modal()")
-                                                                i(class="fa-solid fa-palette") 
 
                                                 div(style="height: 10px")
 
@@ -149,9 +150,9 @@ html
                                         div(id="control_panel")
 
                                             h(class="header2" style="width: 170px; text-align: left; margin-top: -2px") Download
-                                            table 
-                                                tr 
-                                                    td 
+                                            table
+                                                tr
+                                                    td
                                                         button(id="view_download_options_button" class="button-green button-green-hover" style="font-size: 16px; width: 215px")
                                                             i(class="fa-solid fa-file-arrow-down" style="padding-right: 5px")
                                                             |
@@ -179,18 +180,16 @@ html
                                                             td(style="width: 100%")
                                                             td
                                                                 button(class="button-green button-green-hover" onclick="show_metrics_modal()" style="padding: 2px; font-size: 14px; width: 40px")
-                                                                    i(class="fa-regular fa-circle-question") 
+                                                                    i(class="fa-regular fa-circle-question")
 
                                                     select(id="chart_combo" class="nonfixed_dropdown" style="max-width: 100%")
 
                                                 div(style="height: 15px")
-                                                                
-                                                div(id="count_chart" style="height: 90px; border:none")
-                                                    div(id="count_chart_tooltip" class="tooltip" style="z-index: 10")
-
+                                                
+                                                div(id="count_chart" style="height: 90px; width: 270px; border: none")
                                                 hr
                                             
-                                            h(class="header2" style="text-align:left") Overlays
+                                            h(class="header2" style="text-align: left") Overlays
 
                                             table(id="overlays_table" style="margin-top: -22px;")
 
@@ -209,9 +208,7 @@ html
 
                                                 h(class="header2" style="text-align: left; font-size: 14px; margin-top: 2px; margin-left: 1px") Quality Score: 
                                                     span(id="quality_score" style="color: white; text-align: left")
-
-
-                                                div(id="score_chart" style="height: 175px; width: 275px; border:none")
+                                                div(id="score_chart" style="height: 175px; width: 275px; border: none")
                                                 
                                                 hr
                                                 
@@ -236,7 +233,7 @@ html
                                             table
                                                 tr
                                                     td
-                                                        div(style="width: 50px; text-align:left" class="header2") Filter
+                                                        div(style="width: 50px; text-align: left" class="header2") Filter
 
                                                     td
                                                         button(id="score_down" class="button-black button-black-hover" style="margin: 0px; border-radius: 50px; padding-bottom: 3px; margin-top: -4px;")

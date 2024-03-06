@@ -34,7 +34,7 @@ Create database and database user.
 ```
 sudo -u postgres psql
 ```
-In psql (replace 'XXX' with password found in `config.json`):
+In psql (replace 'XXX' with password found in `config.js`):
 ```
 CREATE DATABASE agricounter_db;
 CREATE ROLE agricounter_db_user WITH PASSWORD 'XXX';

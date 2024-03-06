@@ -82,12 +82,14 @@ def get_positives_and_negatives(annotated_boxes, predicted_boxes, iou_thresh):
     STEP_SIZE = min(num_predicted, m.floor(MAX_MAT_SIZE / num_predicted))
 
     for i in range(0, num_predicted, STEP_SIZE):
-        iou_mat = box_utils.compute_iou(
-                    tf.convert_to_tensor(annotated_boxes, dtype=tf.float64),
-                    tf.convert_to_tensor(predicted_boxes[i:i+STEP_SIZE, :], dtype=tf.float64), 
-                    box_format="corners_xy").numpy()
-
-
+        # iou_mat = box_utils.compute_iou(
+        #             tf.convert_to_tensor(annotated_boxes, dtype=tf.float64),
+        #             tf.convert_to_tensor(predicted_boxes[i:i+STEP_SIZE, :], dtype=tf.float64), 
+        #             box_format="corners_xy").numpy()
+        
+        iou_mat = box_utils.compute_iou_np(
+                    annotated_boxes,
+                    predicted_boxes[i:i+STEP_SIZE, :])
 
         max_inds = np.argmax(iou_mat, axis=0)
         max_vals = np.take_along_axis(iou_mat, np.expand_dims(max_inds, axis=0), axis=0)[0]
@@ -339,7 +341,7 @@ def create_spreadsheet(job, regions_only=False):
     # predictions_path = os.path.join(result_dir, "predictions.json")
     # predictions = annotation_utils.load_predictions(predictions_path)
 
-    predictions_dir = os.path.join(result_dir, "predictions")
+    predictions_dir = os.path.join(result_dir, "prediction")
     predictions = annotation_utils.load_predictions_from_dir(predictions_dir)
 
     full_predictions_path = os.path.join(result_dir, "full_predictions.json")
