@@ -84,6 +84,16 @@ function show_performance_modal() {
 
 }
 
+function print_class_accuracies(region_type) {
+
+    let global_metrics = get_global_metrics(region_type);
+    for (let class_name of Object.keys(global_metrics)) {
+        let num = global_metrics[class_name]["Accuracy (IoU=.50, conf>.50)"] * 100;
+        // let v = Math.round(num * 100) / 100;
+        console.log(class_name.padStart(30), ":   ", num.toFixed(2));
+    }
+
+}
 
 function draw_summary_chart() {
 

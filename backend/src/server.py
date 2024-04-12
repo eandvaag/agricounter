@@ -1058,7 +1058,7 @@ if __name__ == "__main__":
 
     #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-
+    # import tensorflow as tf
     # gpus = tf.config.list_physical_devices('GPU')
     # if gpus:
     #     try:

@@ -1076,7 +1076,7 @@ $(document).ready(function() {
                 `</div>` +
                 `<div style="height: 60px"></div>` +
                 `<div id="download_info_area" style="height: 450px"></div>` +
-                `<div id="download_button_area">/div>` +
+                `<div id="download_button_area"></div>` +
             `</div>`
             
             , modal_width=1000, display=true

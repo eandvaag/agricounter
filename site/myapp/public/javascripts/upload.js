@@ -113,10 +113,11 @@ function enable_input() {
     if ($("#image_set_tab").is(":visible")) {
         handler_name = "image_set";
         enable_red_buttons(["remove_image_set_files"]);
-        enable_red_buttons(["remove_orthomosaic_files"]);
+
     }
     else {
         handler_name = "orthomosaic";
+        enable_red_buttons(["remove_orthomosaic_files"]);
     }
 
     $("#" + handler_name + "_dropzone").removeClass("disabled_dropzone");
