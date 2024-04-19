@@ -8,6 +8,8 @@ const http = require('http');
 const { Op } = require("sequelize");
 const models = require('../models');
 
+var bcrypt = require('bcrypt');
+
 const glob = require("glob");
 
 
@@ -34,9 +36,14 @@ const MODEL_NAME_FORMAT =         /[\s `!@#$%^&*()+\=\[\]{}.;':"\\|,<>\/?~]/;
 const OBJECT_NAME_FORMAT =        /[`!@#$%^&*()+\=\[\]{}.;':"\\|,<>\/?~]/;
 const USERNAME_FORMAT =           /[\s `!@#$%^&*()+\=\[\]{}.;':"\\|,<>\/?~]/;
 
-
 const MIN_CAMERA_HEIGHT = 0.01;
 const MAX_CAMERA_HEIGHT = 1000000000;
+
+const MIN_USERNAME_LENGTH = 1;
+const MAX_USERNAME_LENGTH = 255;
+
+const MIN_PASSWORD_LENGTH = 1;
+const MAX_PASSWORD_LENGTH = 255;
 
 const allowed_hotkeys = [
     "Tab", "Shift", "Control", "Alt", "Delete", 
@@ -352,17 +359,74 @@ exports.post_admin = function(req, res, next) {
         response.error = false;
         return res.json(response);
     }
+    else if (action === "update_user_password") {
 
+        let username = req.body.username;
+        let password = req.body.password;
+
+
+        if ((typeof username !== 'string') && (!(username instanceof String))) {
+            response.message = "The provided username is not a string.";
+            response.error = true;
+            return res.json(response);
+        }
+
+        if ((typeof password !== 'string') && (!(password instanceof String))) {
+            response.message = "The provided password is not a string.";
+            response.error = true;
+            return res.json(response);
+        }
+
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            response.message = "The provided password is too short.";
+            response.error = true;
+            return res.json(response);
+        }
+
+        if (password.length > MAX_PASSWORD_LENGTH) {
+            response.message = "The provided password is too long.";
+            response.error = true;
+            return res.json(response);
+        }
+
+        return models.users.findOne({
+            where: {
+                username: username
+            }
+        }).then(user => {
+            if (!user) {
+                response.message = "The user could not be found in the database.";
+                response.error = true;
+                return res.json(response);
+            }
+            else {
+                const salt = bcrypt.genSaltSync();
+                return models.users.update({
+                    password: bcrypt.hashSync(req.body.password, salt),
+                }, {
+                    where: {
+                        username: req.body.username
+                    }
+                }).then(user => {
+                    response.error = false;
+                    return res.json(response);
+                }).catch(error => {
+                    console.log(error);
+                    response.message = "An error occurred while updating the user password.";
+                    response.error = true;
+                    return res.json(response);
+                });
+            }
+        }).catch(error => {
+            console.log(error);
+            response.message = "An error occurred while checking for the user's existence in the database.";
+            response.error = true;
+            return res.json(response);
+        });
+
+    }
 
     else if (action === "create_user_account") {
-
-
-        const MIN_USERNAME_LENGTH = 1;
-        const MAX_USERNAME_LENGTH = 255;
-
-
-        const MIN_PASSWORD_LENGTH = 1;
-        const MAX_PASSWORD_LENGTH = 255;
 
         
         let username = req.body.username;
@@ -1714,6 +1778,7 @@ exports.post_workspace = async function(req, res, next) {
         let object_classes = req.body.object_classes.split(",");
 
         let models = [];
+        console.log("fetching user directories");
         let usr_dirs;
         try {
            usr_dirs = get_subdirpaths(USR_DATA_ROOT);
@@ -1727,6 +1792,7 @@ exports.post_workspace = async function(req, res, next) {
         for (let usr_dir of usr_dirs) {
             let public_models_dir = path.join(usr_dir, "models", "available", "public");
 
+            console.log("fetching public dirs for ", usr_dir);
             let public_dirs;
             try {
                 public_dirs = get_subdirpaths(public_models_dir);

@@ -124,6 +124,13 @@ def create():
     f.close()
 
 
+    logger.info("Creating symlink for usr dir (if missing)")
+    symlink_path = os.path.join("site", "myapp", "usr")
+    if not os.path.exists(symlink_path):
+        usr_dir = os.path.join("backend", "src", "usr")
+        os.symlink(usr_dir, symlink_path)
+
+
 
     logger.info("Starting Docker container")
 

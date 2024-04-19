@@ -98,12 +98,12 @@ def create_default_config():
         "model_name": "model_1",
         "model_uuid": str(uuid.uuid4()),
         "arch": {
-            "model_type": "yolov4_tiny", #"yolov4",
+            "model_type": "yolov4_tiny", #"yolov4_tiny", #"yolov4",
             "backbone_config": {
-                "backbone_type": "csp_darknet53_tiny" #"csp_darknet53"
+                "backbone_type": "csp_darknet53_tiny", #"csp_darknet53_tiny" #"csp_darknet53"
             },
             "neck_config": {
-                "neck_type": "yolov4_tiny_deconv" #"spp_pan"
+                "neck_type": "yolov4_tiny_deconv", #"yolov4_tiny_deconv" #"spp_pan"
             },
             "max_detections": 50,
             "input_image_shape": [416, 416, 3],
@@ -282,6 +282,8 @@ def predict(job):
     farm_name =job["farm_name"]
     field_name = job["field_name"]
     mission_date = job["mission_date"]
+
+    tf.keras.backend.clear_session()
 
     image_set_dir = os.path.join("usr", "data", username, "image_sets", farm_name, field_name, mission_date)
 
