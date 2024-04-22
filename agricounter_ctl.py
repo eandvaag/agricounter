@@ -40,7 +40,7 @@ def create():
 
     site_env["AC_PORT"] = args["site_port"]
     site_env["AC_PY_PORT"] = args["backend_python_port"]
-    url_prefix = args["url_path_prefix"]
+    url_path_prefix = args["url_path_prefix"]
     if url_path_prefix == "":
         url_path_prefix = "/"
     if url_path_prefix[0] != "/":
