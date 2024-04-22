@@ -10,5 +10,5 @@
     "admin_username": "",
     "admin_password": "",
     "use_slurm": false,
-    "gpu_index": ""
+    "gpu_index": 0
 }
