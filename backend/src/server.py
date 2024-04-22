@@ -1099,11 +1099,18 @@ if __name__ == "__main__":
             gpu_index = 0
         else:
             gpu_index = int(gpu_index)
-
-        gpus = tf.config.list_physical_devices("GPU")
-        tf.config.set_visible_devices(gpus[gpu_index], "GPU")
-        logger.info("Using GPU {}.".format(gpu_index))
-
+        
+        if gpu_index == -1:
+            os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+            logger.info("Using CPU.")
+        else:
+            gpus = tf.config.list_physical_devices("GPU")
+            if len(gpus) > gpu_index:
+                tf.config.set_visible_devices(gpus[gpu_index], "GPU")
+                logger.info("Using GPU {}.".format(gpu_index))
+            else:
+                logger.error("GPU index is out of range. Found {} GPU devices. GPU index is {}.".format(len(gpus), gpu_index))
+                exit()
 
     for _ in range(TOTAL_WORKERS):
         worker = threading.Thread(target=work)
