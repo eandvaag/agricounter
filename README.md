@@ -39,8 +39,8 @@ Below is an explanation of the keys that `agricounter_ctl.py` expects to find in
 - `api_key`: The Python process sends this password whenever it sends an HTTP request to the Node.js application. The Node.js application uses this password to verify that the request was sent by the Python process.
 - `admin_username`: Username for the site's administrator account.
 - `admin_password`: Password for the site's administrator account.
-
-
+- `gpu_index`: Index of GPU device to use. If only one GPU is available, this should be 0. Use -1 if you want to use the CPU instead.
+- `use_slurm`: Use SLURM job scheduler (for HPC environments). Requires setup of a `slurm_config.json` file in `backend/src`.
 
 To stop the Docker container without removing the PostGreSQL volume, use `./agricounter_ctl.py --down`. The container can then be rebuilt with `./agricounter_ctl.py --up`. To stop the container and remove the PostGreSQL volume, use `./agricounter_ctl.py --destroy`.
 
