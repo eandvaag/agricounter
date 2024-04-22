@@ -262,7 +262,7 @@ function create_orthomosaic_dropzone() {
     );
 
     dropzone_handlers["orthomosaic"] = new Dropzone("#orthomosaic_dropzone", { 
-        url: get_AC_PATH() + "/orthomosaic_upload",
+        url: ac_path + "orthomosaic_upload",
         autoProcessQueue: false,
         paramName: function(n) { return 'source_file[]'; },
         uploadMultiple: false,
@@ -324,7 +324,7 @@ function create_image_set_dropzone() {
     );
 
     dropzone_handlers["image_set"] = new Dropzone("#image_set_dropzone", { 
-        url: get_AC_PATH() + "/image_set_upload",
+        url: ac_path + "image_set_upload",
         autoProcessQueue: false,
         paramName: function(n) { return 'source_file[]'; },
         uploadMultiple: true,

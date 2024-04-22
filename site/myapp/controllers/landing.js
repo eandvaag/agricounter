@@ -128,12 +128,12 @@ exports.post_sign_in = function(req, res, next) {
             else {
                 if (user.is_admin) {
                     req.session.user = user.dataValues;
-                    response.redirect = process.env.AC_PATH + "/admin";
+                    response.redirect = process.env.AC_PATH + "admin";
                     return res.json(response);
                 }
                 else {
                     req.session.user = user.dataValues;
-                    response.redirect = process.env.AC_PATH + "/home/" + req.body.username;
+                    response.redirect = process.env.AC_PATH + "home/" + req.body.username;
                     return res.json(response);
                 }
             }
@@ -210,7 +210,11 @@ exports.get_admin = function(req, res, next) {
             data["users"] = users;
             data["object_names"] = objects["object_names"];
             
-            res.render("admin", {username: req.session.user.username, data: data});
+            res.render("admin", {
+                ac_path: process.env.AC_PATH, 
+                username: req.session.user.username, 
+                data: data
+            });
 
         }).catch(error => {
             console.log(error);
@@ -693,6 +697,7 @@ exports.get_home = function(req, res, next) {
                 data["maintenance_time"] = maintenance_time;
             
                 res.render("home", {
+                    ac_path: process.env.AC_PATH,
                     username: username, 
                     data: data
                 });
@@ -873,7 +878,7 @@ exports.get_workspace = function(req, res, next) {
         for (let socket_id of Object.keys(socket_api.workspace_id_to_key)) {
             if (socket_api.workspace_id_to_key[socket_id] === image_set_key) {
                 console.log("The workspace is in use", image_set_key);
-                return res.redirect(process.env.AC_PATH + "/home/" + username); 
+                return res.redirect(process.env.AC_PATH + "home/" + username); 
             }
         }
 
@@ -1007,7 +1012,11 @@ exports.get_workspace = function(req, res, next) {
             data["hotkeys"] = hotkeys;
             data["maintenance_time"] = maintenance_time;
 
-            res.render("workspace", {username: username, data: data});
+            res.render("workspace", {
+                ac_path: process.env.AC_PATH,
+                username: username, 
+                data: data
+            });
 
         });
     }
@@ -1027,7 +1036,7 @@ function notify_scheduler(request) {
         let options = {
             hostname: process.env.AC_IP,
             port: parseInt(process.env.AC_PY_PORT),
-            path: process.env.AC_PATH + '/add_request',
+            path: process.env.AC_PATH + 'add_request',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3032,7 +3041,7 @@ exports.post_home = async function(req, res, next) {
                 return res.json(response);
             }
             response.error = false;
-            response.redirect = process.env.AC_PATH + "/home/" + username;
+            response.redirect = process.env.AC_PATH + "home/" + username;
             return res.json(response);
         }
 
@@ -3074,7 +3083,7 @@ exports.post_home = async function(req, res, next) {
             }
 
             response.error = false;
-            response.redirect = process.env.AC_PATH + "/home/" + username;
+            response.redirect = process.env.AC_PATH + "home/" + username;
             return res.json(response);
         }
 
@@ -3096,7 +3105,7 @@ exports.post_home = async function(req, res, next) {
         }
 
         response.error = false;
-        response.redirect = process.env.AC_PATH + "/workspace/" + username + "/" + farm_name + "/" +
+        response.redirect = process.env.AC_PATH + "workspace/" + username + "/" + farm_name + "/" +
                             field_name + "/" + mission_date;
         return res.json(response);
     }
@@ -3780,7 +3789,11 @@ exports.get_viewer = function(req, res, next) {
         data["hotkeys"] = hotkeys;
         data["maintenance_time"] = maintenance_time;
 
-        res.render("viewer", {username: username, "data": data});
+        res.render("viewer", {
+            ac_path: process.env.AC_PATH,
+            username: username, 
+            data: data
+        });
     }
     
     else {

@@ -182,7 +182,7 @@ function create_user_account() {
 
 $(document).ready(function() {
 
-    $("#site_home_button").attr("href", get_AC_PATH() + "/admin");
+    $("#site_home_button").attr("href", ac_path + "admin");
 
 
     usernames = [];

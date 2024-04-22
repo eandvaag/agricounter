@@ -5,7 +5,7 @@ const http = require('http');
 
 const socket_io = require('socket.io');
 const io = socket_io({
-    "path": process.env.AC_PATH + "/socket.io"
+    "path": process.env.AC_PATH + "socket.io"
 });
 
 let workspace_id_to_key = {};
@@ -27,7 +27,7 @@ function query_num_workers() {
         let options = {
             hostname: process.env.AC_IP,
             port: parseInt(process.env.AC_PY_PORT),
-            path: process.env.AC_PATH + '/get_num_workers',
+            path: process.env.AC_PATH + 'get_num_workers',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

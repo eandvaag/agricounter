@@ -1247,7 +1247,7 @@ function create_viewer(viewer_id) {
     viewer = OpenSeadragon({
         id: viewer_id,
         sequenceMode: true,
-        prefixUrl: get_AC_PATH() + "/osd/images/",
+        prefixUrl: ac_path + "osd/images/",
         tileSources: dzi_image_paths,
         showNavigator: false,
         maxZoomLevel: 1000,
@@ -1503,7 +1503,7 @@ function build_map() {
 
             let timestamp = new Date().getTime();   
             
-            let base = get_AC_PATH() + "/usr/data/" + username + "/image_sets/" + image_set_info["farm_name"] + "/" + 
+            let base = ac_path + "usr/data/" + username + "/image_sets/" + image_set_info["farm_name"] + "/" + 
                     image_set_info["field_name"] + "/" + image_set_info["mission_date"] + "/maps/" + sel_interpolation;
 
             map_url = base + "_predicted_map.svg?t=" + timestamp;
@@ -2488,7 +2488,7 @@ function show_model_details(model_creator, model_name) {
             let current_image_set_viewer = OpenSeadragon({
                 id: "target_viewer",
                 sequenceMode: true,
-                prefixUrl: get_AC_PATH() + "/osd/images/",
+                prefixUrl: ac_path + "osd/images/",
                 tileSources: dzi_image_paths,
                 showNavigator: false,
                 maxZoomLevel: 1000,
@@ -2656,7 +2656,7 @@ function init_model_viewer() {
     model_viewer = OpenSeadragon({
         id: "model_viewer",
         sequenceMode: true,
-        prefixUrl: get_AC_PATH() + "/osd/images/",
+        prefixUrl: ac_path + "osd/images/",
         showNavigator: false,
         maxZoomLevel: 1000,
         zoomPerClick: 1,
@@ -2876,7 +2876,7 @@ function change_image_set(image_set_index) {
                 for (let region_key of ["fine_tuning_regions", "test_regions"]) {
                     for (let i = 0; i < model_image_set_annotations[image_name][region_key].length; i++) {
                         model_image_set_dzi_image_paths.push(
-                            get_AC_PATH() + "/usr/data/" + image_set["username"] + "/image_sets/" +
+                            ac_path + "usr/data/" + image_set["username"] + "/image_sets/" +
                                             image_set["farm_name"] + "/" +
                                             image_set["field_name"] + "/" +
                                             image_set["mission_date"] + "/" +
@@ -3430,7 +3430,7 @@ function create_navigator_viewer() {
     navigator_viewer = OpenSeadragon({
         id: "navigator_viewer",
         sequenceMode: true,
-        prefixUrl: get_AC_PATH() + "/osd/images/",
+        prefixUrl: ac_path + "osd/images/",
         tileSources: dzi_image_paths,
         showNavigator: false,
         maxZoomLevel: 1000,
@@ -3565,13 +3565,13 @@ $(document).ready(function() {
     
     let socket = io(
     "", {
-        path: get_AC_PATH() + "/socket.io"
+        path: ac_path + "socket.io"
     });
 
     socket.emit("join_workspace", username + "/" + image_set_info["farm_name"] + "/" + image_set_info["field_name"] + "/" + image_set_info["mission_date"]);
 
     socket.on("workspace_occupied", function(update) {
-        window.location.href = get_AC_PATH() + "/home/" + username;
+        window.location.href = ac_path + "home/" + username;
     });
 
 
@@ -4630,7 +4630,7 @@ function download_annotations() {
         }
         else {
             
-            let download_path = get_AC_PATH() + "/usr/data/" + username + "/image_sets/" + image_set_info["farm_name"] + "/" + 
+            let download_path = ac_path + "usr/data/" + username + "/image_sets/" + image_set_info["farm_name"] + "/" + 
             image_set_info["field_name"] + "/" + image_set_info["mission_date"] + "/annotations/download_annotations.json";
 
             $("#download_button").attr("href", download_path);

@@ -380,7 +380,7 @@ function create_viewer(id_prefix, dzi_image_paths) {
     viewers[id_prefix] = OpenSeadragon({
         id: id_prefix + "_viewer",
         sequenceMode: true,
-        prefixUrl: get_AC_PATH() + "/osd/images/",
+        prefixUrl: ac_path + "osd/images/",
         tileSources: dzi_image_paths,
         showNavigator: false,
         maxZoomLevel: 1000,
@@ -676,7 +676,7 @@ function inspect_image_set(image_set_text_id, for_target) {
             $("#" + id_prefix + "_next").show();
 
             for (let image_name of image_names) {
-                let dzi_image_path = get_AC_PATH() + "/" + image_set_dir + "/dzi_images/" + image_name + ".dzi";
+                let dzi_image_path = ac_path + image_set_dir + "/dzi_images/" + image_name + ".dzi";
                 dzi_image_paths.push(dzi_image_path);
             }
 

@@ -53,4 +53,4 @@ RUN ln -s /opt/app/backend/src/usr /opt/app/site/myapp/usr
 
 RUN chmod +x myapp-init.sh 
 CMD /bin/sh /opt/app/site/myapp/myapp-init.sh
-EXPOSE 8115
+EXPOSE ${AC_PORT}

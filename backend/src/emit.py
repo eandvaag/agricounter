@@ -9,11 +9,11 @@ if RUNNING_IN_APPTAINER:
     base_url = ""
 else:
     base_url = "https://" + os.environ.get("AC_IP") + ":" + os.environ.get("AC_PORT") + os.environ.get("AC_PATH")
-image_set_notification_url = base_url + "/image_set_notification"
-results_notification_url = base_url + "/results_notification"
-model_notification_url = base_url + "/model_notification"
-workers_notification_url = base_url + "/workers_notification"
-upload_notification_url = base_url + "/upload_notification"
+image_set_notification_url = base_url + "image_set_notification"
+results_notification_url = base_url + "results_notification"
+model_notification_url = base_url + "model_notification"
+workers_notification_url = base_url + "workers_notification"
+upload_notification_url = base_url + "upload_notification"
 
 IDLE = "Idle"
 SWITCHING_MODELS = "Switching Models"

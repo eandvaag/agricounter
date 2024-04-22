@@ -223,11 +223,6 @@ function timestamp_to_date(timestamp){
   }
 
 
-function get_AC_PATH() {
-    return "/" + window.location.pathname.split("/")[1];
-}
-
-
 function disable_close_buttons(button_ids) {
 
     for (let button_id of button_ids) {
@@ -1905,7 +1900,7 @@ function apply_hotkey_change() {
 
     if (make_default) {
         
-        $.post(get_AC_PATH() + "/hotkey_change/" + username,
+        $.post(ac_path + "hotkey_change/" + username,
         {
             hotkeys: JSON.stringify(new_hotkeys)
         },
@@ -1993,7 +1988,7 @@ function apply_overlay_appearance_change() {
 
     if (make_default) {
         
-        $.post(get_AC_PATH() + "/overlay_appearance_change/" + username,
+        $.post(ac_path + "overlay_appearance_change/" + username,
         {
             overlay_appearance: JSON.stringify(new_overlay_appearance)
         },
@@ -2016,7 +2011,7 @@ function apply_overlay_appearance_change() {
 
 function reset_overlay_appearance_to_default() {
 
-    let default_overlay_appearance_url = get_AC_PATH() + "/usr/shared/default_overlay_appearance.json";
+    let default_overlay_appearance_url = ac_path + "usr/shared/default_overlay_appearance.json";
     $.getJSON(default_overlay_appearance_url, function(data) {
         new_overlay_appearance = data;
         draw_customize_overlays_table(false);
@@ -2279,7 +2274,7 @@ function display_sign_in_required_modal(header_text, body_text) {
         , modal_width=650, display=true, include_close_button=false
     );
     $("#return_to_sign_in").click(function() {
-        window.location.href = get_AC_PATH();
+        window.location.href = ac_path;
     }); 
 
 

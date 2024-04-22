@@ -38,7 +38,7 @@ let gsd = null;
 
 function show_metrics_modal() {
 
-    let metric_definitions_url = get_AC_PATH() + "/usr/shared/metric_definitions.svg";
+    let metric_definitions_url = ac_path + "usr/shared/metric_definitions.svg";
     show_modal_message(`Metric Definitions`, 
     `<div class="scrollable_area" style="height: 400px">` +
         `<img src="${metric_definitions_url}"></img>` +
@@ -156,7 +156,7 @@ function build_map() {
             
             let timestamp = new Date().getTime();   
             
-            let base = get_AC_PATH() + "/usr/data/" + username + "/image_sets/" + image_set_info["farm_name"] + "/" + 
+            let base = ac_path + "usr/data/" + username + "/image_sets/" + image_set_info["farm_name"] + "/" + 
                     image_set_info["field_name"] + "/" + image_set_info["mission_date"] + "/model/results/" +
                     image_set_info["result_uuid"] + "/maps/" + sel_interpolation;
 
@@ -219,7 +219,7 @@ function create_viewer() {
     viewer = OpenSeadragon({
         id: "seadragon_viewer",
         sequenceMode: true,
-        prefixUrl: get_AC_PATH() + "/osd/images/",
+        prefixUrl: ac_path + "osd/images/",
         tileSources: dzi_image_paths,
         showNavigator: false,
         maxZoomLevel: 1000,
@@ -632,8 +632,8 @@ function show_download_metrics() {
     $("#raw_outputs_tab").removeClass("tab-btn-active");
     $("#areas_tab").removeClass("tab-btn-active");
 
-    let metrics_download_path = get_AC_PATH() + 
-                                "/usr/data/" + 
+    let metrics_download_path = ac_path + 
+                                "usr/data/" + 
                                 username + 
                                 "/image_sets/" + 
                                 image_set_info["farm_name"] + "/" + 
@@ -706,8 +706,8 @@ function show_download_areas() {
     $("#raw_outputs_tab").removeClass("tab-btn-active");
     $("#areas_tab").addClass("tab-btn-active");
 
-    let areas_download_path = get_AC_PATH() + 
-                                "/usr/data/" + 
+    let areas_download_path = ac_path + 
+                                "usr/data/" + 
                                 username + 
                                 "/image_sets/" + 
                                 image_set_info["farm_name"] + "/" + 
@@ -806,8 +806,8 @@ function show_download_raw_outputs() {
     $("#raw_outputs_tab").addClass("tab-btn-active");
     $("#areas_tab").removeClass("tab-btn-active");
 
-    let raw_outputs_download_path = get_AC_PATH() + 
-                                "/usr/data/" + 
+    let raw_outputs_download_path = ac_path + 
+                                "usr/data/" + 
                                 username + 
                                 "/image_sets/" + 
                                 image_set_info["farm_name"] + "/" + 
@@ -992,8 +992,8 @@ $(document).ready(function() {
     }
 
     $("#request_raw_outputs_button").click(function() {
-        let raw_outputs_download_path = get_AC_PATH() + 
-            "/usr/data/" + 
+        let raw_outputs_download_path = ac_path + 
+            "usr/data/" + 
             username + 
             "/image_sets/" + 
             image_set_info["farm_name"] + "/" + 
@@ -1097,8 +1097,8 @@ $(document).ready(function() {
 
 
     $("#request_metrics_button").click(function() {
-        let metrics_download_path = get_AC_PATH() + 
-            "/usr/data/" + 
+        let metrics_download_path = ac_path + 
+            "usr/data/" + 
             username + 
             "/image_sets/" + 
             image_set_info["farm_name"] + "/" + 

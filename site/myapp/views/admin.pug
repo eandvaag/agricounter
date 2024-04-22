@@ -5,18 +5,18 @@ html
         title="AgriCounter"
         meta(name="viewport" content="width=device-width, initial-scale=1")
 
-        link(rel="icon" href=process.env.AC_PATH + "/images/favicon.ico")
+        link(rel="icon" href=process.env.AC_PATH + "images/favicon.ico")
 
 
-        //- link(href=process.env.AC_PATH + "/external_stylesheets/font-awesome-6.1.2.css" rel="stylesheet")
+        //- link(href=process.env.AC_PATH + "external_stylesheets/font-awesome-6.1.2.css" rel="stylesheet")
         link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" rel="stylesheet")
-        link(href=process.env.AC_PATH + '/stylesheets/main.css' rel='stylesheet')
+        link(href=process.env.AC_PATH + 'stylesheets/main.css' rel='stylesheet')
         
-        script(src=process.env.AC_PATH + "/external_javascripts/jquery-3.6.0.js")
+        script(src=process.env.AC_PATH + "external_javascripts/jquery-3.6.0.js")
 
-        script(src=process.env.AC_PATH + '/javascripts/common.js')
-        script(src=process.env.AC_PATH + '/javascripts/admin.js')
-        script(src=process.env.AC_PATH + '/javascripts/modal.js')
+        script(src=process.env.AC_PATH + 'javascripts/common.js')
+        script(src=process.env.AC_PATH + 'javascripts/admin.js')
+        script(src=process.env.AC_PATH + 'javascripts/modal.js')
 
     body
         div(id="container")
@@ -103,5 +103,6 @@ html
 
 
     script.
+        let ac_path = !{JSON.stringify(ac_path)};
         let username = !{JSON.stringify(username)};
         let data = !{JSON.stringify(data)};

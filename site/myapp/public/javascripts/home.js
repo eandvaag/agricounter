@@ -1051,7 +1051,7 @@ function create_result_entry(result) {
         let field_name = $("#field_combo").val();
         let mission_date = $("#mission_combo").val();
 
-        let href = get_AC_PATH() + "/viewer/" + username + "/" +
+        let href = ac_path + "viewer/" + username + "/" +
                            farm_name + "/" + field_name + "/" + mission_date + "/" + result["result_uuid"];
 
         $("#" + main_result_container_id).append(
@@ -1368,7 +1368,7 @@ $(document).ready(function() {
 
     let socket = io(
     "", {
-       path: get_AC_PATH() + "/socket.io"
+       path: ac_path + "socket.io"
     });
 
     socket.emit("join_home", username);

@@ -40,8 +40,16 @@ def create():
 
     site_env["AC_PORT"] = args["site_port"]
     site_env["AC_PY_PORT"] = args["backend_python_port"]
-    site_env["AC_PATH"] = args["url_prefix"]
+    url_prefix = args["url_path_prefix"]
+    if url_path_prefix == "":
+        url_path_prefix = "/"
+    if url_path_prefix[0] != "/":
+        url_path_prefix = "/" + url_path_prefix
+    if url_path_prefix[-1] != "/":
+        url_path_prefix = url_path_prefix + "/"
+    site_env["AC_PATH"]  = url_path_prefix
     site_env["AC_API_KEY"] = args["api_key"]
+    site_env["AC_GPU_INDEX"] = args["gpu_index"]
 
 
 

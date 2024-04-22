@@ -4,9 +4,9 @@ services:
     image: postgres
     restart: always
     environment:
-      POSTGRES_USER: agricounter_db_user
-      POSTGRES_PASSWORD: secretDBkeypass
-      POSTGRES_DB: agricounter_db
+      POSTGRES_DB: "${DB_SCHEMA}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
     ports:
       - '8120:5432'
     volumes:
@@ -19,9 +19,9 @@ services:
     build: 
       context: .
     environment:
-      DB_SCHEMA: agricounter_db
-      DB_USER: agricounter_db_user
-      DB_PASSWORD: secretDBkeypass
+      DB_SCHEMA: "${DB_SCHEMA}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
       DB_HOST: db 
       DB_PORT: 5432 
       NODE_ENV: 'docker'
@@ -31,6 +31,7 @@ services:
       AC_PATH: "${AC_PATH}"
       AC_API_KEY: "${AC_API_KEY}"
       AC_TIMEZONE: "${AC_TIMEZONE}"
+      AC_GPU_INDEX: "${AC_GPU_INDEX}"
     depends_on:
       - db
     ports:

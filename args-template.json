@@ -1,0 +1,14 @@
+{
+    "url_path_prefix": "",
+    "site_port": "", 
+    "backend_python_port": "", 
+    "postgres_db_name": "",
+    "postgres_db_username": "",
+    "postgres_db_password": "",
+    "postgres_db_port": "",
+    "api_key": "",
+    "admin_username": "",
+    "admin_password": "",
+    "use_slurm": false,
+    "gpu_index": ""
+}

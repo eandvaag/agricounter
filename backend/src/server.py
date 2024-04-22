@@ -7,10 +7,11 @@ import time
 import datetime
 import traceback
 import threading
-import numpy as np
-import math as m
 import random
 import urllib3
+import math as m
+import numpy as np
+import tensorflow as tf
 
 from flask import Flask, request
 
@@ -83,12 +84,12 @@ def set_enqueued_state(job):
 
 
 
-@app.route(os.environ.get("AC_PATH") + '/health_request', methods=['POST'])
+@app.route(os.environ.get("AC_PATH") + 'health_request', methods=['POST'])
 def health_request():
     return {"message": "alive"}
 
 
-@app.route(os.environ.get("AC_PATH") + '/is_occupied', methods=['POST'])
+@app.route(os.environ.get("AC_PATH") + 'is_occupied', methods=['POST'])
 def is_occupied():
 
     logger = logging.getLogger(__name__)
@@ -104,11 +105,11 @@ def is_occupied():
         return {"message": 'Content-Type not supported!'}
     
 
-@app.route(os.environ.get("AC_PATH") + '/get_num_workers', methods=['POST'])
+@app.route(os.environ.get("AC_PATH") + 'get_num_workers', methods=['POST'])
 def get_num_workers():
     return {"num_workers": str(waiting_workers)}
 
-@app.route(os.environ.get("AC_PATH") + '/add_request', methods=['POST'])
+@app.route(os.environ.get("AC_PATH") + 'add_request', methods=['POST'])
 def add_request():
     
     logger = logging.getLogger(__name__)
@@ -1076,8 +1077,8 @@ if __name__ == "__main__":
     # # gpus = None
 
 
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     logging.basicConfig(level=logging.INFO)
 
 
@@ -1091,6 +1092,17 @@ if __name__ == "__main__":
 
     logger = logging.getLogger(__name__)
     logger.info("Using Slurm? {}".format(USE_SLURM))
+
+    if not USE_SLURM:
+        gpu_index = os.environ.get("AC_GPU_INDEX")
+        if gpu_index is None:
+            gpu_index = 0
+        else:
+            gpu_index = int(gpu_index)
+
+        gpus = tf.config.list_physical_devices("GPU")
+        tf.config.set_visible_devices(gpus[gpu_index], "GPU")
+        logger.info("Using GPU {}.".format(gpu_index))
 
 
     for _ in range(TOTAL_WORKERS):
