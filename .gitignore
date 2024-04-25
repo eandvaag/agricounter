@@ -2,6 +2,10 @@ args.json
 docker-compose.yml
 
 site/myapp/usr/data
+site/myapp/usr/shared/public_image_sets.json
+site/myapp/usr/shared/objects.json
+site/myapp/usr/shared/maintenance.json
+site/myapp/usr/shared/sign_in_log.txt
 site/myapp/node_modules
 site/myapp/config/config.js
 site/myapp/seeders
@@ -10,6 +14,10 @@ site/myapp/cert.pem
 site/myapp/key.pem
 
 backend/src/usr/data
+backend/src/usr/shared/public_image_sets.json
+backend/src/usr/shared/objects.json
+backend/src/usr/shared/maintenance.json
+backend/src/usr/shared/sign_in_log.txt
 
 # note: to freeze version control on a file, use:
 # git update-index --skip-worktree <file>
