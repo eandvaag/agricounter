@@ -1356,8 +1356,8 @@ $(document).ready(function() {
     overlay_appearance = data["overlay_appearance"];
 
 
-    if (data["maintenance_time"] !== "") {
-        $("#maintenance_message").html("Site maintenance is scheduled for " + data["maintenance_time"] + ".");
+    if (data["maintenance_message"] !== "") {
+        $("#maintenance_message").html(data["maintenance_message"]);
         $("#maintenance_message").show();
     }
 

@@ -64,11 +64,12 @@ Add environment variables to `~/.bashrc`.
 export AC_IP="YOUR_IP_ADDRESS_HERE"
 export AC_PORT="8110"
 export AC_PY_PORT="8111"
-export AC_PATH="/agricounter"
+export AC_PATH="/"
 export AC_API_KEY="YOUR_SECRET_API_KEY_HERE"
 ```
 
-
+AC_PATH must begin and end with a forward slash. 
+For example "/", "/ac/", and "/agricounter/" are all valid values.
 Acquire cert.pem and key.pem and add to `site/myapp` directory.
 
 

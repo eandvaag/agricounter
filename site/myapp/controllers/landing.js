@@ -109,7 +109,6 @@ exports.post_sign_in = function(req, res, next) {
     let response = {};
     response.not_found = false;
     response.error = false;
-    response.maintenance = false;
 
     return models.users.findOne({
     where: {
@@ -562,7 +561,7 @@ exports.get_home = function(req, res, next) {
         }
 
 
-        let maintenance_time = "";
+        let maintenance_message = "";
         let maintenance_path = path.join(USR_SHARED_ROOT, "maintenance.json");
         if (fpath_exists(maintenance_path)) {
             try {
@@ -573,7 +572,7 @@ exports.get_home = function(req, res, next) {
                 return res.redirect(process.env.AC_PATH);
             }
 
-            maintenance_time = maintenance_log["maintenance_time"];
+            maintenance_message = maintenance_log["message"];
         }
 
 
@@ -694,7 +693,7 @@ exports.get_home = function(req, res, next) {
                 data["objects"] = objects;
                 data["available_image_sets"] = available_image_sets;
                 data["overlay_appearance"] = overlay_appearance;
-                data["maintenance_time"] = maintenance_time;
+                data["maintenance_message"] = maintenance_message;
             
                 res.render("home", {
                     ac_path: process.env.AC_PATH,
@@ -883,7 +882,7 @@ exports.get_workspace = function(req, res, next) {
         }
 
 
-        let maintenance_time = "";
+        let maintenance_message = "";
         let maintenance_path = path.join(USR_SHARED_ROOT, "maintenance.json");
         if (fpath_exists(maintenance_path)) {
             try {
@@ -894,7 +893,7 @@ exports.get_workspace = function(req, res, next) {
                 return res.redirect(process.env.AC_PATH);
             }
 
-            maintenance_time = maintenance_log["maintenance_time"];
+            maintenance_message = maintenance_log["message"];
         }
 
 
@@ -1010,7 +1009,7 @@ exports.get_workspace = function(req, res, next) {
             data["camera_specs"] = camera_specs;
             data["overlay_appearance"] = overlay_appearance;
             data["hotkeys"] = hotkeys;
-            data["maintenance_time"] = maintenance_time;
+            data["maintenance_message"] = maintenance_message;
 
             res.render("workspace", {
                 ac_path: process.env.AC_PATH,
@@ -3643,7 +3642,7 @@ exports.get_viewer = function(req, res, next) {
             return res.redirect(process.env.AC_PATH);
         }
 
-        let maintenance_time = "";
+        let maintenance_message = "";
         let maintenance_path = path.join(USR_SHARED_ROOT, "maintenance.json");
         if (fpath_exists(maintenance_path)) {
             try {
@@ -3654,7 +3653,7 @@ exports.get_viewer = function(req, res, next) {
                 return res.redirect(process.env.AC_PATH);
             }
 
-            maintenance_time = maintenance_log["maintenance_time"];
+            maintenance_message = maintenance_log["message"];
         }
 
         let overlay_appearance;
@@ -3787,7 +3786,7 @@ exports.get_viewer = function(req, res, next) {
         data["dzi_image_paths"] = nat_orderBy.orderBy(dzi_image_paths);
         data["overlay_appearance"] = overlay_appearance;
         data["hotkeys"] = hotkeys;
-        data["maintenance_time"] = maintenance_time;
+        data["maintenance_message"] = maintenance_message;
 
         res.render("viewer", {
             ac_path: process.env.AC_PATH,
