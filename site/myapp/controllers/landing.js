@@ -102,30 +102,38 @@ if (process.env.NODE_ENV === "docker") {
 
 }
 
+function sleep(time) {
+    return new Promise(resolve => setTimeout(resolve, time));
+}
 
-function log_sign_in_attempt(content) {
-
-    sign_in_log_mutex.acquire()
-    .then(function(release) {
+async function log_sign_in_attempt(content) {
+    const release = await sign_in_log_mutex.acquire();
+    try {
         let log_time = new Date().toISOString();
         let sign_in_log_path = path.join(USR_SHARED_ROOT, "sign_in_log.txt");
         let log_line = log_time + " " + content;
         if (fs.existsSync(sign_in_log_path)) {
             log_line = "\n" + log_line;
         }
-        fs.appendFile(sign_in_log_path, log_line, error => {
-            release();
-            if (error) {
-                console.log("Failed to write to sign-in log file");
-                console.log(error);
-            }
-            return;
-        });
-    }).catch(function(error) {
-        console.log("Failed to acquire sign-in log mutex");
+        fs.appendFileSync(sign_in_log_path, log_line);
+    }
+    catch (error) {
         console.log(error);
-    });
+    }
+    finally {
+        release();
+    }
 }
+
+
+function sanitize(txt_str, max_len) {
+    // remove non-printable characters and whitespace
+    let res = txt_str.replace(/[^ -~]+/g, "");
+    res = res.replace(/\s/g, "");
+    res = res.substring(0, max_len);
+    return res;
+}
+
 
 
 
@@ -133,58 +141,70 @@ function log_sign_in_attempt(content) {
 exports.get_sign_in = function(req, res, next) {
     res.render('sign_in');
 }
-exports.post_sign_in = function(req, res, next) {
+
+exports.post_sign_in = async function(req, res, next) {
     let response = {};
     response.not_found = false;
     response.error = false;
 
     let ip = req.socket.remoteAddress;
 
-    return models.users.findOne({
-    where: {
-        username: req.body.username,
+    let prov_username = req.body.username;
+    let prov_password = req.body.password;
+
+    let san_username = sanitize(prov_username, MAX_USERNAME_LENGTH);
+    let san_password = sanitize(prov_password, MAX_PASSWORD_LENGTH);
+
+    if (prov_username !== san_username || prov_password !== san_password) {
+        response.not_found = true;
+        let log_str = "ILLEGAL_CHAR " + ip + " " + san_username + " " + san_password;
+        await log_sign_in_attempt(log_str);
+        await sleep(5 * 1000);
+        return res.json(response); 
     }
-    }).then(user => {
-        if (!user) {
+
+    try {
+        const user = await models.users.findOne({ where: { username: san_username } });
+        if (user === null) {
             response.not_found = true;
-            let log_str = "FAIL    " + ip + " " + req.body.username + " " + req.body.password;
-            log_sign_in_attempt(log_str);
-            delay(5 * 1000).then(() => { 
-                return res.json(response);
-            });
+            let log_str = "NOT_FOUND    " + ip + " " + san_username + " " + san_password;
+            await log_sign_in_attempt(log_str);
+            await sleep(5 * 1000);
+            return res.json(response)
         }
         else {
-            if (!user.check_password(req.body.password)) {
+            if (!user.check_password(san_password)) {
                 response.not_found = true;
-                let log_str = "FAIL    " + ip + " " + req.body.username + " " + req.body.password;
-                log_sign_in_attempt(log_str);
-                delay(5 * 1000).then(() => { 
-                    return res.json(response);
-                });
+                let log_str = "NOT_FOUND    " + ip + " " + san_username + " " + san_password;
+                await log_sign_in_attempt(log_str);
+                await sleep(5 * 1000);
+                return res.json(response)
             }
             else {
-                let log_str = "SUCCESS " + ip + " " + req.body.username;
-                log_sign_in_attempt(log_str);
+                let log_str = "SUCCESS      " + ip + " " + san_username;
+                await log_sign_in_attempt(log_str);
+                req.session.user = user.dataValues;
                 if (user.is_admin) {
-                    req.session.user = user.dataValues;
-                    response.redirect = process.env.AC_PATH + "admin";
-                    return res.json(response);
+                    response.redirect = process.env.FF_PATH + "admin";
                 }
                 else {
-                    req.session.user = user.dataValues;
-                    response.redirect = process.env.AC_PATH + "home/" + req.body.username;
-                    return res.json(response);
+                    response.redirect = process.env.FF_PATH + "home/" + san_username;
                 }
+                return res.json(response);
+
             }
         }
-    }).catch(error => {
+    }
+    catch (error) {
         console.log(error);
-        let log_str = "ERROR   " + ip + " " + req.body.username;
-        log_sign_in_attempt(log_str);
         response.error = true;
-        return res.json(response);
-    });
+        let log_str = "ERROR        " + ip + " " + san_username;
+        await log_sign_in_attempt(log_str);
+        await sleep(5 * 1000);
+        return res.json(response)
+    }
 }
+
 
 function get_subdirnames(dir) {
     let subdirnames = [];
