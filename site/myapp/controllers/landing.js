@@ -190,10 +190,10 @@ exports.post_sign_in = async function(req, res, next) {
                 await log_sign_in_attempt(log_str);
                 req.session.user = user.dataValues;
                 if (user.is_admin) {
-                    response.redirect = process.env.FF_PATH + "admin";
+                    response.redirect = process.env.AC_PATH + "admin";
                 }
                 else {
-                    response.redirect = process.env.FF_PATH + "home/" + san_username;
+                    response.redirect = process.env.AC_PATH + "home/" + san_username;
                 }
                 return res.json(response);
 
