@@ -111,10 +111,7 @@ async function log_sign_in_attempt(content) {
     try {
         let log_time = new Date().toISOString();
         let sign_in_log_path = path.join(USR_SHARED_ROOT, "sign_in_log.txt");
-        let log_line = log_time + " " + content;
-        if (fs.existsSync(sign_in_log_path)) {
-            log_line = "\n" + log_line;
-        }
+        let log_line = log_time.padEnd(28) + content + "\n";
         fs.appendFileSync(sign_in_log_path, log_line);
     }
     catch (error) {
@@ -127,7 +124,7 @@ async function log_sign_in_attempt(content) {
 
 
 function sanitize(txt_str, max_len) {
-    // remove non-printable characters and whitespace
+    // remove non-printable characters and whitespace, truncate to max_len
     let res = txt_str.replace(/[^ -~]+/g, "");
     res = res.replace(/\s/g, "");
     res = res.substring(0, max_len);
@@ -141,7 +138,6 @@ function sanitize(txt_str, max_len) {
 exports.get_sign_in = function(req, res, next) {
     res.render('sign_in');
 }
-
 exports.post_sign_in = async function(req, res, next) {
     let response = {};
     response.not_found = false;
@@ -157,9 +153,11 @@ exports.post_sign_in = async function(req, res, next) {
 
     if (prov_username !== san_username || prov_password !== san_password) {
         response.not_found = true;
-        let log_str = "ILLEGAL_CHAR " + ip + " " + san_username + " " + san_password;
+        let log_str = "UNSAFE_CHAR".padEnd(15) + 
+                      ip.padEnd(40) + 
+                      san_username;
         await log_sign_in_attempt(log_str);
-        await sleep(5 * 1000);
+        await sleep(5000);
         return res.json(response); 
     }
 
@@ -167,21 +165,28 @@ exports.post_sign_in = async function(req, res, next) {
         const user = await models.users.findOne({ where: { username: san_username } });
         if (user === null) {
             response.not_found = true;
-            let log_str = "NOT_FOUND    " + ip + " " + san_username + " " + san_password;
+            let log_str = "NOT_FOUND".padEnd(15) + 
+                            ip.padEnd(40) + 
+                            san_username;
             await log_sign_in_attempt(log_str);
-            await sleep(5 * 1000);
+            await sleep(5000);
             return res.json(response)
         }
         else {
             if (!user.check_password(san_password)) {
                 response.not_found = true;
-                let log_str = "NOT_FOUND    " + ip + " " + san_username + " " + san_password;
+                let log_str = "NOT_FOUND".padEnd(15) + 
+                                ip.padEnd(40) + 
+                                san_username;
                 await log_sign_in_attempt(log_str);
-                await sleep(5 * 1000);
+                await sleep(5000);
                 return res.json(response)
             }
             else {
-                let log_str = "SUCCESS      " + ip + " " + san_username;
+                let log_str = "SUCCESS".padEnd(15) + 
+                                ip.padEnd(40) + 
+                                san_username;
+
                 await log_sign_in_attempt(log_str);
                 req.session.user = user.dataValues;
                 if (user.is_admin) {
@@ -198,13 +203,14 @@ exports.post_sign_in = async function(req, res, next) {
     catch (error) {
         console.log(error);
         response.error = true;
-        let log_str = "ERROR        " + ip + " " + san_username;
+        let log_str = "ERROR".padEnd(15) + 
+                        ip.padEnd(40) + 
+                        san_username;
         await log_sign_in_attempt(log_str);
-        await sleep(5 * 1000);
+        await sleep(5000);
         return res.json(response)
     }
 }
-
 
 function get_subdirnames(dir) {
     let subdirnames = [];
