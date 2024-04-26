@@ -80,7 +80,7 @@ function draw_map_chart() {
         ratio = ((max_longitude - min_longitude) / (max_latitude - min_latitude));
     }
 
-    let max_image_height = ($("#seadragon_viewer").height() - 4) - (2 * margin);
+    let max_image_height = ($("#seadragon_viewer").height() + 2) - (2 * margin);
     let max_image_width;
     if ($("#image_view_container").is(":visible")) {
         max_image_width = ($("#image_view_container").width() - (2 * $("#left_panel").width())) - (2 * margin); //($("#seadragon_viewer").width() - 4) - (2 * margin);
@@ -374,7 +374,7 @@ function draw_map_chart() {
                 update_count_combo(true);
                 cur_region_index = -1;
                 show_image(image_name);
-    
+                resize_window();
             });
         }
     }
@@ -430,6 +430,7 @@ function draw_map_chart() {
                 update_count_combo(true);
                 cur_region_index = -1;
                 show_image(d["image_name"]);
+                resize_window();
             })
             .on("mouseover", tip_mouseover)
             .on("mouseleave", tip_mouseleave);

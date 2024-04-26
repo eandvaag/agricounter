@@ -3696,18 +3696,17 @@ $(document).ready(function() {
 
     if (can_calculate_density(metadata, camera_specs)) {
         if (metadata["is_ortho"] || Object.keys(annotations).length >= 3) {
-
-
+            
             $("#view_button_container").show();
 
-
             $("#view_button").click(function() {
-                if (cur_view == "image") {
+                if (cur_view === "image") {
                     show_map();
                 }
                 else {
                     show_image(cur_img_name);
                 }
+                resize_window();
             });
         }
 

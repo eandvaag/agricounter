@@ -2229,7 +2229,6 @@ function resize_window() {
 
     let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
     $("#seadragon_viewer").height(new_viewer_height);
-    $("#chart_container").height(new_viewer_height);
     let non_nav_container_height = $("#non_nav_container").height();
     let new_navigation_table_container_height = new_viewer_height - non_nav_container_height - 50;
     $("#score_area").show();
@@ -2243,6 +2242,9 @@ function resize_window() {
         $("#count_area").hide();
     }
     $("#navigation_table_container").height(new_navigation_table_container_height);
+    if (cur_view !== "image") {
+        draw_map_chart();
+    }
 }
 
 

@@ -1205,13 +1205,13 @@ $(document).ready(function() {
             $("#view_button_container").show();
 
             $("#view_button").click(function() {
-
                 if (cur_view == "image") {
                     show_map();
                 }
                 else {
                     show_image(cur_img_name);
                 }
+                resize_window();
             });
         }
 
