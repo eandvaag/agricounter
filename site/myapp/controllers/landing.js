@@ -10,7 +10,7 @@ const models = require('../models');
 
 var bcrypt = require('bcrypt');
 
-const glob = require("glob");
+const { glob } = require("glob");
 
 
 var socket_api = require('../socket_api');
@@ -987,128 +987,130 @@ exports.get_workspace = function(req, res, next) {
             maintenance_message = maintenance_log["message"];
         }
 
+        let image_paths;
+        try {
+            image_paths = glob.sync(path.join(image_set_dir, "images", "*"));
+        }
+        catch (error) {
+            return res.redirect(process.env.AC_PATH);
+        }
 
-        glob(path.join(image_set_dir, "images", "*"), function(error, image_paths) {
-            if (error) {
-                return res.redirect(process.env.AC_PATH);
-            }
-            let image_ext = image_paths[0].substring(image_paths[0].length - 4);
+        let image_ext = image_paths[0].substring(image_paths[0].length - 4);
 
-            let overlay_appearance;
-            let overlay_appearance_path = path.join(USR_DATA_ROOT, username, "overlay_appearance.json");
-            try {
-                overlay_appearance = JSON.parse(fs.readFileSync(overlay_appearance_path, 'utf8'));
-            }
-            catch (error) {
-                console.log(error);
-                return res.redirect(process.env.AC_PATH);
-            }
+        let overlay_appearance;
+        let overlay_appearance_path = path.join(USR_DATA_ROOT, username, "overlay_appearance.json");
+        try {
+            overlay_appearance = JSON.parse(fs.readFileSync(overlay_appearance_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
-            let hotkeys;
-            let hotkeys_path = path.join(USR_DATA_ROOT, username, "hotkeys.json");
-            try {
-                hotkeys = JSON.parse(fs.readFileSync(hotkeys_path, 'utf8'));
-            }
-            catch (error) {
-                console.log(error);
-                return res.redirect(process.env.AC_PATH);
-            }
+        let hotkeys;
+        let hotkeys_path = path.join(USR_DATA_ROOT, username, "hotkeys.json");
+        try {
+            hotkeys = JSON.parse(fs.readFileSync(hotkeys_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
-            console.log("getting annotations");
-            let annotations_dir = path.join(image_set_dir, "annotations");
-            let annotations_path = path.join(annotations_dir, "annotations.json");
-            let annotations;
-            try {
-                annotations = JSON.parse(fs.readFileSync(annotations_path, 'utf8'));
-            }
-            catch (error) {
-                console.log(error);
-                return res.redirect(process.env.AC_PATH);
-            }
+        console.log("getting annotations");
+        let annotations_dir = path.join(image_set_dir, "annotations");
+        let annotations_path = path.join(annotations_dir, "annotations.json");
+        let annotations;
+        try {
+            annotations = JSON.parse(fs.readFileSync(annotations_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
-            console.log("getting metadata");
-            let metadata_path = path.join(image_set_dir, "metadata", "metadata.json");
-            let metadata;
-            try {
-                metadata = JSON.parse(fs.readFileSync(metadata_path, 'utf8'));
-            }
-            catch (error) {
-                console.log(error);
-                return res.redirect(process.env.AC_PATH);
-            }
+        console.log("getting metadata");
+        let metadata_path = path.join(image_set_dir, "metadata", "metadata.json");
+        let metadata;
+        try {
+            metadata = JSON.parse(fs.readFileSync(metadata_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
-            console.log("getting camera specs");
-            let camera_specs_path = path.join(USR_DATA_ROOT, username, "cameras", "cameras.json");
-            let camera_specs;
-            try {
-                camera_specs = JSON.parse(fs.readFileSync(camera_specs_path, 'utf8'));
-            }
-            catch (error) {
-                console.log(error);
-                return res.redirect(process.env.AC_PATH);
-            }
+        console.log("getting camera specs");
+        let camera_specs_path = path.join(USR_DATA_ROOT, username, "cameras", "cameras.json");
+        let camera_specs;
+        try {
+            camera_specs = JSON.parse(fs.readFileSync(camera_specs_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
-            let excess_green_record;
-            console.log("getting exg record");
-            let excess_green_record_path = path.join(image_set_dir, "excess_green", "record.json");
-            
-            try {
-                excess_green_record = JSON.parse(fs.readFileSync(excess_green_record_path, 'utf8'));
-            }
-            catch (error) {
-                console.log(error);
-                return res.redirect(process.env.AC_PATH);
-            }
+        let excess_green_record;
+        console.log("getting exg record");
+        let excess_green_record_path = path.join(image_set_dir, "excess_green", "record.json");
+        
+        try {
+            excess_green_record = JSON.parse(fs.readFileSync(excess_green_record_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
-            let tags;
-            console.log("getting tags");
-            let tags_path = path.join(image_set_dir, "annotations", "tags.json");
-            
-            try {
-                tags = JSON.parse(fs.readFileSync(tags_path, 'utf8'));
-            }
-            catch (error) {
-                console.log(error);
-                return res.redirect(process.env.AC_PATH);
-            }
+        let tags;
+        console.log("getting tags");
+        let tags_path = path.join(image_set_dir, "annotations", "tags.json");
+        
+        try {
+            tags = JSON.parse(fs.readFileSync(tags_path, 'utf8'));
+        }
+        catch (error) {
+            console.log(error);
+            return res.redirect(process.env.AC_PATH);
+        }
 
 
-            console.log("getting dzi image paths");
-            let dzi_images_dir = path.join(image_set_dir, "dzi_images");
-            let dzi_image_paths = [];
-            for (let image_name of Object.keys(annotations)) {
-                let dzi_image_path = path.join(process.env.AC_PATH, dzi_images_dir, image_name + ".dzi");
-                dzi_image_paths.push(dzi_image_path);
-            }
+        console.log("getting dzi image paths");
+        let dzi_images_dir = path.join(image_set_dir, "dzi_images");
+        let dzi_image_paths = [];
+        for (let image_name of Object.keys(annotations)) {
+            let dzi_image_path = path.join(process.env.AC_PATH, dzi_images_dir, image_name + ".dzi");
+            dzi_image_paths.push(dzi_image_path);
+        }
 
-            let image_set_info = {
-                "farm_name": farm_name,
-                "field_name": field_name,
-                "mission_date": mission_date,
-                "image_ext": image_ext,
-            }
-    
-            let data = {};
+        let image_set_info = {
+            "farm_name": farm_name,
+            "field_name": field_name,
+            "mission_date": mission_date,
+            "image_ext": image_ext,
+        }
 
-            data["cur_page"] = "workspace";
-            data["image_set_info"] = image_set_info;
-            data["metadata"] = metadata;
-            data["dzi_image_paths"] = nat_orderBy.orderBy(dzi_image_paths);
-            data["annotations"] = annotations;
-            data["excess_green_record"] = excess_green_record;
-            data["tags"] = tags;
-            data["camera_specs"] = camera_specs;
-            data["overlay_appearance"] = overlay_appearance;
-            data["hotkeys"] = hotkeys;
-            data["maintenance_message"] = maintenance_message;
+        let data = {};
 
-            res.render("workspace", {
-                ac_path: process.env.AC_PATH,
-                username: username, 
-                data: data
-            });
+        data["cur_page"] = "workspace";
+        data["image_set_info"] = image_set_info;
+        data["metadata"] = metadata;
+        data["dzi_image_paths"] = nat_orderBy.orderBy(dzi_image_paths);
+        data["annotations"] = annotations;
+        data["excess_green_record"] = excess_green_record;
+        data["tags"] = tags;
+        data["camera_specs"] = camera_specs;
+        data["overlay_appearance"] = overlay_appearance;
+        data["hotkeys"] = hotkeys;
+        data["maintenance_message"] = maintenance_message;
 
+        res.render("workspace", {
+            ac_path: process.env.AC_PATH,
+            username: username, 
+            data: data
         });
+
     }
     else {
         return res.redirect(process.env.AC_PATH);
@@ -2922,132 +2924,136 @@ exports.post_home = async function(req, res, next) {
 
             let available_dir = path.join(models_dir, "available");
 
-            glob(path.join(available_dir, "public", "*"), function(error, public_paths) {
+            let public_paths;
+            try {
+                public_paths = glob.sync(path.join(available_dir, "public", "*"));
+            }
+            catch (error) {
+                response.message = "Failed to retrieve models.";
+                response.error = true;
+                return res.json(response);                
+            }
 
-                if (error) {
-                    response.message = "Failed to retrieve models.";
+            let private_paths;
+            try {
+                private_paths = glob.sync(path.join(available_dir, "private", "*"));
+            }
+            catch (error) {
+                response.message = "Failed to retrieve models.";
+                response.error = true;
+                return res.json(response);                
+            }
+
+            let models = [];
+
+            for (let public_path of public_paths) {
+
+                let log_path = path.join(public_path, "log.json");
+                let log;
+                try {
+                    log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
+                }
+                catch (error) {
+                    response.message = "Failed to read model log.";
                     response.error = true;
                     return res.json(response);
                 }
-
-                glob(path.join(available_dir, "private", "*"), function(error, private_paths) {
-                    if (error) {
-                        response.message = "Failed to retrieve models.";
-                        response.error = true;
-                        return res.json(response);
-                    }
-
-                    let models = [];
-
-                    for (let public_path of public_paths) {
-
-                        let log_path = path.join(public_path, "log.json");
-                        let log;
-                        try {
-                            log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
-                        }
-                        catch (error) {
-                            response.message = "Failed to read model log.";
-                            response.error = true;
-                            return res.json(response);
-                        }
-                        models.push({
-                            "log": log,
-                        });
-                    }
-                    for (let private_path of private_paths) {
-
-                        let log_path = path.join(private_path, "log.json");
-                        let log;
-                        try {
-                            log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
-                        }
-                        catch (error) {
-                            response.message = "Failed to read model log.";
-                            response.error = true;
-                            return res.json(response);
-                        }
-                        models.push({
-                            "log": log,
-                        });
-                    }
-                    response.models = models;
-                    response.error = false;
-                    return res.json(response);
+                models.push({
+                    "log": log,
                 });
-            });
+            }
+            for (let private_path of private_paths) {
+
+                let log_path = path.join(private_path, "log.json");
+                let log;
+                try {
+                    log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
+                }
+                catch (error) {
+                    response.message = "Failed to read model log.";
+                    response.error = true;
+                    return res.json(response);
+                }
+                models.push({
+                    "log": log,
+                });
+            }
+            response.models = models;
+            response.error = false;
+            return res.json(response);
         }
 
         else if (model_state === "pending") {
 
             let pending_dir = path.join(models_dir, "pending");
 
-            glob(path.join(pending_dir, "*"), function(error, model_paths) {
-                if (error) {
+            let model_paths;
+            try {
+                model_paths = glob.sync(path.join(pending_dir, "*"));
+            }
+            catch (error) {
+                response.error = true;
+                return res.json(response);             
+            }
+
+            let models = [];
+            for (let model_path of model_paths) {
+
+                let log_path = path.join(model_path, "log.json");
+                let log;
+                try {
+                    log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
+                }
+                catch (error) {
                     response.error = true;
                     return res.json(response);
                 }
 
-                let models = [];
-                for (let model_path of model_paths) {
+                models.push({
+                    "log": log
+                });
+            }
 
-                    let log_path = path.join(model_path, "log.json");
-                    let log;
-                    try {
-                        log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
-                    }
-                    catch (error) {
-                        response.error = true;
-                        return res.json(response);
-                    }
-
-                    models.push({
-                       "log": log
-                    });
-                }
-
-                response.models = models;
-                response.error = false;
-                return res.json(response);
-
-            });
+            response.models = models;
+            response.error = false;
+            return res.json(response);
         }
 
         else if (model_state === "aborted") {
             let aborted_dir = path.join(models_dir, "aborted");
 
-            glob(path.join(aborted_dir, "*"), function(error, model_paths) {
-                if (error) {
-                    response.message = "Failed to obtain list of aborted models.";
+
+            let model_paths;
+            try {
+                model_paths = glob.sync(path.join(aborted_dir, "*"));
+            }
+            catch (error) {
+                response.message = "Failed to obtain list of aborted models.";
+                response.error = true;
+                return res.json(response);             
+            }
+
+            let models = [];
+            for (let model_path of model_paths) {
+                let log_path = path.join(model_path, "log.json");
+                let log;
+                try {
+                    log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
+                }
+                catch (error) {
+                    response.message = "Failed to read log file of aborted model.";
                     response.error = true;
                     return res.json(response);
                 }
 
-                let models = [];
-                for (let model_path of model_paths) {
-                    let log_path = path.join(model_path, "log.json");
-                    let log;
-                    try {
-                        log = JSON.parse(fs.readFileSync(log_path, 'utf8'));
-                    }
-                    catch (error) {
-                        response.message = "Failed to read log file of aborted model.";
-                        response.error = true;
-                        return res.json(response);
-                    }
+                models.push({
+                    "log": log
+                });
+            }
 
-                    models.push({
-                        "log": log
-                    });
-                }
-
-                response.models = models;
-                response.error = false;
-                return res.json(response);
-
-            });
-
-
+            response.models = models;
+            response.error = false;
+            return res.json(response);
         }
     }
     else if (action === "get_overview_info") {
@@ -3264,49 +3270,54 @@ exports.post_home = async function(req, res, next) {
         response.aborted_results = [];
         response.completed_results = [];
 
-        glob(path.join(results_dir, "aborted", "*"), function(error, aborted_dirs) {
 
-            if (error) {
+        let aborted_dirs;
+        try {
+            aborted_dirs = glob.sync(path.join(results_dir, "aborted", "*"));
+        }
+        catch (error) {
+            console.log(error);
+            response.error = true;
+            return res.json(response);           
+        }
+
+        for (let aborted_dir of aborted_dirs) {
+            let request_path = path.join(aborted_dir, "request.json");
+            try {
+                response.aborted_results.push(JSON.parse(fs.readFileSync(request_path, 'utf8')));
+            }
+            catch (error) {
                 console.log(error);
                 response.error = true;
                 return res.json(response);
             }
+        }
 
-            for (let aborted_dir of aborted_dirs) {
-                let request_path = path.join(aborted_dir, "request.json");
-                try {
-                    response.aborted_results.push(JSON.parse(fs.readFileSync(request_path, 'utf8')));
-                }
-                catch (error) {
-                    console.log(error);
-                    response.error = true;
-                    return res.json(response);
-                }
+
+        let completed_dirs;
+        try {
+            completed_dirs = glob.sync(path.join(results_dir, "available", "*"));
+        }
+        catch (error) {
+            console.log(error);
+            response.error = true;
+            return res.json(response);          
+        }
+
+        for (let completed_dir of completed_dirs) {
+            let request_path = path.join(completed_dir, "request.json");
+            try {
+                response.completed_results.push(JSON.parse(fs.readFileSync(request_path, 'utf8')));
             }
-
-            glob(path.join(results_dir, "available", "*"), function(error, completed_dirs) {
-                if (error) {
-                    console.log(error);
-                    response.error = true;
-                    return res.json(response);
-                }
-
-                for (let completed_dir of completed_dirs) {
-                    let request_path = path.join(completed_dir, "request.json");
-                    try {
-                        response.completed_results.push(JSON.parse(fs.readFileSync(request_path, 'utf8')));
-                    }
-                    catch (error) {
-                        console.log(error);
-                        response.error = true;
-                        return res.json(response);
-                    }
-                }
-
-                response.error = false;
+            catch (error) {
+                console.log(error);
+                response.error = true;
                 return res.json(response);
-            });
-        });
+            }
+        }
+
+        response.error = false;
+        return res.json(response);
 
 
     }

@@ -80,30 +80,12 @@ function draw_map_chart() {
         ratio = ((max_longitude - min_longitude) / (max_latitude - min_latitude));
     }
 
-    let max_image_height = ($("#seadragon_viewer").height() + 2) - (2 * margin);
-    let max_image_width;
-    if ($("#image_view_container").is(":visible")) {
-        max_image_width = ($("#image_view_container").width() - (2 * $("#left_panel").width())) - (2 * margin); //($("#seadragon_viewer").width() - 4) - (2 * margin);
-    }
-    else {
-        max_image_width = ($("#map_view_container").width() - (2 * $("#map_builder_controls_container").width())) - (2 * margin); //($("#seadragon_viewer").width() - 4) - (2 * margin);
-    }
-    
+    let chart_height = $("#seadragon_viewer").height() - 100;
+    let chart_width = Math.max($("#seadragon_viewer").width(), chart_height * ratio);
 
-    let image_height = max_image_height;
-    let image_width = image_height * ratio;
-    if (image_width > max_image_width) {
-        image_width = max_image_width;
-        image_height = image_width * (1 / ratio);
-    }
-
-    chart_height = Math.max(image_height + (2 * margin), 500);
-    chart_width = Math.max(image_width + (2 * margin), 500);
 
     chart_height = chart_height + "px";
     chart_width = chart_width + "px";
-
-
 
     $("#chart_container").empty();
     $("#chart_container").append(
@@ -241,70 +223,71 @@ function draw_map_chart() {
         if (min_max_rec !== null) {
             vmin = min_max_rec["vmin"];
             vmax = min_max_rec["vmax"];
-            let legend_svg = d3.select("#legend_container")
-            .append("svg")
-            .attr("width", "60px")
-            .attr("height", chart_height);
-
-            let cmap = d3.select("#legend_container").select("svg").append("g");
-
-            let min_color = wheat;
-            let max_color = forestgreen;
-            let rects = [];
-            
-            let num_rects = 1000;
-            for (let i = 0; i < num_rects; i++) {
-
-                let v = range_map(i, 0, num_rects, vmin, vmax);
-                let c = color_map(v, vmin, vmax, min_color, max_color);
-                rects.push({
-                    "color": "rgb(" + c[0] + ", " + c[1] + ", " + c[2] + ")",
-                    "v": v
-                });
-            }
-
-            let legend_yScale = d3.scaleLinear()
-                .domain([vmin, vmax])
-                .range([chart_height - margin, margin]);
-
-
-            let legend_y_axis = legend_svg.append("g")
-                .attr("class", "map_legend axis")
-                .attr("transform", "translate(" + 70 + ", 0)");
-
-            if (interpolated_value === "obj_density") {
-                custom_tickformat = d3.format("d")
-
-
-            }
-            else {
-                custom_tickformat = function(d, i) { return "%" + d; }
-            }
-            legend_y_axis.call(d3.axisLeft(legend_yScale).tickValues([vmin, vmax]).tickFormat(custom_tickformat).tickSize(25));
-
-            cmap.selectAll(".rect")
-            .data(rects)
-            .enter()
-            .append("rect")
-            .attr("x", function(d) {
-                return 50;
-            })
-            .attr("y", function(d, i) {
-                return legend_yScale(d.v);
-            })
-            .attr("height", function(d, i) {
-                if (i == num_rects -1) {
-                    return (legend_yScale(d.v) - legend_yScale(vmax)) + 1;
+            if (vmin !== vmax) {
+                let legend_svg = d3.select("#legend_container")
+                .append("svg")
+                .attr("width", "60px")
+                .attr("height", chart_height);
+    
+                let cmap = d3.select("#legend_container").select("svg").append("g");
+    
+                let min_color = wheat;
+                let max_color = forestgreen;
+                let rects = [];
+                
+                let num_rects = 1000;
+                for (let i = 0; i < num_rects; i++) {
+    
+                    let v = range_map(i, 0, num_rects, vmin, vmax);
+                    let c = color_map(v, vmin, vmax, min_color, max_color);
+                    rects.push({
+                        "color": "rgb(" + c[0] + ", " + c[1] + ", " + c[2] + ")",
+                        "v": v
+                    });
+                }
+    
+                let legend_yScale = d3.scaleLinear()
+                    .domain([vmin, vmax])
+                    .range([chart_height - margin, margin]);
+    
+    
+                let legend_y_axis = legend_svg.append("g")
+                    .attr("class", "map_legend axis")
+                    .attr("transform", "translate(" + 70 + ", 0)");
+    
+                if (interpolated_value === "obj_density") {
+                    custom_tickformat = d3.format("d")
+    
+    
                 }
                 else {
-                    return (legend_yScale(d.v) - legend_yScale(rects[i+1]["v"])) + 1;
+                    custom_tickformat = function(d, i) { return "%" + d; }
                 }
-            })
-            .attr("width", 20)
-            .attr("fill", function(d) {
-                return d["color"];
-            });
-
+                legend_y_axis.call(d3.axisLeft(legend_yScale).tickValues([vmin, vmax]).tickFormat(custom_tickformat).tickSize(25));
+    
+                cmap.selectAll(".rect")
+                .data(rects)
+                .enter()
+                .append("rect")
+                .attr("x", function(d) {
+                    return 50;
+                })
+                .attr("y", function(d, i) {
+                    return legend_yScale(d.v);
+                })
+                .attr("height", function(d, i) {
+                    if (i == num_rects -1) {
+                        return (legend_yScale(d.v) - legend_yScale(vmax)) + 1;
+                    }
+                    else {
+                        return (legend_yScale(d.v) - legend_yScale(rects[i+1]["v"])) + 1;
+                    }
+                })
+                .attr("width", 20)
+                .attr("fill", function(d) {
+                    return d["color"];
+                });
+            }
         }
 
 

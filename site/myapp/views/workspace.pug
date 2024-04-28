@@ -182,19 +182,22 @@ html
                                                             option(value="images") Images 
 
 
-                                        div(id="navigation_table_container" class="scrollable_area" style="height: 365px; width: 280px; border: none; overflow-y: scroll;")
+                                        div(id="navigation_table_container" class="scrollable_area" style="height: 15px; width: 280px; border: none; overflow-y: scroll;")
+                                            
                                             table(id="navigation_table")
 
 
-                                        div(style="height: 10px")
+                                        div(id="non_nav_container_2")
 
-                                        button(id="prev_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px") 
-                                            i(class="fa-solid fa-circle-chevron-left" style="padding-right: 5px")
-                                            | 
-                                            | Previous 
+                                            div(style="height: 10px")
 
-                                        button(id="next_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 0px 30px 30px 0px; margin-left: -1px") Next 
-                                            i(class="fa-solid fa-circle-chevron-right" style="padding-left: 5px")  
+                                            button(id="prev_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px") 
+                                                i(class="fa-solid fa-circle-chevron-left" style="padding-right: 5px")
+                                                | 
+                                                | Previous 
+
+                                            button(id="next_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 0px 30px 30px 0px; margin-left: -1px") Next 
+                                                i(class="fa-solid fa-circle-chevron-right" style="padding-left: 5px")  
 
 
                                 td(style="width: 100%; position: relative; border-left: none; border-right: none" class="viewer" id="seadragon_viewer")
@@ -343,7 +346,7 @@ html
                                                             td(style="width: 50%")
 
 
-                                                    hr
+                                                    hr(style="margin-top: 4px")
 
                                                     table(style="margin-top: -8px")
                                                         tr
