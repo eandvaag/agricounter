@@ -871,7 +871,7 @@ function create_region_element(region_color, region_index) {
 function create_region_of_interest_element(region_color, region_index) {
 
     let btn_func;
-    if (window.location.pathname.split("/")[2] === "workspace") {
+    if (window.location.pathname.substring(ac_path.length).startsWith("workspace")) {
         btn_func = "edit_tags()";
     }
     else {
