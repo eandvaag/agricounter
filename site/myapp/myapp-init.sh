@@ -16,11 +16,18 @@ echo >&2 "$(date +%Y%m%dt%H%M%S) Postgres is up - executing command"
 
 
 
-echo 'running db:migrate'
-npx sequelize-cli db:migrate
+USERS_TABLE_EXISTS=`PGPASSWORD=$DB_PASSWORD psql -c "SELECT EXISTS ( SELECT 1 FROM pg_catalog.pg_class WHERE relname='users' AND relkind='r')" -h db -p 5432 -U $DB_USER $DB_SCHEMA | head -3 | tail -1`
 
-echo 'running db:seed:all'
-npx sequelize-cli db:seed:all
+if [ $USERS_TABLE_EXISTS == 't' ]; then
+  echo "Users table exists, not running migrations and seeders"
+else
+  echo 'Running db:migrate'
+  npx sequelize-cli db:migrate
+
+  echo 'Running db:seed:all'
+  npx sequelize-cli db:seed:all
+
+fi
 
 
 echo 'Starting npm'
