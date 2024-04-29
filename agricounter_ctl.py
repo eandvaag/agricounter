@@ -167,16 +167,16 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("-c", "--create", action="store_true",
-                        help="create the docker container")
+                        help="create the containers, seed the database if empty, set the container environment variables")
 
     parser.add_argument("-d", "--down", action="store_true",
-                        help="stop the docker container")
+                        help="remove the containers, do not remove the database volume")
 
     parser.add_argument("-u", "--up", action="store_true",
-                        help="start the docker container")
+                        help="create the containers, seed the database if empty")
 
     parser.add_argument("-D", "--destroy", action="store_true",
-                        help="remove the docker container")
+                        help="remove the containers and remove the database volume")
     
     
     args = parser.parse_args()

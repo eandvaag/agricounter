@@ -42,13 +42,10 @@ Below is an explanation of the keys that `agricounter_ctl.py` expects to find in
 - `gpu_index`: Index of GPU device to use. If only one GPU is available, this should be 0. Use -1 if you want to use the CPU instead.
 - `use_slurm`: Use SLURM job scheduler (for HPC environments). Requires setup of a `slurm_config.json` file in `backend/src`.
 
-To stop the Docker container without removing the PostGreSQL volume, use `./agricounter_ctl.py --down`. The container can then be rebuilt with `./agricounter_ctl.py --up`. To stop the container and remove the PostGreSQL volume, use `./agricounter_ctl.py --destroy`.
 
-When a AgriCounter Docker instance is created with `./agricounter_ctl.py -c`, only the administrator account 
-is seeded to the database. In order to add regular user accounts, it is necessary to log in as the 
-administrator and add the new user accounts through the administrator web page interface. It is also necessary to 
-specify the object classes that the AgriCounter tool will be used to detect (e.g., "Canola Seedling"). This is also 
-done from the administrator's web page.
+To remove the Docker containers without removing the PostGreSQL volume, use `./agricounter_ctl.py --down`. The containers can then be rebuilt with `./agricounter_ctl.py --up`. To remove the containers and remove the PostGreSQL volume, use `./agricounter_ctl.py --destroy`.
+
+When a AgriCounter Docker instance is created for the first time with `./agricounter_ctl.py -c`, only the administrator account is seeded to the database. In order to add regular user accounts, it is necessary to log in as the administrator and add the new user accounts through the administrator web page interface. It is also necessary to specify the object classes that the AgriCounter tool will be used to detect (e.g., "Canola Seedling"). This is also done from the administrator's web page.
 
 
 ### Non-Docker Install
