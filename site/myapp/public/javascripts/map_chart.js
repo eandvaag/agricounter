@@ -81,7 +81,8 @@ function draw_map_chart() {
     }
 
     let chart_height = $("#seadragon_viewer").height() - 100;
-    let chart_width = Math.max($("#seadragon_viewer").width(), chart_height * ratio);
+    let max_chart_width = window.innerWidth - $("#map_builder_controls_container").width() - 150;
+    let chart_width = Math.min(max_chart_width, chart_height * ratio);
 
 
     chart_height = chart_height + "px";
