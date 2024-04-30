@@ -81,7 +81,7 @@ html
                                     div(style="width: 280px;")
                                         div(id="left_panel")
 
-                                            div(id="non_nav_container")
+                                            div(id="non_nav_container_upper")
 
                                                 div(style="font-size: 20px; height: 40px; word-wrap: break-word;" id="result_name")
                                                 div(style="height: 10px")
@@ -129,14 +129,17 @@ html
                                             div(id="navigation_table_container" class="scrollable_area" style="width: 280px; border: none; overflow-y: scroll")
                                                 table(id="navigation_table")
 
-                                            div(style="height: 10px")
 
-                                            button(id="prev_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px") 
-                                                i(class="fa-solid fa-circle-chevron-left" style="padding-right: 5px")
-                                                | 
-                                                | Previous 
-                                            button(id="next_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 0px 30px 30px 0px; margin-left: -1px") Next 
-                                                i(class="fa-solid fa-circle-chevron-right" style="padding-left: 5px")                                 
+                                            div(id="non_nav_container_lower")
+
+                                                div(style="height: 10px")
+
+                                                button(id="prev_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 30px 0px 0px 30px") 
+                                                    i(class="fa-solid fa-circle-chevron-left" style="padding-right: 5px")
+                                                    | 
+                                                    | Previous 
+                                                button(id="next_image_button" class="button-green button-green-hover" style="font-size: 16px; width: 130px; border-radius: 0px 30px 30px 0px; margin-left: -1px") Next 
+                                                    i(class="fa-solid fa-circle-chevron-right" style="padding-left: 5px")                                 
 
 
                                 td(style="width: 100%; border-left: none; border-right: none" class="viewer" id="seadragon_viewer")
@@ -248,8 +251,6 @@ html
                                                     td
                                                         div(id="confidence_slider_val" style="margin-left: 2px; padding: 4px 2px; margin-top: -4px; border-radius: 5px; border: 1px solid white; width: 55px") > 0.50
 
-                                            //div(style="height: 5px")
-                                            //hr
                                             hr(style="margin-top: 2px")
 
 

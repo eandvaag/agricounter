@@ -2230,9 +2230,9 @@ function resize_window() {
     let new_viewer_height = window.innerHeight - $("#header_table").height() - 100;
     $("#seadragon_viewer").height(new_viewer_height);
     $("#chart_container").height(new_viewer_height);
-    let non_nav_container_height = $("#non_nav_container").height();
-    let non_nav_container_2_height = $("#non_nav_container_2").height();
-    let new_navigation_table_container_height = new_viewer_height - non_nav_container_height - non_nav_container_2_height - 16; // - 100; //50;
+    let non_nav_container_upper_height = $("#non_nav_container_upper").height();
+    let non_nav_container_lower_height = $("#non_nav_container_lower").height();
+    let new_navigation_table_container_height = new_viewer_height - non_nav_container_upper_height - non_nav_container_lower_height - 16; // - 100; //50;
     $("#score_area").show();
     $("#count_area").show();
     let right_panel_height = $("#control_panel").height();
