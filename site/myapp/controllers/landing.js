@@ -143,7 +143,7 @@ exports.post_sign_in = async function(req, res, next) {
     response.not_found = false;
     response.error = false;
 
-    let ip = req.socket.remoteAddress;
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     let prov_username = req.body.username;
     let prov_password = req.body.password;
