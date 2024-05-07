@@ -16,7 +16,6 @@ The `backend` directory contains the code for the Python process. The Python pro
 
 ### Docker Install
 
-
 Follow these steps to create a new Docker instance of AgriCounter.
 
 #### 1. Create args.json file
@@ -52,12 +51,11 @@ openssl req -newkey rsa:2048 -new -nodes -keyout key.pem -out csr.pem
 
 #### 3. Create the containers
 
-The `agricounter_ctl.py` script can be used to create and manage the AgriCounter tool inside a Docker container. To create the AgriCounter application for the first time, 
-run `./agricounter_ctl.py --create`.
+The `agricounter_ctl.py` script can be used to create and manage the AgriCounter tool inside a Docker container. To create the AgriCounter application for the first time, run `./agricounter_ctl.py --create`.
 
 To remove the Docker containers without removing the PostGreSQL volume, use `./agricounter_ctl.py --down`. The containers can then be rebuilt with `./agricounter_ctl.py --up`. To remove the containers and remove the PostGreSQL volume, use `./agricounter_ctl.py --destroy`.
 
-When a AgriCounter Docker instance is created for the first time with `./agricounter_ctl.py -c`, only the administrator account is seeded to the database. In order to add regular user accounts, it is necessary to log in as the administrator and add the new user accounts through the administrator web page interface. It is also necessary to specify the object classes that the AgriCounter tool will be used to detect (e.g., "Canola Seedling"). This is also done from the administrator's web page.
+When an AgriCounter Docker instance is created for the first time with `./agricounter_ctl.py -c`, only the administrator account is seeded to the database. In order to add regular user accounts, it is necessary to log in as the administrator and add the new user accounts through the administrator web page interface. It is also necessary to specify the object classes that the AgriCounter tool will be used to detect (e.g., "Canola Seedling"). This is also done from the administrator's web page.
 
 
 ### Non-Docker Install
