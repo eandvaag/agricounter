@@ -49,7 +49,6 @@ cd site/myapp
 openssl genrsa -out key.pem
 openssl req -new -key key.pem -out csr.pem
 openssl x509 -req -days 2000 -in csr.pem -signkey key.pem -out cert.pem
-
 ```
 
 #### 3. Create the containers
