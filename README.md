@@ -16,12 +16,10 @@ The `backend` directory contains the code for the Python process. The Python pro
 
 ### Docker Install
 
-`agricounter_ctl.py` can be used to create and manage the AgriCounter tool inside a Docker container. 
-After cloning the AgriCounter repository, a new Docker instance of AgriCounter can be built with the following command:
 
-```
-./agricounter_ctl.py --create
-```
+Follow these steps to create a new Docker instance of AgriCounter.
+
+#### 1. Create args.json file
 
 In order to set up the application, `agricounter_ctl.py` will attempt to read a configuration file called `args.json`. The `args.json` file should be located in the root directory of the AgriCounter repository.
 
@@ -42,6 +40,20 @@ Below is an explanation of the keys that `agricounter_ctl.py` expects to find in
 - `gpu_index`: Index of GPU device to use. If only one GPU is available, this should be 0. Use -1 if you want to use the CPU instead.
 - `use_slurm`: Use SLURM job scheduler (for HPC environments). Requires setup of a `slurm_config.json` file in `backend/src`.
 
+
+#### 2. Create SSL certificate and key
+
+Before running `./agricounter_ctl.py --create`, it is also necessary to generate a PEM encoded SSL certificate and private key. This can be accomplished with the following commands:
+
+```
+cd site/myapp
+openssl req -newkey rsa:2048 -new -nodes -keyout key.pem -out csr.pem
+```
+
+#### 3. Create the containers
+
+The `agricounter_ctl.py` script can be used to create and manage the AgriCounter tool inside a Docker container. To create the AgriCounter application for the first time, 
+run `./agricounter_ctl.py --create`.
 
 To remove the Docker containers without removing the PostGreSQL volume, use `./agricounter_ctl.py --down`. The containers can then be rebuilt with `./agricounter_ctl.py --up`. To remove the containers and remove the PostGreSQL volume, use `./agricounter_ctl.py --destroy`.
 

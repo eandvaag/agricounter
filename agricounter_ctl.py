@@ -8,6 +8,9 @@ import json
 import yaml
 import subprocess
 
+
+DETACH = True
+
 def create():
 
     logging.basicConfig(level=logging.INFO)
@@ -142,14 +145,21 @@ def create():
 
     logger.info("Starting Docker container")
 
-    subprocess.run(["docker-compose", "up", "-d"])
+    command = ["docker-compose", "up"]
+    if DETACH:
+        command.append("-d")
+    subprocess.run(command)
 
 
 
 
 
 def up():
-    subprocess.run(["docker-compose", "up", "-d"])
+    command = ["docker-compose", "up"]
+    if DETACH:
+        command.append("-d")
+    subprocess.run(command)
+
 
 def down():
     subprocess.run(["docker-compose", "down", "--rmi", "local"])
