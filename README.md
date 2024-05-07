@@ -42,11 +42,14 @@ Below is an explanation of the keys that `agricounter_ctl.py` expects to find in
 
 #### 2. Create SSL certificate and key
 
-Before running `./agricounter_ctl.py --create`, it is also necessary to generate a PEM encoded SSL certificate and private key. This can be accomplished with the following commands:
+Before running `./agricounter_ctl.py --create`, it is also necessary to generate a PEM encoded SSL certificate and private key. A self-signed certificate can be created with the following commands:
 
 ```
 cd site/myapp
-openssl req -newkey rsa:2048 -new -nodes -keyout key.pem -out cert.pem
+openssl genrsa -out key.pem
+openssl req -new -key key.pem -out csr.pem
+openssl x509 -req -days 2000 -in csr.pem -signkey key.pem -out cert.pem
+
 ```
 
 #### 3. Create the containers
