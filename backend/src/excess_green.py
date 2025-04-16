@@ -31,7 +31,7 @@ def create_vegetation_record_for_orthomosaic(image_set_dir, excess_green_record,
         for j in range(0, w, CHUNK_SIZE):
             chunk_coords_lst.append([i, j, min(i+CHUNK_SIZE, h), min(j+CHUNK_SIZE, w)])
 
-    results = Parallel(int(os.cpu_count() / 3))(
+    results = Parallel(max(1, int(os.cpu_count() / 3)))(
         delayed(get_vegetation_percentages_for_chunk)(
             excess_green_record, metadata, annotations, predictions, image.image_path, chunk_coords) for chunk_coords in chunk_coords_lst)
 

@@ -145,7 +145,7 @@ def create():
 
     logger.info("Starting Docker container")
 
-    command = ["docker-compose", "up"]
+    command = ["docker", "compose", "up"]
     if DETACH:
         command.append("-d")
     subprocess.run(command)
@@ -155,17 +155,17 @@ def create():
 
 
 def up():
-    command = ["docker-compose", "up"]
+    command = ["docker", "compose", "up"]
     if DETACH:
         command.append("-d")
     subprocess.run(command)
 
 
 def down():
-    subprocess.run(["docker-compose", "down", "--rmi", "local"])
+    subprocess.run(["docker", "compose", "down", "--rmi", "local"])
 
 def destroy():
-    subprocess.run(["docker-compose", "down", "-v", "--rmi", "local"])
+    subprocess.run(["docker", "compose", "down", "-v", "--rmi", "local"])
 
 
 
